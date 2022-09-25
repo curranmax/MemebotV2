@@ -1,0 +1,9 @@
+\b(?i:g+i+d+o+)\b	<:gido:606573415234797589>
+\b(?i:oo+f+)\b	<:baboof:619675420538699790>
+\b(?i:(p+h+a+r+a+h+)|(m+e+r+c+y+)|(p+h+a+r+m+e+r+c+y+))\b	<:pharmercy:577357947315814417>
+\b(?i:t+o+r+b+(j+o+r+n+)?)\b	<:torbcard:585176013110116357>
+\b(?i:d+i+v+(e+|i+n+g+))\b	<:dive:577357184145293342>
+\b(?i:(h+i+)|(h+e+ll+o+))\b	👋
+\b(?i:(m+e+m+e+)?(b+o+t+))\b	🤖
+\b(?i:l+u+c+i+o+)\b	🐸
+\b(?i:l+u+c+i+o+ ?b+a+ll+)\b	⚽
