@@ -7,7 +7,11 @@ import discord
 from discord import app_commands
 import logging
 
-DEFAULT_GUILDS = [discord.Object(id=599237897580970005)]
+DEFAULT_GUILDS = [
+    discord.Object(id=599237897580970005),
+    discord.Object(id=525174584526241803),
+    discord.Object(id=400805068934348800)
+]
 
 
 class CustomDiscordClient(discord.Client):
@@ -48,12 +52,15 @@ class CustomDiscordClient(discord.Client):
             return
 
         if message.content.startswith('||') and message.content.endswith('||'):
-            logging.info('Ignoring message, because it is surronded by spoiler tags')
+            logging.info(
+                'Ignoring message, because it is surronded by spoiler tags')
             return
 
         emotes = self.auto_react_manager.getEmotes(message.content)
         for emote in emotes:
-            logging.info('Adding automatic reaction to message: message = "{}" reaction = {}'.format(message.content, emote))
+            logging.info(
+                'Adding automatic reaction to message: message = "{}" reaction = {}'
+                .format(message.content, emote))
             await message.add_reaction(emote)
 
     async def on_reaction_add(self, reaction, user):
@@ -62,12 +69,13 @@ class CustomDiscordClient(discord.Client):
             return
 
         if reaction.emoji in emote_speller.TRIGGER_EMOJIS:
-            logging.info('Trying to spell words on message: "{}"'.format(reaction.message.content))
+            logging.info('Trying to spell words on message: "{}"'.format(
+                reaction.message.content))
             spelling = emote_speller.onReactionAdd(reaction)
             if spelling is not None:
-                logging.info('Found a valid spelling: {}'.format(', '.join(spelling)))
+                logging.info('Found a valid spelling: {}'.format(
+                    ', '.join(spelling)))
                 for emote in spelling:
                     await reaction.message.add_reaction(emote)
             else:
                 logging.info('No valid spelling')
-        
