@@ -7,6 +7,7 @@ import discord
 from discord import app_commands
 import logging
 
+
 DEFAULT_GUILDS = [
     discord.Object(id=599237897580970005),
     discord.Object(id=525174584526241803),

@@ -41,7 +41,7 @@ class Meme(app_commands.Command):
         self.reply = reply
 
     async def _handleInteraction(self, interaction: discord.Interaction):
-        logging.info('Replying to meme "{}"'.format(self.commanhd))
+        logging.info('Replying to meme "{}"'.format(self.command))
         await interaction.response.send_message(self.reply, ephemeral=False)
 
 
