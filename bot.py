@@ -1,12 +1,12 @@
 import auto_reacts
 import emote_speller
 import memes
+import owl_calendar
 import pugs
 
 import discord
 from discord import app_commands
 import logging
-
 
 DEFAULT_GUILDS = [
     discord.Object(id=599237897580970005),
@@ -14,25 +14,36 @@ DEFAULT_GUILDS = [
     discord.Object(id=400805068934348800)
 ]
 
+TESTING_GUILDS = [discord.Object(id=599237897580970005)]
+
 
 class CustomDiscordClient(discord.Client):
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, command_guilds=[], *args, **kwargs):
         super(CustomDiscordClient, self).__init__(command_prefix='/',
                                                   *args,
                                                   **kwargs)
 
+        self.command_guilds = command_guilds
         self.command_tree = app_commands.CommandTree(self)
 
         # Add copy pasta / meme commands
         self.command_tree.add_command(memes.MemesCommands(),
-                                      guilds=DEFAULT_GUILDS)
+                                      guilds=self.command_guilds)
+
+        # Add OWL calendar.
+        self.owl_calendar_manager = owl_calendar.OwlCalendarManager()
+        for command_group in self.owl_calendar_manager.getDiscordCommands():
+            self.command_tree.add_command(command_group,
+                                          guilds=self.command_guilds)
 
         # Add PUGs commands
         self.pugs_manager = pugs.PugsManager()
         for command_group in self.pugs_manager.getDiscordCommands():
-            self.command_tree.add_command(command_group, guilds=DEFAULT_GUILDS)
+            self.command_tree.add_command(command_group,
+                                          guilds=self.command_guilds)
 
+        # Creates the class to add auto reacts
         self.auto_react_manager = auto_reacts.AutoReactManager()
 
     async def on_ready(self):
@@ -45,7 +56,7 @@ class CustomDiscordClient(discord.Client):
         print(self.user.id)
         print('-' * 50)
 
-        for guild in DEFAULT_GUILDS:
+        for guild in self.command_guilds:
             await self.command_tree.sync(guild=guild)
 
     async def on_message(self, message):

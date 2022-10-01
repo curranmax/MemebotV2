@@ -1,9 +1,17 @@
-from bot import CustomDiscordClient
+import bot
 
 from datetime import datetime
 import discord
 import logging
 import os
+
+TESTING_MODE = True
+token = os.getenv('DISCORD_TOKEN')
+command_guilds = bot.DEFAULT_GUILDS
+if TESTING_MODE:
+    print('RUNNING IN TESTING MODE')
+    token = os.getenv('DISCORD_TESTING_TOKEN')
+    command_guilds = bot.TESTING_GUILDS
 
 # Configure logging
 logging_fname = datetime.now().strftime('logs/log_%b-%d-%Y_%I:%M:%S_%p.txt')
@@ -18,5 +26,5 @@ intents = discord.Intents.default()
 intents.message_content = True
 
 # Start discord bot
-client = CustomDiscordClient(intents=intents)
-client.run(os.getenv('DISCORD_TOKEN'))
+client = bot.CustomDiscordClient(command_guilds=command_guilds,intents=intents)
+client.run(token)
