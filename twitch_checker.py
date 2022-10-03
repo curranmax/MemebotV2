@@ -1,5 +1,7 @@
+import asyncio
 import discord
 from discord import app_commands
+from discord.ext import commands, tasks
 import os
 import os.path
 import pickle
@@ -25,6 +27,9 @@ class TwitchManager:
 
         self.twitch_stream_filename = twitch_stream_filename
         self.loadTwitchStreamsFromFile()
+
+    def getDiscordCommands(self):
+        return [TwitchDiscordCommands(self), TwitchAdminDiscordCommands(self)]
 
     def getTwitchAccessToken(self):
         params = {
@@ -143,6 +148,34 @@ class TwitchState:
         self.title = title
 
 
+class TwitchCog(commands.Cog):
+    def __init__(self, discord_client, twitch_manager):
+        # self.discord_client = discord_client
+        # self.twitch_manager = twitch_manager
+
+        # self.lock = asyncio.Lock()
+        self.checkTwitchStreams.start()
+
+    def cog_unload(self):
+        self.checkTwitchStreams.cancel()
+
+    @tasks.loop(seconds = 60)
+    async def checkTwitchStreams(self):
+        print('a')
+        # if not self.lock.locked():
+        #     async with self.lock:
+        #         twitch_messages = self.twitch_manager.checkStateOfAllStreams()
+        #         for value in twitch_messages:
+        #             if value is None:
+        #                 continue
+        #             message, channel_id = value
+        #             await self.discord_client.get_channel(channel_id).send(message)
+
+    # @checkTwitchStreams.before_loop
+    # async def before_checkTwitchStreams(self):
+    #     await self.discord_client.wait_until_ready()
+
+
 class TwitchDiscordCommandsBase(app_commands.Group):
 
     def __init__(self, twitch_manager, name, *args, **kwargs):
@@ -189,7 +222,7 @@ class TwitchAdminDiscordCommands(TwitchDiscordCommandsBase):
 
 if __name__ == '__main__':
     twitch_manager = TwitchManager()
-    twitch_manager.addTwitchStream(TwitchStream('KryticZeuz', 0, 1))
-    twitch_manager.addTwitchStream(TwitchStream('burninate32', 2, 3))
-    twitch_manager.addTwitchStream(TwitchStream('kolvia', 4, 5))
+    twitch_manager.addTwitchStream(TwitchStream('DrGluon', 0, 599237897580970013))
+    twitch_manager.addTwitchStream(TwitchStream('burninate32', 2, 599237897580970013))
+    twitch_manager.addTwitchStream(TwitchStream('kolvia', 4, 599237897580970013))
     twitch_manager.checkStateOfAllStreams()

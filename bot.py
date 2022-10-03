@@ -3,6 +3,7 @@ import emote_speller
 import memes
 import owl_calendar
 import pugs
+import twitch_checker
 
 import discord
 from discord import app_commands
@@ -45,6 +46,12 @@ class CustomDiscordClient(discord.Client):
 
         # Creates the class to add auto reacts
         self.auto_react_manager = auto_reacts.AutoReactManager()
+
+        # Creates the class for the twitch checker
+        self.twitch_manager = twitch_checker.TwitchManager()
+        self.twitch_cog = twitch_checker.TwitchCog(self, self.twitch_manager)
+        for command_group in self.twitch_manager.getDiscordCommands():
+            self.command_tree.add_command(command_group, guilds=self.command_guilds)
 
     async def on_ready(self):
         logging.info(
