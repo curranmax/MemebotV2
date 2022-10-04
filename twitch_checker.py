@@ -129,10 +129,10 @@ class TwitchStream:
                 and new_state.status == TwitchState.ONLINE):
             message_format = random.choice(
                 TwitchStream.DEFAULT_LIVE_MESSAGE_FORMATS)
-            message = message_format.format(user_name=self.user_name,
-                                            game_name=new_state.game,
-                                            twitch_link='twitch.tv/{}'.format(
-                                                self.user_name))
+            message = message_format.format(
+                user_name=self.user_name,
+                game_name=new_state.game,
+                twitch_link='https://twitch.tv/{}'.format(self.user_name))
             rv = (message, self.discord_channel_id)
         self.state = new_state
         return rv
@@ -170,7 +170,8 @@ class TwitchCog(commands.Cog):
                     if value is None:
                         continue
                     message, channel_id = value
-                    await self.discord_client.get_channel(channel_id).send(message)
+                    await self.discord_client.get_channel(channel_id).send(
+                        message)
 
     @checkTwitchStreams.before_loop
     async def before_checkTwitchStreams(self):
@@ -224,6 +225,7 @@ class TwitchAdminDiscordCommands(TwitchDiscordCommandsBase):
 
     # TODO Add: add-other, remove-other, check-all, add-other-allowlist, clear-other-allowlist
 
+
 def addTestStreams(twitch_manager):
     BOT_TESTING_CHANNEL = 599237897580970013
     twitch_manager.addTwitchStream(
@@ -232,6 +234,7 @@ def addTestStreams(twitch_manager):
         TwitchStream('burninate32', 2, BOT_TESTING_CHANNEL))
     twitch_manager.addTwitchStream(
         TwitchStream('kolvia', 4, BOT_TESTING_CHANNEL))
+
 
 if __name__ == '__main__':
     twitch_manager = TwitchManager()
