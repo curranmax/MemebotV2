@@ -49,9 +49,9 @@ class CustomDiscordClient(discord.Client):
 
         # Creates the class for the twitch checker
         self.twitch_manager = twitch_checker.TwitchManager()
-        self.twitch_cog = twitch_checker.TwitchCog(self, self.twitch_manager)
         for command_group in self.twitch_manager.getDiscordCommands():
-            self.command_tree.add_command(command_group, guilds=self.command_guilds)
+            self.command_tree.add_command(command_group,
+                                          guilds=self.command_guilds)
 
     async def on_ready(self):
         logging.info(
@@ -65,6 +65,9 @@ class CustomDiscordClient(discord.Client):
 
         for guild in self.command_guilds:
             await self.command_tree.sync(guild=guild)
+
+        # Setup twitch task to incremently check streams
+        self.twitch_cog = twitch_checker.TwitchCog(self, self.twitch_manager)
 
     async def on_message(self, message):
         if message.author == self.user:

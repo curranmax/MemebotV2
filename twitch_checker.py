@@ -118,6 +118,7 @@ class TwitchStream:
         self.discord_channel_id = discord_channel_id
 
         # Add in cooldown, allow_list, custom message formats,
+        # Add new fields to pickled objects
 
         self.state = TwitchState()
 
@@ -149,31 +150,31 @@ class TwitchState:
 
 
 class TwitchCog(commands.Cog):
-    def __init__(self, discord_client, twitch_manager):
-        # self.discord_client = discord_client
-        # self.twitch_manager = twitch_manager
 
-        # self.lock = asyncio.Lock()
+    def __init__(self, discord_client, twitch_manager):
+        self.discord_client = discord_client
+        self.twitch_manager = twitch_manager
+
+        self.lock = asyncio.Lock()
         self.checkTwitchStreams.start()
 
     def cog_unload(self):
         self.checkTwitchStreams.cancel()
 
-    @tasks.loop(seconds = 60)
+    @tasks.loop(seconds=60)
     async def checkTwitchStreams(self):
-        print('a')
-        # if not self.lock.locked():
-        #     async with self.lock:
-        #         twitch_messages = self.twitch_manager.checkStateOfAllStreams()
-        #         for value in twitch_messages:
-        #             if value is None:
-        #                 continue
-        #             message, channel_id = value
-        #             await self.discord_client.get_channel(channel_id).send(message)
+        if not self.lock.locked():
+            async with self.lock:
+                twitch_messages = self.twitch_manager.checkStateOfAllStreams()
+                for value in twitch_messages:
+                    if value is None:
+                        continue
+                    message, channel_id = value
+                    await self.discord_client.get_channel(channel_id).send(message)
 
-    # @checkTwitchStreams.before_loop
-    # async def before_checkTwitchStreams(self):
-    #     await self.discord_client.wait_until_ready()
+    @checkTwitchStreams.before_loop
+    async def before_checkTwitchStreams(self):
+        await self.discord_client.wait_until_ready()
 
 
 class TwitchDiscordCommandsBase(app_commands.Group):
@@ -212,6 +213,8 @@ class TwitchDiscordCommands(TwitchDiscordCommandsBase):
 
         await interaction.response.send_message(message, ephemeral=True)
 
+    # TODO Add: remove-self, check-self, add-to-allowlist, clear-allowlist
+
 
 class TwitchAdminDiscordCommands(TwitchDiscordCommandsBase):
 
@@ -219,10 +222,18 @@ class TwitchAdminDiscordCommands(TwitchDiscordCommandsBase):
         super(TwitchAdminDiscordCommands,
               self).__init__(twitch_manager, 'twitch-admin', *args, **kwargs)
 
+    # TODO Add: add-other, remove-other, check-all, add-other-allowlist, clear-other-allowlist
+
+def addTestStreams(twitch_manager):
+    BOT_TESTING_CHANNEL = 599237897580970013
+    twitch_manager.addTwitchStream(
+        TwitchStream('Fitzyhere', 0, BOT_TESTING_CHANNEL))
+    twitch_manager.addTwitchStream(
+        TwitchStream('burninate32', 2, BOT_TESTING_CHANNEL))
+    twitch_manager.addTwitchStream(
+        TwitchStream('kolvia', 4, BOT_TESTING_CHANNEL))
 
 if __name__ == '__main__':
     twitch_manager = TwitchManager()
-    twitch_manager.addTwitchStream(TwitchStream('DrGluon', 0, 599237897580970013))
-    twitch_manager.addTwitchStream(TwitchStream('burninate32', 2, 599237897580970013))
-    twitch_manager.addTwitchStream(TwitchStream('kolvia', 4, 599237897580970013))
-    twitch_manager.checkStateOfAllStreams()
+    addTestStreams(twitch_manager)
+    print(twitch_manager.checkStateOfAllStreams())
