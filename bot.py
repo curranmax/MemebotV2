@@ -1,7 +1,6 @@
 import auto_reacts
 import emote_speller
 import memes
-import owl_calendar
 import pugs
 import twitch_checker
 
@@ -33,10 +32,10 @@ class CustomDiscordClient(discord.Client):
                                       guilds=self.command_guilds)
 
         # Add OWL calendar.
-        self.owl_calendar_manager = owl_calendar.OwlCalendarManager()
-        for command_group in self.owl_calendar_manager.getDiscordCommands():
-            self.command_tree.add_command(command_group,
-                                          guilds=self.command_guilds)
+        # self.owl_calendar_manager = owl_calendar.OwlCalendarManager()
+        # for command_group in self.owl_calendar_manager.getDiscordCommands():
+        #     self.command_tree.add_command(command_group,
+        #                                   guilds=self.command_guilds)
 
         # Add PUGs commands
         self.pugs_manager = pugs.PugsManager()

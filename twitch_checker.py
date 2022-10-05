@@ -1,4 +1,5 @@
 import asyncio
+import datetime
 import discord
 from discord import app_commands
 from discord.ext import commands, tasks
@@ -65,9 +66,36 @@ class TwitchManager:
         self.saveTwitchStreamsToFile()
         return True
 
+    def getTwitchStreamByUserName(self, user_name):
+        if user_name not in self.twitch_streams:
+            return None
+        return self.twitch_streams[user_name]
+
+    def getTwitchStreamsByDiscordUser(self, discord_user_id):
+        streams = []
+        for _, twitch_stream in self.twitch_streams.items():
+            if twitch_stream.discord_user_id == discord_user_id:
+                streams.append(twitch_stream)
+        return streams
+
+    def getTwitchStreamByUserNameAndId(self, user_name, discord_user_id):
+        if user_name not in self.twitch_streams:
+            return None
+        twitch_stream = self.twitch_streams[user_name]
+        return twitch_stream if twitch_stream.discord_user_id == discord_user_id else None
+
+    def removeTwitchStream(self, user_name, discord_user_id):
+        if user_name not in self.twitch_streams or self.twitch_streams[
+                user_name].discord_user_id != discord_user_id:
+            return False
+
+        del self.twitch_streams[user_name]
+        self.saveTwitchStreamsToFile()
+        return True
+
     def checkStateOfAllStreams(self, retry=False):
         if len(self.twitch_streams) <= 0:
-            return
+            return []
 
         url = TWITCh_STREAMS_URL + '?first={}&{}'.format(
             len(self.twitch_streams), '&'.join(
@@ -112,21 +140,52 @@ class TwitchStream:
         '{user_name} is now live playing {game_name}!\n{twitch_link}'
     ]
 
-    def __init__(self, user_name, discord_user_id, discord_channel_id):
+    def __init__(self,
+                 user_name,
+                 discord_user_id,
+                 discord_channel_id,
+                 game_allow_list=None,
+                 post_cooldown=datetime.timedelta(hours=1),
+                 super_mode=False):
         self.user_name = user_name
         self.discord_user_id = discord_user_id
         self.discord_channel_id = discord_channel_id
 
-        # Add in cooldown, allow_list, custom message formats,
+        self.game_allowlist = game_allow_list if game_allow_list is not None else []
+
+        self.last_post = None
+        self.post_cooldown = post_cooldown
+
+        # If enabled, then a separate post is made when this stream changes games
+        self.super_mode = super_mode
+
+        # Add in custom message formats,
         # Add new fields to pickled objects
 
         self.state = TwitchState()
 
+    def getPostCooldownStr(self):
+        # Posts the timedelta in HH:MM format
+        return ':'.join(str(self.post_cooldown).split(':')[:2])
+
     # Returns None if a message should not be sent, otherwise ()
     def updateState(self, new_state):
         rv = None
-        if (self.state.status in (TwitchState.NONE, TwitchState.OFFLINE)
-                and new_state.status == TwitchState.ONLINE):
+        # In order to post:
+        #   1) State must transition from Offline to Online -OR- Game is changing and stream is set to super mode.
+        #   2) Allowlist is empty (i.e. self.game_allowlist has a length of zero) -OR- new_state.game is in self.game_allowlist.
+        #   3) No post has ever been made (i.e. self.last_post is None) -OR- self.post_cooldown is less than or equal to zero -OR- The last post was at least self.post_cooldown ago (i.e. self.last_post + self.post_cooldown <= now()).
+
+        offline_to_online = self.state.status == TwitchState.OFFLINE and new_state.status == TwitchState.ONLINE
+        game_changed_super_mode = self.state.status == TwitchState.ONLINE and new_state.status == TwitchState.ONLINE and self.super_mode and self.state.game != new_state.game
+        valid_game = len(
+            self.game_allowlist) == 0 or new_state.game in self.game_allowlist
+        post_cooldown = self.last_post is None or self.post_cooldown <= datetime.timedelta(
+        ) or self.last_post + self.post_cooldown <= datetime.datetime.now()
+
+        if (offline_to_online
+                or game_changed_super_mode) and valid_game and post_cooldown:
+            self.last_post = datetime.datetime.now()
             message_format = random.choice(
                 TwitchStream.DEFAULT_LIVE_MESSAGE_FORMATS)
             message = message_format.format(
@@ -196,12 +255,11 @@ class TwitchDiscordCommands(TwitchDiscordCommandsBase):
     @app_commands.command(
         name='add-self',
         description=
-        'Add your twitch stream to the bot, so when you go live a post, the bot automatically makes a post!'
-    )
+        'Add your twitch stream to the bot, so it posts when you go live!')
     @app_commands.describe(
         twitch_user_name='This requires the correct capitalization')
-    async def test(self, interaction: discord.Interaction,
-                   twitch_user_name: str):
+    async def add_self(self, interaction: discord.Interaction,
+                       twitch_user_name: str):
         new_twitch_stream = TwitchStream(twitch_user_name, interaction.user.id,
                                          interaction.channel_id)
         was_successful = self.twitch_manager.addTwitchStream(new_twitch_stream)
@@ -214,7 +272,95 @@ class TwitchDiscordCommands(TwitchDiscordCommandsBase):
 
         await interaction.response.send_message(message, ephemeral=True)
 
-    # TODO Add: remove-self, check-self, add-to-allowlist, clear-allowlist
+    @app_commands.command(name='remove-self',
+                          description='Remove your twitch stream to the bot')
+    @app_commands.describe(
+        twitch_user_name=
+        'This needs to be the same string as stored in the bot, use the "check-self" command to get the exact string'
+    )
+    async def remove_self(self, interaction: discord.Interaction,
+                          twitch_user_name: str):
+        was_successful = self.twitch_manager.removeTwitchStream(
+            twitch_user_name, interaction.user.id)
+
+        message = ''
+        if was_successful:
+            message = 'Twitch stream was successfully removed from the bot! If you have any problems, contact the mods for help.'
+        else:
+            message = 'Unable to remove the specified twitch stream from the bot, use the "check-self" command to check your streams. Contact the mods if you need additional help.'
+
+        await interaction.response.send_message(message, ephemeral=True)
+
+    @app_commands.command(name='check-self',
+                          description='Check your tracked streams in the bot.')
+    async def check_self(self, interaction: discord.Interaction):
+        streams = self.twitch_manager.getTwitchStreamsByDiscordUser(
+            interaction.user.id)
+
+        message = ''
+        if len(streams) == 0:
+            message = 'You haven\'t added any streams to the bot. Use "add-self" to add a twitch stream of the bot.'
+        else:
+            stream_strs = []
+            for stream in streams:
+                ss = 'Tracking "{0.user_name}" at https://twitch.tv/{0.user_name}'.format(
+                    stream)
+                if len(stream.game_allowlist) > 0:
+                    ss += '\nGame Allowlist: {}'.format(', '.join(
+                        map(lambda s: '"{}"'.format(s),
+                            stream.game_allowlist)))
+                if stream.post_cooldown > datetime.timedelta():
+                    ss += '\nPost Cooldown: {}'.format(
+                        stream.getPostCooldownStr())
+                stream_strs.append(ss)
+            message = '\n\n'.join(stream_strs)
+
+        await interaction.response.send_message(message, ephemeral=True)
+
+    @app_commands.command(
+        name='add-to-allowlist',
+        description='Adds a game to your twitch stream allowlist.')
+    @app_commands.describe(
+        twitch_user_name=
+        'This needs to be the same string as stored in the bot, use the "check-self" command to get the exact string',
+        game_name=
+        'This needs to be the exact string used for the game within Twitch.')
+    async def add_to_allowlist(self, interaction: discord.Interaction,
+                               twitch_user_name: str, game_name: str):
+        twitch_stream = self.twitch_manager.getTwitchStreamByUserNameAndId(
+            twitch_user_name, interaction.user.id)
+
+        message = ''
+        if twitch_stream is None:
+            message = 'Unable to get stream, use the "check-self" command to check your streams. Contact the mods if you need additional help.'
+        else:
+            twitch_stream.game_allowlist.append(game_name)
+            self.twitch_manager.saveTwitchStreamsToFile()
+            message = 'Game added to "{0.user_name}" allowlist, which is now: {1}'.format(
+                twitch_stream, ', '.join(twitch_stream.game_allowlist))
+
+        await interaction.response.send_message(message, ephemeral=True)
+
+    @app_commands.command(name='clear-allowlist',
+                          description='Clears allowlist for specified stream.')
+    @app_commands.describe(
+        twitch_user_name=
+        'This needs to be the same string as stored in the bot, use the "check-self" command to get the exact string'
+    )
+    async def clear_allowlist(self, interaction: discord.Interaction,
+                              twitch_user_name: str):
+        twitch_stream = self.twitch_manager.getTwitchStreamByUserNameAndId(
+            twitch_user_name, interaction.user.id)
+
+        message = ''
+        if twitch_stream is None:
+            message = 'Unable to get stream, use the "check-self" command to check your streams. Contact the mods if you need additional help.'
+        else:
+            twitch_stream.game_allowlist.clear()
+            self.twitch_manager.saveTwitchStreamsToFile()
+            message = 'Allowlist cleared!'
+
+        await interaction.response.send_message(message, ephemeral=True)
 
 
 class TwitchAdminDiscordCommands(TwitchDiscordCommandsBase):
@@ -223,7 +369,180 @@ class TwitchAdminDiscordCommands(TwitchDiscordCommandsBase):
         super(TwitchAdminDiscordCommands,
               self).__init__(twitch_manager, 'twitch-admin', *args, **kwargs)
 
-    # TODO Add: add-other, remove-other, check-all, add-other-allowlist, clear-other-allowlist
+    @app_commands.command(
+        name='add-other',
+        description=
+        'Add a twitch stream to the bot, so the bot posts when it goes live!')
+    @app_commands.describe(
+        discord_user=
+        'User to associate this stream with. They will be able to edit the stream if they want.',
+        twitch_user_name='This requires the correct capitalization')
+    async def add_other(self, interaction: discord.Interaction,
+                        discord_user: discord.User, twitch_user_name: str):
+        new_twitch_stream = TwitchStream(twitch_user_name, discord_user.id,
+                                         interaction.channel_id)
+        was_successful = self.twitch_manager.addTwitchStream(new_twitch_stream)
+
+        message = ''
+        if was_successful:
+            message = 'Twitch stream was successfully added to the bot!'
+        else:
+            message = 'The twitch stream is already being tracked.'
+
+        await interaction.response.send_message(message, ephemeral=True)
+
+    @app_commands.command(
+        name='remove-other',
+        description='Remove the given twitch stream to the bot')
+    @app_commands.describe(
+        discord_user='User that the stream is associated with',
+        twitch_user_name=
+        'This needs to be the same string as stored in the bot, use the "check-self" command to get the exact string'
+    )
+    async def remove_other(self, interaction: discord.Interaction,
+                           discord_user: discord.User, twitch_user_name: str):
+        was_successful = self.twitch_manager.removeTwitchStream(
+            twitch_user_name, discord_user.id)
+
+        message = ''
+        if was_successful:
+            message = 'Twitch stream was successfully removed from the bot!'
+        else:
+            message = 'Unable to remove the specified twitch stream from the bot.'
+
+        await interaction.response.send_message(message, ephemeral=True)
+
+    @app_commands.command(
+        name='check-all',
+        description='List all twitch streams tracked by the bot.')
+    async def check_all(self, interaction: discord.Interaction):
+        message = ''
+        if len(self.twitch_manager.twitch_streams) == 0:
+            message = 'No tracked streams in this bot'
+        else:
+            stream_strs = []
+            for _, stream in self.twitch_manager.twitch_streams.items():
+                ss = 'Tracking "{0.user_name}" at https://twitch.tv/{0.user_name}'.format(
+                    stream)
+                user = await interaction.client.fetch_user(
+                    stream.discord_user_id)
+                if user is not None:
+                    ss += ' , assocated with {}'.format(user.display_name)
+
+                if len(stream.game_allowlist) > 0:
+                    ss += '\nGame Allowlist: {}'.format(', '.join(
+                        map(lambda s: '"{}"'.format(s),
+                            stream.game_allowlist)))
+                if stream.post_cooldown > datetime.timedelta():
+                    # Posts the timedelta in HH:MM format
+                    ss += '\nPost Cooldown: {}'.format(
+                        stream.getPostCooldownStr())
+                if stream.super_mode:
+                    ss += '\nSUPER MODE ENABLED'
+                stream_strs.append(ss)
+            message = '\n\n'.join(stream_strs)
+
+        await interaction.response.send_message(message, ephemeral=True)
+
+    @app_commands.command(
+        name='add-to-other-allowlist',
+        description='Adds a game to a twitch stream\'s allowlist.')
+    @app_commands.describe(
+        discord_user='Discord user the stream is associated with',
+        twitch_user_name=
+        'This needs to be the same string as stored in the bot, use the "check-self" command to get the exact string',
+        game_name=
+        'This needs to be the exact string used for the game within Twitch.')
+    async def add_to_other_allowlist(self, interaction: discord.Interaction,
+                                     discord_user: discord.User,
+                                     twitch_user_name: str, game_name: str):
+        twitch_stream = self.twitch_manager.getTwitchStreamByUserNameAndId(
+            twitch_user_name, discord_user.id)
+
+        message = ''
+        if twitch_stream is None:
+            message = 'Unable to get stream, use the "check-all" command to check your streams. Contact the mods if you need additional help.'
+        else:
+            twitch_stream.game_allowlist.append(game_name)
+            self.twitch_manager.saveTwitchStreamsToFile()
+            message = 'Game added to "{0.user_name}" allowlist, which is now: {1}'.format(
+                twitch_stream, ', '.join(twitch_stream.game_allowlist))
+
+        await interaction.response.send_message(message, ephemeral=True)
+
+    @app_commands.command(name='clear-other-allowlist',
+                          description='Clears allowlist for specified stream.')
+    @app_commands.describe(
+        discord_user='Discord user the stream is associated with',
+        twitch_user_name=
+        'This needs to be the same string as stored in the bot, use the "check-self" command to get the exact string'
+    )
+    async def clear_other_allowlist(self, interaction: discord.Interaction,
+                                    discord_user: discord.User,
+                                    twitch_user_name: str):
+        twitch_stream = self.twitch_manager.getTwitchStreamByUserNameAndId(
+            twitch_user_name, discord_user.id)
+
+        message = ''
+        if twitch_stream is None:
+            message = 'Unable to get stream, use the "check-all" command to check your streams. Contact the mods if you need additional help.'
+        else:
+            twitch_stream.game_allowlist.clear()
+            self.twitch_manager.saveTwitchStreamsToFile()
+            message = 'Allowlist cleared!'
+
+        await interaction.response.send_message(message, ephemeral=True)
+
+    @app_commands.command(
+        name='set-post-cooldown',
+        description='Set the cooldown for notifications for a stream.')
+    @app_commands.describe(
+        discord_user='Discord user the stream is associated with',
+        twitch_user_name=
+        'This needs to be the same string as stored in the bot, use the "check-all" command to get the exact string',
+        hour_cooldown=
+        'The cooldown for notifications to be posted. This value is in hours.')
+    async def set_post_cooldown(self, interaction: discord.Interaction,
+                                discord_user: discord.User,
+                                twitch_user_name: str, hour_cooldown: float):
+        twitch_stream = self.twitch_manager.getTwitchStreamByUserNameAndId(
+            twitch_user_name, discord_user.id)
+
+        message = ''
+        if twitch_stream is None:
+            message = 'Unable to get stream, use the "check-all" command to check your streams. Contact the mods if you need additional help.'
+        else:
+            twitch_stream.post_cooldown = datetime.timedelta(
+                hours=hour_cooldown)
+            self.twitch_manager.saveTwitchStreamsToFile()
+            message = 'Updated twitch stream post cooldown to {}'.format(
+                twitch_stream.getPostCooldownStr())
+
+        await interaction.response.send_message(message, ephemeral=True)
+
+    @app_commands.command(name='toggle-super-mode',
+                          description='Toggles super mode for given stream.')
+    @app_commands.describe(
+        discord_user='Discord user the stream is associated with',
+        twitch_user_name=
+        'This needs to be the same string as stored in the bot, use the "check-all" command to get the exact string'
+    )
+    async def toggle_super_mode(self, interaction: discord.Interaction,
+                                discord_user: discord.User,
+                                twitch_user_name: str):
+        twitch_stream = self.twitch_manager.getTwitchStreamByUserNameAndId(
+            twitch_user_name, discord_user.id)
+
+        message = ''
+        if twitch_stream is None:
+            message = 'Unable to get stream, use the "check-all" command to check your streams. Contact the mods if you need additional help.'
+        else:
+            twitch_stream.super_mode = not twitch_stream.super_mode
+            self.twitch_manager.saveTwitchStreamsToFile()
+            message = 'Updated twitch stream so that super_mode = {}'.format(
+                'true' if twitch_stream.super_mode else 'false')
+
+        await interaction.response.send_message(message, ephemeral=True)
 
 
 def addTestStreams(twitch_manager):

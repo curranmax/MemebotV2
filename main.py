@@ -5,7 +5,7 @@ import discord
 import logging
 import os
 
-TESTING_MODE = True
+TESTING_MODE = False
 token = os.getenv('DISCORD_TOKEN')
 command_guilds = bot.DEFAULT_GUILDS
 if TESTING_MODE:
