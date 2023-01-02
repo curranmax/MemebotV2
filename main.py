@@ -26,5 +26,6 @@ intents = discord.Intents.default()
 intents.message_content = True
 
 # Start discord bot
-client = bot.CustomDiscordClient(command_guilds=command_guilds,intents=intents)
+client = bot.CustomDiscordClient(command_guilds=command_guilds,
+                                 intents=intents)
 client.run(token)

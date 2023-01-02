@@ -3,6 +3,7 @@ import emote_speller
 import memes
 import pugs
 import twitch_checker
+import ow_tracker
 
 import discord
 from discord import app_commands
@@ -49,6 +50,12 @@ class CustomDiscordClient(discord.Client):
         # Creates the class for the twitch checker
         self.twitch_manager = twitch_checker.TwitchManager()
         for command_group in self.twitch_manager.getDiscordCommands():
+            self.command_tree.add_command(command_group,
+                                          guilds=self.command_guilds)
+
+        # Add commands for Overwatch Tracker
+        self.ow_tracker_manager = ow_tracker.OverwatchTrackerManager()
+        for command_group in self.ow_tracker_manager.getDiscordCommands():
             self.command_tree.add_command(command_group,
                                           guilds=self.command_guilds)
 
