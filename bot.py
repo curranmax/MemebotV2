@@ -4,6 +4,8 @@ import memes
 import pugs
 import twitch_checker
 import ow_tracker
+import event_calendar
+import chore_calendar
 
 import discord
 from discord import app_commands
@@ -27,6 +29,8 @@ class CustomDiscordClient(discord.Client):
 
         self.command_guilds = command_guilds
         self.command_tree = app_commands.CommandTree(self)
+
+        self.event_calendar = event_calendar.EventCalendar(self)
 
         # Add copy pasta / meme commands
         self.command_tree.add_command(memes.MemesCommands(),
@@ -59,6 +63,13 @@ class CustomDiscordClient(discord.Client):
             self.command_tree.add_command(command_group,
                                           guilds=self.command_guilds)
 
+        # Add commands for the Chore Calendar
+        self.chore_calendar = chore_calendar.ChoreCalendar(
+            self, self.event_calendar)
+        for command_group in self.chore_calendar.getDiscordCommands():
+            self.command_tree.add_command(command_group,
+                                          guilds=self.command_guilds)
+
     async def on_ready(self):
         logging.info(
             'Logged in as (name: {0.user.name}, id: {0.user.id})'.format(self))
@@ -74,6 +85,7 @@ class CustomDiscordClient(discord.Client):
 
         # Setup twitch task to incremently check streams
         self.twitch_cog = twitch_checker.TwitchCog(self, self.twitch_manager)
+        self.event_calendar.start()
 
     async def on_message(self, message):
         if message.author == self.user:

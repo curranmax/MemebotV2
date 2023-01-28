@@ -16,7 +16,6 @@ class OwlTeam:
 
 # This is useful playoff games where the team isn't known
 class TbdTeam:
-
     def getChoiceName(self):
         return 'TBD'
 
