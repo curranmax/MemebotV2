@@ -13,6 +13,41 @@ DPS = 'DPS'
 SUPPORT = 'Support'
 DEFAULT_COMP = [TANK, DPS, DPS, SUPPORT, SUPPORT]
 
+MAPS_BY_MODE = {
+    'Control': {
+        'Antarctic Peninsula': [],
+        'Busan': ['Night', 'Morning'],
+        'Ilios': ['Evening', 'Morning'],
+        'Lijiang': ['Dawn', 'Night', 'Lunar New Year'],
+        'Nepal': ['Evening', 'Morning'],
+        'Oasis': ['Evening', 'Night', 'Morning'],
+    },
+    'Escort': {
+        'Circuit Royal': ['Morning', 'Night'],
+        'Dorado': ['Evening', 'Night'],
+        'Havana': ['Morning', 'Night'],
+        'Junkertown': [],
+        'Rialto': [],
+        'Route 66': ['Morning', 'Night'],
+        'Shambali Monastery': [],
+        'Watchpoint: Gibraltar': ['Evening', 'Morning'],
+    },
+    'Hybrid': {
+        'Blizzard World': ['Overcast', 'Morning', 'Winter'],
+        'Eichenwalde': ['Evening', 'Morning', 'Halloween'],
+        'Hollywood': ['Normal', 'Halloween'],
+        'King\'s Row': ['Night', 'Evening', 'Winter'],
+        'Midtown': [],
+        'Paraiso': [],
+    },
+    'Push': {
+        'Colosseo': ['Evening', 'Morning'],
+        'Esperanca': [],
+        'New Queen Street': [],
+    },
+}
+
+
 def RolesListFromInt(role_int):
     if role_int == 1:
         return [TANK]
@@ -30,19 +65,21 @@ def RolesListFromInt(role_int):
         return [TANK, DPS, SUPPORT]
     return []
 
+
 # Set of discord commands to interact with the PUGs feature.
 async def sendUpdatedPlayerCount(channel, pugs_count):
-        if pugs_count == 0:
-            message = 'PUGs are now empty :('
-        if pugs_count == 1:
-            message = 'PUGs now have 1 player!'
-        if pugs_count >= 2:
-            message = 'PUGs now have {} players!'.format(pugs_count)
-        if pugs_count < 0:
-            message = 'PUGs have transcended and have {} players'.format(
-                pugs_count)
-        await channel.send(message)
-    
+    if pugs_count == 0:
+        message = 'PUGs are now empty :('
+    if pugs_count == 1:
+        message = 'PUGs now have 1 player!'
+    if pugs_count >= 2:
+        message = 'PUGs now have {} players!'.format(pugs_count)
+    if pugs_count < 0:
+        message = 'PUGs have transcended and have {} players'.format(
+            pugs_count)
+    await channel.send(message)
+
+
 class PugsDiscordCommands(app_commands.Group):
 
     def __init__(self, pugs_manager, *args, **kwargs):
@@ -207,6 +244,8 @@ class PugsDiscordCommands(app_commands.Group):
             await sendUpdatedPlayerCount(
                 interaction.client.get_channel(interaction.channel_id),
                 len(pugs_picker.players))
+
+    # TODO Add a map vote system
 
 
 # Main class the stores the state of PUGs, and generates new games.
@@ -505,7 +544,52 @@ class PugsAdminDiscordCommands(app_commands.Group):
 
             await interaction.response.send_message(message, ephemeral=False)
 
-    # Commands --> Gen PUGs lineup, Lock-in lineup
+    @app_commands.command(name='random-map',
+                          description='Generates a random map')
+    @app_commands.describe(
+        control='Include Control maps.',
+        escort='Include Escort maps.',
+        hybrid='Include Hybrid maps.',
+        push='Include Push maps.',
+    )
+    async def random_map(self,
+                         interaction: discord.Interaction,
+                         control: typing.Optional[bool] = True,
+                         escort: typing.Optional[bool] = True,
+                         hybrid: typing.Optional[bool] = True,
+                         push: typing.Optional[bool] = True):
+        modes = []
+        if control:
+            modes.append('Control')
+        if escort:
+            modes.append('Escort')
+        if hybrid:
+            modes.append('Hybrid')
+        if push:
+            modes.append('Push')
+
+        if len(modes) == 0:
+            await interaction.response.send_message(
+                'No modes selected. Select at least one mode', ephemeral=True)
+            return
+
+        random_mode = random.choice(modes)
+        if random_mode not in MAPS_BY_MODE:
+            await interaction.response.send_message(
+                'The random mode is not in the MAPS_BY_MODE dictionary. FIX THE DAMN CODE!!!',
+                ephemeral=True)
+            return
+
+        base_map, variants = random.choice(
+            list(MAPS_BY_MODE[random_mode].items()))
+
+        message = 'The randomly chosen map is --> '
+        if len(variants) == 0:
+            message += '`{}`'.format(base_map)
+        else:
+            message += '`{}: {}`'.format(base_map, random.choice(variants))
+
+        await interaction.response.send_message(message, ephemeral=True)
 
 
 class PugsManager:
@@ -555,7 +639,8 @@ class PugsPicker:
             return self.updatePlayer(discord_id, discord_name, roles, nickname)
 
         if discord_id in self.old_players:
-            logging.info('Player info in self.old_players, moving to self.players')
+            logging.info(
+                'Player info in self.old_players, moving to self.players')
             new_player = self.old_players[discord_id]
             del self.old_players[discord_id]
         else:
@@ -565,7 +650,8 @@ class PugsPicker:
         return PugsPicker.ADDED, self.players[discord_id]
 
     def updatePlayer(self, discord_id, discord_name, roles, nickname=None):
-        logging.info('Updating player: {}, {}'.format(discord_id, discord_name))
+        logging.info('Updating player: {}, {}'.format(discord_id,
+                                                      discord_name))
         if discord_id not in self.players:
             logging.info('Player not in PUGs')
             return PugsPicker.ERROR, None
@@ -586,7 +672,9 @@ class PugsPicker:
         if discord_id not in self.players:
             logging.info('Player not in PUGs')
             return PugsPicker.ERROR
-        logging.info('Moving player to self.old_players then removing from self.players')
+        logging.info(
+            'Moving player to self.old_players then removing from self.players'
+        )
         self.old_players[discord_id] = self.players[discord_id]
         del self.players[discord_id]
         return PugsPicker.REMOVED
@@ -605,7 +693,8 @@ class PugsPicker:
     def generateGame(self, team_format=DEFAULT_COMP, max_iterations=100):
         logging.info('Generating new PUGs game')
         valid, reason = self._checkIfGenerationPossible(team_format)
-        logging.info('Check returned with: valid = {}, reason = {}'.format(str(valid), 'None' if reason is None else ', '.join(reason)))
+        logging.info('Check returned with: valid = {}, reason = {}'.format(
+            str(valid), 'None' if reason is None else ', '.join(reason)))
         # TODO If this check fails, then return early.
 
         self.pending_game = None
@@ -614,7 +703,9 @@ class PugsPicker:
             self.pending_game = self._generateOneGame(team_format)
             i += 1
 
-        logging.info('Generation took {} iterations. {}'.format(i, 'Unable to generate game' if self.pending_game is None else 'Generated valid game'))
+        logging.info('Generation took {} iterations. {}'.format(
+            i, 'Unable to generate game'
+            if self.pending_game is None else 'Generated valid game'))
         return self.pending_game, reason
 
     def _checkIfGenerationPossible(self, team_format=DEFAULT_COMP):
