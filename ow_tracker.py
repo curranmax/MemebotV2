@@ -5,6 +5,7 @@ import os
 import os.path
 import pickle
 from datetime import date, timedelta
+import logging
 
 MAPS = [
     # Escort
@@ -27,6 +28,7 @@ MAPS = [
     'Paraíso',
 
     # Control
+    'Antarctic Peninsula'
     'Busan',
     'Ilios',
     'Lijiang Tower',
@@ -95,11 +97,6 @@ class OwTrackerDiscordCommands(app_commands.Group):
         for result in ['Win', 'Loss', 'Draw']
     ]
 
-    # TODO Auto detect role based
-    ROLE_CHOICES = [
-        app_commands.Choice(name=role, value=role) for role in ROLES
-    ]
-
     def __init__(self, ow_tracker_manager, *args, **kwargs):
         super(OwTrackerDiscordCommands, self).__init__(name='ow-tracker',
                                                        *args,
@@ -128,111 +125,120 @@ class OwTrackerDiscordCommands(app_commands.Group):
     @app_commands.command(name='add-win', description='Record win')
     @app_commands.describe(
         map='Map the game was played on.',
-        role='Role played on the map.',
         hero=
         'Main hero played on the map. (Use add-hero to add additional heroes to this game)',
         percent='Percent of the map where this hero was played.')
-    @app_commands.choices(role=ROLE_CHOICES)
     @app_commands.autocomplete(map=map_autocomplete, hero=hero_autocomplete)
     async def add_win(self,
                       interaction: discord.Interaction,
                       map: str,
-                      role: app_commands.Choice[str],
                       hero: str,
                       percent: typing.Optional[float] = 1.0):
         await self._addGame(
-            interaction,
-            OverwatchGame(OverwatchGame.WIN, map, role.value, hero, percent))
+            interaction, OverwatchGame(OverwatchGame.WIN, map, hero, percent))
 
     @app_commands.command(name='add-loss', description='Record lose')
     @app_commands.describe(
         map='Map the game was played on.',
-        role='Role played on the map.',
         hero=
         'Main hero played on the map. (Use add-hero to add additional heroes to this game)',
         percent='Percent of the map where this hero was played.')
-    @app_commands.choices(role=ROLE_CHOICES)
     @app_commands.autocomplete(map=map_autocomplete, hero=hero_autocomplete)
     async def add_loss(self,
                        interaction: discord.Interaction,
                        map: str,
-                       role: app_commands.Choice[str],
                        hero: str,
                        percent: typing.Optional[float] = 1.0):
         await self._addGame(
-            interaction,
-            OverwatchGame(OverwatchGame.LOSS, map, role.value, hero, percent))
+            interaction, OverwatchGame(OverwatchGame.LOSS, map, hero, percent))
 
     @app_commands.command(name='add-draw', description='Record lose')
     @app_commands.describe(
         map='Map the game was played on.',
-        role='Role played on the map.',
         hero=
         'Main hero played on the map. (Use add-hero to add additional heroes to this game)',
         percent='Percent of the map where this hero was played.')
-    @app_commands.choices(role=ROLE_CHOICES)
     @app_commands.autocomplete(map=map_autocomplete, hero=hero_autocomplete)
     async def add_draw(self,
                        interaction: discord.Interaction,
                        map: str,
-                       role: app_commands.Choice[str],
                        hero: str,
                        percent: typing.Optional[float] = 1.0):
         await self._addGame(
-            interaction,
-            OverwatchGame(OverwatchGame.DRAW, map, role.value, hero, percent))
+            interaction, OverwatchGame(OverwatchGame.DRAW, map, hero, percent))
 
     async def _addGame(self, interaction, new_game):
         latest_game = self.ow_tracker_manager.addGame(interaction.user.id,
                                                       new_game)
         message = 'Game added.\n' + self._getRecentResultMessage(
-            interaction.user.id, 7) + '\n\n' + latest_game.msgStr()
+            interaction.user.id, num_days=7) + '\nAdded Game:\n' + latest_game.msgStr()
 
         await interaction.response.send_message(message, ephemeral=True)
 
-    def _getRecentResultMessage(self, user_id, num_days):
-        recent_games = self.ow_tracker_manager.getGamesFromPastDays(
+    def _getRecentResultMessage(self, user_id, num_days=7):
+        session_games = self.ow_tracker_manager.getGamesFromPastDays(
+            user_id, num_days=1)
+        total_games = self.ow_tracker_manager.getGamesFromPastDays(
             user_id, num_days=num_days)
 
-        if len(recent_games) <= 0:
-            message = 'No games within the last {} day(s).'.format(num_days)
-        else:
-            message = 'Results (W-L-D) from the last {} day(s):\n'.format(
-                num_days) + self._getSummaryMessage(recent_games)
+        #  Today's Results     |   Recent Results (k days)
+        # -------------------------------------------------
+        #  Total -> XX-XX-XX   |   Total -> X-X-X
+        #  Tank  -> X-X-X      |   Tank  -> X-X-X
+        #  DPS   -> X-X-X      |   DPS   -> X-X-X
+        #  Supp  -> X-X-X      |   Supp  -> X-X-X
+
+        session_header = 'Today\'s Results'
+        session_lines = self._getSummaryMessageByLine(session_games)
+
+        total_header = 'Recent Results ({} days)'.format(num_days)
+        total_lines = self._getSummaryMessageByLine(total_games)
+
+        session_width = max(map(len, [session_header] + session_lines))
+
+        joiner = '   |   '
+
+        header = ' ' + session_header + ' ' * (
+            session_width - len(session_header)) + joiner + total_header
+        lines = [
+            ' ' + sl + ' ' * (session_width - len(sl)) + joiner + tl
+            for sl, tl in zip(session_lines, total_lines)
+        ]
 
         # Progress towards weekly goal?
-        return message
+        return '\n'.join(['```', header, '-' * (len(header) + 1)] + lines + ['```'])
 
-    def _getSummaryMessage(self, games):
+    def _getSummaryMessageByLine(self, games):
         overall_result = {result: 0 for result in OverwatchGame.RESULTS}
         result_by_role = {(role, result): 0
                           for role in ROLES
                           for result in OverwatchGame.RESULTS}
         for game in games:
             overall_result[game.result] += 1
-            result_by_role[(game.role, game.result)] += 1
-        message = '```\n'
+            if (game.role, game.result) in result_by_role:
+                result_by_role[(game.role, game.result)] += 1
 
-        # Overall
-        message += 'Total -> {}-{}-{}\n'.format(
-            overall_result[OverwatchGame.WIN],
-            overall_result[OverwatchGame.LOSS],
-            overall_result[OverwatchGame.DRAW])
-        message += 'Tank  -> {}-{}-{}\n'.format(
-            result_by_role[(TANK, OverwatchGame.WIN)],
-            result_by_role[(TANK, OverwatchGame.LOSS)],
-            result_by_role[(TANK, OverwatchGame.DRAW)])
-        message += 'DPS   -> {}-{}-{}\n'.format(
-            result_by_role[(DPS, OverwatchGame.WIN)],
-            result_by_role[(DPS, OverwatchGame.LOSS)],
-            result_by_role[(DPS, OverwatchGame.DRAW)])
-        message += 'Supp  -> {}-{}-{}\n'.format(
-            result_by_role[(SUPPORT, OverwatchGame.WIN)],
-            result_by_role[(SUPPORT, OverwatchGame.LOSS)],
-            result_by_role[(SUPPORT, OverwatchGame.DRAW)])
-        message += '```'
+        return [
+            'Total -> {}-{}-{}'.format(overall_result[OverwatchGame.WIN],
+                                       overall_result[OverwatchGame.LOSS],
+                                       overall_result[OverwatchGame.DRAW]),
+            'Tank  -> {}-{}-{}'.format(
+                result_by_role[(TANK, OverwatchGame.WIN)],
+                result_by_role[(TANK, OverwatchGame.LOSS)],
+                result_by_role[(TANK, OverwatchGame.DRAW)]),
+            'DPS   -> {}-{}-{}'.format(
+                result_by_role[(DPS, OverwatchGame.WIN)],
+                result_by_role[(DPS, OverwatchGame.LOSS)],
+                result_by_role[(DPS, OverwatchGame.DRAW)]),
+            'Supp  -> {}-{}-{}'.format(
+                result_by_role[(SUPPORT, OverwatchGame.WIN)],
+                result_by_role[(SUPPORT, OverwatchGame.LOSS)],
+                result_by_role[(SUPPORT, OverwatchGame.DRAW)])
+        ]
 
-        return message
+    def _getSummaryMessage(self, games):
+        lines = self._getSummaryMessageByLine(games)
+        return '```\n' + '\n'.join(lines) + '\n```'
 
     @app_commands.command(name='add-hero',
                           description='Add extra hero info to latest game')
@@ -301,27 +307,22 @@ class OwTrackerDiscordCommands(app_commands.Group):
     @app_commands.describe(
         result='Result of the match.',
         map='Map the game was played on.',
-        role='Role played on the map.',
         hero=
         'Main hero played on the map. (Use add-hero to add additional heroes to this game)',
         percent='Percent of the map where this hero was played.')
-    @app_commands.choices(result=RESULT_CHOICES, role=ROLE_CHOICES)
     @app_commands.autocomplete(map=map_autocomplete, hero=hero_autocomplete)
     async def update_game(
             self,
             interaction: discord.Interaction,
             result: typing.Optional[app_commands.Choice[str]] = None,
             map: typing.Optional[str] = None,
-            role: typing.Optional[app_commands.Choice[str]] = None,
             hero: typing.Optional[str] = None,
             percent: typing.Optional[float] = 1.0):
         if result is not None:
             result = result.value
-        if role is not None:
-            role = role.value
 
         updated_game = self.ow_tracker_manager.updateGame(
-            interaction.user.id, result, map, role, hero, percent)
+            interaction.user.id, result, map, hero, percent)
 
         if updated_game is None:
             message = 'Unable to update game.'
@@ -329,9 +330,6 @@ class OwTrackerDiscordCommands(app_commands.Group):
             message = 'Game updated to:\n' + updated_game.msgStr()
 
         await interaction.response.send_message(message, ephemeral=True)
-
-    # List games from a certain day --> Include an "id"
-    # Completely update the selected game
 
     # TODO Add commands/support for
     #    Weekly goals
@@ -391,10 +389,9 @@ class OverwatchTrackerManager:
         overwatch_tracker = self._getOrCreateOwTrackerForUser(user_id)
         return overwatch_tracker.selectGame(game_ind)
 
-    def updateGame(self, user_id, result, map, role, hero, weight):
+    def updateGame(self, user_id, result, map, hero, weight):
         overwatch_tracker = self._getOrCreateOwTrackerForUser(user_id)
-        updated_game = overwatch_tracker.updateGame(result, map, role, hero,
-                                                    weight)
+        updated_game = overwatch_tracker.updateGame(result, map, hero, weight)
         if updated_game is not None:
             self.saveTrackersToFile
         return updated_game
@@ -425,12 +422,20 @@ class OverwatchTracker:
         self.selected_game.heroes.append((hero, weight))
         return self.selected_game
 
-    # TODO This may be inefficient
     def getGamesFromPastDays(self, num_days=7):
-        return [
-            game for game in self.games
-            if game.date > date.today() - timedelta(days=num_days)
-        ]
+        # TMP check that games are in sorted order by date.
+        prev_date = None
+        for game in self.games:
+            if prev_date is not None and game.date < prev_date:
+                logging.info('Games are not in sorted order by date.')
+
+        rv = []
+        cutoff_day = date.today() - timedelta(days=num_days)
+        for game in reversed(self.games):
+            if game.date <= cutoff_day:
+                break
+            rv.append(game)
+        return reversed(rv)
 
     def getRecentGames(self, num_games=10):
         if len(self.games) == 0:
@@ -448,7 +453,7 @@ class OverwatchTracker:
         self.selected_game = self.games[-game_ind]
         return self.selected_game
 
-    def updateGame(self, result, map, role, hero, weight):
+    def updateGame(self, result, map, hero, weight):
         if self.selected_game is None:
             return None
 
@@ -458,10 +463,11 @@ class OverwatchTracker:
         if map is not None:
             self.selected_game.map = map
 
-        if role is not None:
-            self.selected_game.role = role
-
         if hero is not None:
+            if hero in HEROES:
+                self.selected_game.role = HEROES[hero]
+            else:
+                self.selected_game.role = 'Invalid hero: ' + hero
             self.selected_game.heroes = [(hero, weight)]
 
         return self.selected_game
@@ -473,10 +479,13 @@ class OverwatchGame:
     DRAW = 'Draw'
     RESULTS = [WIN, LOSS, DRAW]
 
-    def __init__(self, result, map, role, hero, weight):
+    def __init__(self, result, map, hero, weight):
         self.result = result
         self.map = map
-        self.role = role
+        if hero in HEROES:
+            self.role = HEROES[hero]
+        else:
+            self.role = 'Invalid hero: ' + hero
 
         # TODO Have a way to update this as time passes
         self.season = 2
