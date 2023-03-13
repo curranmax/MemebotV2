@@ -482,7 +482,13 @@ class PugsAdminDiscordCommands(app_commands.Group):
         description=
         'Generates a lineup for PUGs. The lineup isn\'t saved until the "lock-in" command is run'
     )
-    async def generate(self, interaction: discord.Interaction):
+    @app_commands.describe(
+        num_choices=
+        'Number of possible to generate before choosing the one that minimizes the defined heuristic.'
+    )
+    async def generate(self,
+                       interaction: discord.Interaction,
+                       num_choices: typing.Optional[int] = 10):
         pugs_picker = self.pugs_manager.getPugsPicker(interaction.channel_id)
         if pugs_picker == None:
             await interaction.response.send_message(
@@ -495,7 +501,8 @@ class PugsAdminDiscordCommands(app_commands.Group):
                 format(2 * len(DEFAULT_COMP), len(pugs_picker.players)),
                 ephemeral=True)
 
-        pending_game, failure_reason = pugs_picker.generateGame(DEFAULT_COMP)
+        pending_game, failure_reason = pugs_picker.generateGame(
+            DEFAULT_COMP, num_choices=num_choices)
 
         if pending_game is None:
             # TODO Figure out why no game could be generated (not enough of a given role)
@@ -587,9 +594,76 @@ class PugsAdminDiscordCommands(app_commands.Group):
         if len(variants) == 0:
             message += '`{}`'.format(base_map)
         else:
-            message += '`{}: {}`'.format(base_map, random.choice(variants))
+            message += '`{} --> {}`'.format(base_map, random.choice(variants))
 
         await interaction.response.send_message(message, ephemeral=True)
+
+    @app_commands.command(name='make-map-vote',
+                          description='Creates a vote for map to play in PUGs')
+    @app_commands.describe(
+        num_maps='Number of maps to add to map vote',
+        control='Include Control maps.',
+        escort='Include Escort maps.',
+        hybrid='Include Hybrid maps.',
+        push='Include Push maps.',
+    )
+    async def make_map_vote(self,
+                            interaction: discord.Interaction,
+                            num_maps: typing.Optional[int] = 3,
+                            control: typing.Optional[bool] = True,
+                            escort: typing.Optional[bool] = True,
+                            hybrid: typing.Optional[bool] = True,
+                            push: typing.Optional[bool] = True):
+        modes = []
+        if control:
+            modes.append('Control')
+        if escort:
+            modes.append('Escort')
+        if hybrid:
+            modes.append('Hybrid')
+        if push:
+            modes.append('Push')
+
+        if len(modes) == 0:
+            await interaction.response.send_message(
+                'No modes selected. Select at least one mode', ephemeral=True)
+            return
+
+        random_mode = random.choice(modes)
+        if random_mode not in MAPS_BY_MODE:
+            await interaction.response.send_message(
+                'The random mode is not in the MAPS_BY_MODE dictionary. FIX THE DAMN CODE!!!',
+                ephemeral=True)
+            return
+
+        maps_with_variants = random.sample(
+            list(MAPS_BY_MODE[random_mode].items()),
+            min(num_maps, len(MAPS_BY_MODE[random_mode])))
+
+        vote_emotes = [
+            '1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣', '6️⃣', '7️⃣', '8️⃣', '9️⃣', '🔟'
+        ]
+        if len(vote_emotes) < len(maps_with_variants):
+            await interaction.response.send_message(
+                'Not enough voting options for the number of maps selected.',
+                ephemeral=True)
+            return
+
+        final_maps = [
+            '{}'.format(base_map) if len(variants) == 0 else
+            '{} --> {}'.format(base_map, random.choice(variants))
+            for base_map, variants in maps_with_variants
+        ]
+
+        message = 'Vote for the next map for PUGs:\n' + '\n'.join(
+            '  {} {}'.format(emote, map)
+            for map, emote in zip(final_maps, vote_emotes[:len(final_maps)]))
+
+        await interaction.response.send_message(message)
+
+        msg_obj = await interaction.original_response()
+        for emote in vote_emotes[:len(final_maps)]:
+            await msg_obj.add_reaction(emote)
 
 
 class PugsManager:
@@ -686,22 +760,32 @@ class PugsPicker:
             return None
         logging.info('Saving pending game')
         next_game = self.pending_game
+        self._updateRoleWeights(next_game)
         self.pending_game = None
         self.past_games.append(next_game)
         return next_game
 
-    def generateGame(self, team_format=DEFAULT_COMP, max_iterations=100):
+    def generateGame(self,
+                     team_format=DEFAULT_COMP,
+                     max_iterations=100,
+                     num_choices=10):
         logging.info('Generating new PUGs game')
         valid, reason = self._checkIfGenerationPossible(team_format)
         logging.info('Check returned with: valid = {}, reason = {}'.format(
             str(valid), 'None' if reason is None else ', '.join(reason)))
-        # TODO If this check fails, then return early.
+        if not valid:
+            return None, reason
 
-        self.pending_game = None
+        game_choices = []
         i = 0
-        while self.pending_game is None and i < max_iterations:
-            self.pending_game = self._generateOneGame(team_format)
+        while len(game_choices) < num_choices and i < max(
+                max_iterations, num_choices):
+            pos_game = self._generateOneGame(team_format)
+            if pos_game is not None:
+                game_choices.append(pos_game)
             i += 1
+
+        self.pending_game = self._chooseBestPossibleGame(game_choices)
 
         logging.info('Generation took {} iterations. {}'.format(
             i, 'Unable to generate game'
@@ -771,6 +855,78 @@ class PugsPicker:
         # TODO If no game was generated, figure out if its impossible, and why (are there not enough tanks?)
         return None
 
+    def _chooseBestPossibleGame(self, game_choices):
+        best_game = None
+        best_game_val = None
+
+        for game in game_choices:
+            val = self._evaluateRoleFrequency(game)
+            if best_game_val is None or val < best_game_val:
+                best_game = game
+                best_game_val = val
+
+        return best_game
+
+    def _evaluateRoleFrequency(self, game):
+        total_weight = 0.0
+        for _, player in self.players.items():
+            role_in_game = None
+            if player in game.team1:
+                role_in_game = game.team_format[game.team1.index(player)]
+            if player in game.team2:
+                role_in_game = game.team_format[game.team2.index(player)]
+
+            if role_in_game is None:
+                total_weight += sum(w for _, w in player.role_weights.items())
+                continue
+
+            if role_in_game not in player.roles:
+                continue
+
+            role_count = {
+                role: game.team_format.count(role)
+                for role in player.roles
+            }
+            for role in [TANK, DPS, SUPPORT]:
+                w = player.role_weights[role]
+                if role in player.roles:
+                    if role == role_in_game:
+                        w += 0.5 if len(player.roles) > 1 else 0.0
+                    else:
+                        w += -role_count[role] / 2.0 / (
+                            sum(c for _, c in role_count.items()) -
+                            role_count[role_in_game])
+                total_weight += abs(w)
+
+        return total_weight
+
+    def _updateRoleWeights(self, game):
+        for _, player in self.players.items():
+            role_in_game = None
+            if player in game.team1:
+                role_in_game = game.team_format[game.team1.index(player)]
+            if player in game.team2:
+                role_in_game = game.team_format[game.team2.index(player)]
+
+            if role_in_game is None:
+                continue
+
+            if role_in_game not in player.roles:
+                continue
+
+            role_count = {
+                role: game.team_format.count(role)
+                for role in player.roles
+            }
+            for role in player.roles:
+                if role == role_in_game:
+                    player.role_weights[role] += 0.5 if len(
+                        player.roles) > 1 else 0.0
+                else:
+                    player.role_weights[role] += -role_count[role] / 2.0 / (
+                        sum(c for _, c in role_count.items()) -
+                        role_count[role_in_game])
+
 
 class Player:
 
@@ -779,6 +935,8 @@ class Player:
         self.discord_name = discord_name
         self.nickname = nickname
         self.roles = roles
+
+        self.role_weights = {TANK: 0.0, DPS: 0.0, SUPPORT: 0.0}
 
     def getRolesStr(self):
         if len(self.roles) == 0:
@@ -838,11 +996,11 @@ class Game:
 if __name__ == "__main__":
     test_picker = PugsPicker()
 
-    test_picker.addPlayer(1, 'a', [TANK])
-    test_picker.addPlayer(2, 'b', [DPS])
-    test_picker.addPlayer(3, 'c', [DPS])
-    test_picker.addPlayer(4, 'd', [SUPPORT])
-    test_picker.addPlayer(5, 'e', [SUPPORT])
+    test_picker.addPlayer(1, 'a', [TANK, DPS, SUPPORT])
+    test_picker.addPlayer(2, 'b', [TANK, DPS, SUPPORT])
+    test_picker.addPlayer(3, 'c', [TANK, DPS, SUPPORT])
+    test_picker.addPlayer(4, 'd', [TANK, DPS, SUPPORT])
+    test_picker.addPlayer(5, 'e', [TANK, DPS, SUPPORT])
 
     test_picker.addPlayer(6, 'f', [TANK])
     test_picker.addPlayer(7, 'g', [DPS])
@@ -850,5 +1008,28 @@ if __name__ == "__main__":
     test_picker.addPlayer(9, 'i', [SUPPORT])
     test_picker.addPlayer(10, 'j', [SUPPORT])
 
-    game, failure_reason = test_picker.generateGame()
+    game, failure_reason = test_picker.generateGame(num_choices=10)
+    test_picker.lockInPendingGame()
     print(game.getTableStr())
+
+    game, failure_reason = test_picker.generateGame(num_choices=10)
+    test_picker.lockInPendingGame()
+    print(game.getTableStr())
+
+    game, failure_reason = test_picker.generateGame(num_choices=10)
+    test_picker.lockInPendingGame()
+    print(game.getTableStr())
+
+    game, failure_reason = test_picker.generateGame(num_choices=10)
+    test_picker.lockInPendingGame()
+    print(game.getTableStr())
+
+    game, failure_reason = test_picker.generateGame(num_choices=10)
+    test_picker.lockInPendingGame()
+    print(game.getTableStr())
+
+    print(test_picker.getPlayer(1).role_weights)
+    print(test_picker.getPlayer(2).role_weights)
+    print(test_picker.getPlayer(3).role_weights)
+    print(test_picker.getPlayer(4).role_weights)
+    print(test_picker.getPlayer(5).role_weights)
