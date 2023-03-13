@@ -28,7 +28,7 @@ MAPS = [
     'Paraíso',
 
     # Control
-    'Antarctic Peninsula'
+    'Antarctic Peninsula',
     'Busan',
     'Ilios',
     'Lijiang Tower',
@@ -171,7 +171,8 @@ class OwTrackerDiscordCommands(app_commands.Group):
         latest_game = self.ow_tracker_manager.addGame(interaction.user.id,
                                                       new_game)
         message = 'Game added.\n' + self._getRecentResultMessage(
-            interaction.user.id, num_days=7) + '\nAdded Game:\n' + latest_game.msgStr()
+            interaction.user.id,
+            num_days=7) + '\nAdded Game:\n' + latest_game.msgStr()
 
         await interaction.response.send_message(message, ephemeral=True)
 
@@ -206,7 +207,8 @@ class OwTrackerDiscordCommands(app_commands.Group):
         ]
 
         # Progress towards weekly goal?
-        return '\n'.join(['```', header, '-' * (len(header) + 1)] + lines + ['```'])
+        return '\n'.join(['```', header, '-' * (len(header) + 1)] + lines +
+                         ['```'])
 
     def _getSummaryMessageByLine(self, games):
         overall_result = {result: 0 for result in OverwatchGame.RESULTS}
