@@ -891,11 +891,11 @@ class PugsPicker:
                 w = player.role_weights[role]
                 if role in player.roles:
                     if role == role_in_game:
-                        w += 0.5 if len(player.roles) > 1 else 0.0
+                        w += 1.0 - (role_count[role] /
+                                    sum(c for _, c in role_count.items()))
                     else:
-                        w += -role_count[role] / 2.0 / (
-                            sum(c for _, c in role_count.items()) -
-                            role_count[role_in_game])
+                        w += -role_count[role] / sum(
+                            c for _, c in role_count.items())
                 total_weight += abs(w)
 
         return total_weight
@@ -920,12 +920,12 @@ class PugsPicker:
             }
             for role in player.roles:
                 if role == role_in_game:
-                    player.role_weights[role] += 0.5 if len(
-                        player.roles) > 1 else 0.0
+                    player.role_weights[role] += 1.0 - (
+                        role_count[role] / sum(c
+                                               for _, c in role_count.items()))
                 else:
-                    player.role_weights[role] += -role_count[role] / 2.0 / (
-                        sum(c for _, c in role_count.items()) -
-                        role_count[role_in_game])
+                    player.role_weights[role] += -role_count[role] / sum(
+                        c for _, c in role_count.items())
 
 
 class Player:
