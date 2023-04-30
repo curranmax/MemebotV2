@@ -82,6 +82,7 @@ HEROES = {
     'Baptiste': SUPPORT,
     'Brigitte': SUPPORT,
     'Kiriko': SUPPORT,
+    'Lifeweaver': SUPPORT,
     'Lúcio': SUPPORT,
     'Mercy': SUPPORT,
     'Moira': SUPPORT,
@@ -490,7 +491,7 @@ class OverwatchGame:
             self.role = 'Invalid hero: ' + hero
 
         # TODO Have a way to update this as time passes
-        self.season = 2
+        self.season = 4
 
         # List of two-ples of (hero, weight)
         self.heroes = [(hero, weight)]

@@ -19,7 +19,7 @@ MAPS_BY_MODE = {
         'Busan': ['Night', 'Morning'],
         'Ilios': ['Evening', 'Morning'],
         'Lijiang': ['Dawn', 'Night', 'Lunar New Year'],
-        'Nepal': ['Evening', 'Morning'],
+        'Nepal': ['Dawn', 'Morning'],
         'Oasis': ['Evening', 'Night', 'Morning'],
     },
     'Escort': {
@@ -35,15 +35,16 @@ MAPS_BY_MODE = {
     'Hybrid': {
         'Blizzard World': ['Overcast', 'Morning', 'Winter'],
         'Eichenwalde': ['Evening', 'Morning', 'Halloween'],
-        'Hollywood': ['Normal', 'Halloween'],
+        'Hollywood': ['Night', 'Morning', 'Halloween'],
         'King\'s Row': ['Night', 'Evening', 'Winter'],
         'Midtown': [],
-        'Paraiso': [],
+        'Numbani': [],
+        'Paraíso': [],
     },
     'Push': {
         'Colosseo': ['Evening', 'Morning'],
-        'Esperanca': [],
-        'New Queen Street': [],
+        'Esperança': [],
+        'New Queen Street': ['Dawn', 'Morning'],
     },
 }
 
@@ -258,6 +259,8 @@ class PugsAdminDiscordCommands(app_commands.Group):
                                                        **kwargs)
 
         self.pugs_manager = pugs_manager
+
+        self.map_vote_choices = None
 
     # Allows an admin to add another user
     @app_commands.command(name='add-user', description='Add a user to PUGs')
@@ -613,57 +616,79 @@ class PugsAdminDiscordCommands(app_commands.Group):
                             control: typing.Optional[bool] = True,
                             escort: typing.Optional[bool] = True,
                             hybrid: typing.Optional[bool] = True,
-                            push: typing.Optional[bool] = True):
-        modes = []
-        if control:
-            modes.append('Control')
-        if escort:
-            modes.append('Escort')
-        if hybrid:
-            modes.append('Hybrid')
-        if push:
-            modes.append('Push')
+                            push: typing.Optional[bool] = True,
+                            make_post: typing.Optional[bool] = False):
+        if not make_post:
+            self.map_vote_choices = None
 
-        if len(modes) == 0:
-            await interaction.response.send_message(
-                'No modes selected. Select at least one mode', ephemeral=True)
-            return
+        if self.map_vote_choices is None:
+            modes = []
+            if control:
+                modes.append('Control')
+            if escort:
+                modes.append('Escort')
+            if hybrid:
+                modes.append('Hybrid')
+            if push:
+                modes.append('Push')
 
-        random_mode = random.choice(modes)
-        if random_mode not in MAPS_BY_MODE:
-            await interaction.response.send_message(
-                'The random mode is not in the MAPS_BY_MODE dictionary. FIX THE DAMN CODE!!!',
-                ephemeral=True)
-            return
+            if len(modes) == 0:
+                await interaction.response.send_message(
+                    'No modes selected. Select at least one mode',
+                    ephemeral=True)
+                return
 
-        maps_with_variants = random.sample(
-            list(MAPS_BY_MODE[random_mode].items()),
-            min(num_maps, len(MAPS_BY_MODE[random_mode])))
+            random_mode = random.choice(modes)
+            if random_mode not in MAPS_BY_MODE:
+                await interaction.response.send_message(
+                    'The random mode is not in the MAPS_BY_MODE dictionary. FIX THE DAMN CODE!!!',
+                    ephemeral=True)
+                return
+
+            maps_with_variants = random.sample(
+                list(MAPS_BY_MODE[random_mode].items()),
+                min(num_maps, len(MAPS_BY_MODE[random_mode])))
+
+            self.map_vote_choices = [
+                (base_map,
+                 (None if len(variants) == 0 else random.choice(variants)))
+                for base_map, variants in maps_with_variants
+            ]
 
         vote_emotes = [
             '1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣', '6️⃣', '7️⃣', '8️⃣', '9️⃣', '🔟'
         ]
-        if len(vote_emotes) < len(maps_with_variants):
+        if len(vote_emotes) < len(self.map_vote_choices):
             await interaction.response.send_message(
                 'Not enough voting options for the number of maps selected.',
                 ephemeral=True)
             return
 
         final_maps = [
-            '{}'.format(base_map) if len(variants) == 0 else
-            '{} --> {}'.format(base_map, random.choice(variants))
-            for base_map, variants in maps_with_variants
+            '{}'.format(base_map) if variant is None else '{} --> {}'.format(
+                base_map, variant)
+            for base_map, variant in self.map_vote_choices
         ]
 
-        message = 'Vote for the next map for PUGs:\n' + '\n'.join(
-            '  {} {}'.format(emote, map)
-            for map, emote in zip(final_maps, vote_emotes[:len(final_maps)]))
+        if make_post:
+            message = 'Vote for the next map for PUGs:\n' + '\n'.join(
+                '  {} {}'.format(emote, map) for map, emote in zip(
+                    final_maps, vote_emotes[:len(final_maps)]))
 
-        await interaction.response.send_message(message)
+            await interaction.response.send_message(message)
 
-        msg_obj = await interaction.original_response()
-        for emote in vote_emotes[:len(final_maps)]:
-            await msg_obj.add_reaction(emote)
+            msg_obj = await interaction.original_response()
+            for emote in vote_emotes[:len(final_maps)]:
+                await msg_obj.add_reaction(emote)
+
+            self.map_vote_choices = None
+        else:
+            message = 'The map vote will be:\n' + '\n'.join(
+                '  {} {}'.format(emote, map) for map, emote in zip(
+                    final_maps, vote_emotes[:len(final_maps)])
+            ) + '\n\nRerun this command with "make_post" set to True to post publicly'
+
+            await interaction.response.send_message(message, ephemeral=True)
 
 
 class PugsManager:
