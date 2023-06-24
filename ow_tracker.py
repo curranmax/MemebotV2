@@ -6,6 +6,7 @@ import os.path
 import pickle
 from datetime import date, timedelta
 import logging
+from collections import defaultdict
 
 MAPS = [
     # Escort
@@ -90,6 +91,10 @@ HEROES = {
 }
 
 OW_TRACKER_FILENAME = 'data/ow_tracker.pickle'
+SEASON_FILENAME = 'data/season.pickle'
+
+AUTOCOMPLETE_LIMIT = 25
+SORT_HERO_AUTOCOMPLETE_BY_USAGE = True
 
 
 class OwTrackerDiscordCommands(app_commands.Group):
@@ -108,20 +113,38 @@ class OwTrackerDiscordCommands(app_commands.Group):
     async def map_autocomplete(
             self, interaction: discord.Interaction,
             current: str) -> typing.List[app_commands.Choice[str]]:
-        return [
+        map_choices = [
             app_commands.Choice(name=map, value=map) for map in MAPS
             if current.lower() in map.lower()
         ]
+        if len(map_choices) > AUTOCOMPLETE_LIMIT:
+            map_choices = map_choices[:AUTOCOMPLETE_LIMIT]
+
+        return map_choices
 
     async def hero_autocomplete(
             self, interaction: discord.Interaction,
             current: str) -> typing.List[app_commands.Choice[str]]:
-        return [
+        hero_choices = [
             app_commands.Choice(name=hero, value=hero)
             for hero, _ in HEROES.items()
             if current.lower() in hero.lower() or (
                 hero == 'Lúcio' and current.lower() in 'lucio')
         ]
+
+        # Sort by usage rate of the user
+        if SORT_HERO_AUTOCOMPLETE_BY_USAGE:
+            hero_usage = self.ow_tracker_manager.getHeroUsage(
+                interaction.user.id)
+
+            # The heroes are sorted by (hero usage descending, hero name ascending)
+            hero_choices.sort(key=lambda hero:
+                              (-hero_usage.get(hero.value, 0.0), hero.value))
+
+        if len(hero_choices) > AUTOCOMPLETE_LIMIT:
+            hero_choices = hero_choices[:AUTOCOMPLETE_LIMIT]
+
+        return hero_choices
 
     @app_commands.command(name='add-win', description='Record win')
     @app_commands.describe(
@@ -136,7 +159,10 @@ class OwTrackerDiscordCommands(app_commands.Group):
                       hero: str,
                       percent: typing.Optional[float] = 1.0):
         await self._addGame(
-            interaction, OverwatchGame(OverwatchGame.WIN, map, hero, percent))
+            interaction,
+            OverwatchGame(
+                OverwatchGame.WIN, map, hero, percent,
+                self.ow_tracker_manager.getSeason(interaction.user.id)))
 
     @app_commands.command(name='add-loss', description='Record lose')
     @app_commands.describe(
@@ -151,7 +177,10 @@ class OwTrackerDiscordCommands(app_commands.Group):
                        hero: str,
                        percent: typing.Optional[float] = 1.0):
         await self._addGame(
-            interaction, OverwatchGame(OverwatchGame.LOSS, map, hero, percent))
+            interaction,
+            OverwatchGame(
+                OverwatchGame.LOSS, map, hero, percent,
+                self.ow_tracker_manager.getSeason(interaction.user.id)))
 
     @app_commands.command(name='add-draw', description='Record lose')
     @app_commands.describe(
@@ -166,7 +195,10 @@ class OwTrackerDiscordCommands(app_commands.Group):
                        hero: str,
                        percent: typing.Optional[float] = 1.0):
         await self._addGame(
-            interaction, OverwatchGame(OverwatchGame.DRAW, map, hero, percent))
+            interaction,
+            OverwatchGame(
+                OverwatchGame.DRAW, map, hero, percent,
+                self.ow_tracker_manager.getSeason(interaction.user.id)))
 
     async def _addGame(self, interaction, new_game):
         latest_game = self.ow_tracker_manager.addGame(interaction.user.id,
@@ -313,6 +345,7 @@ class OwTrackerDiscordCommands(app_commands.Group):
         hero=
         'Main hero played on the map. (Use add-hero to add additional heroes to this game)',
         percent='Percent of the map where this hero was played.')
+    @app_commands.choices(result=RESULT_CHOICES)
     @app_commands.autocomplete(map=map_autocomplete, hero=hero_autocomplete)
     async def update_game(
             self,
@@ -320,18 +353,141 @@ class OwTrackerDiscordCommands(app_commands.Group):
             result: typing.Optional[app_commands.Choice[str]] = None,
             map: typing.Optional[str] = None,
             hero: typing.Optional[str] = None,
-            percent: typing.Optional[float] = 1.0):
+            percent: typing.Optional[float] = 1.0,
+            season: typing.Optional[int] = None):
         if result is not None:
             result = result.value
 
         updated_game = self.ow_tracker_manager.updateGame(
-            interaction.user.id, result, map, hero, percent)
+            interaction.user.id, result, map, hero, percent, season)
 
         if updated_game is None:
             message = 'Unable to update game.'
         else:
             message = 'Game updated to:\n' + updated_game.msgStr()
 
+        await interaction.response.send_message(message, ephemeral=True)
+
+    @app_commands.command(
+        name='update-season',
+        description=
+        'Updates the season for anyone new games. If no arg is given, then the current value will be printed.'
+    )
+    @app_commands.describe(
+        season=
+        'Value to update the tracked season to. If not given, the current tracked value.'
+    )
+    async def update_season(self,
+                            interaction: discord.Interaction,
+                            season: typing.Optional[int] = None):
+        if season is not None:
+            self.ow_tracker_manager.updateSeason(interaction.user.id, season)
+
+        message = 'Tracker will set new games to season {}'.format(
+            self.ow_tracker_manager.getSeason(interaction.user.id))
+        await interaction.response.send_message(message, ephemeral=True)
+
+    @app_commands.command(
+        name='hero-usage-stats',
+        description=
+        'Output stats about hero usage and winrate for the last 3 seasons.')
+    @app_commands.describe(
+        include_zero_gp_heroes=
+        'Whether or not to include heroes with zero games played. False by default.',
+        num_heroes='Maximum number of heroes PER ROLE to display.')
+    async def hero_usage_stats(
+            self,
+            interaction: discord.Interaction,
+            include_zero_gp_heroes: typing.Optional[bool] = False,
+            num_heroes: typing.Optional[int] = None):
+        # Tank --> GP XX, WLD WW.W-LL.L-DD.D
+        # -----------------------------------------
+        # Hero #1 --> GP XX, R WW.W-LL.L-DD.D
+        # ...
+        # -----------------------------------------
+        #
+        # DPS --> GP XX, WLD WW-LL-DD
+        # -----------------------------------------
+        # Hero #1 --> GP XX, R WW.W-LL.L-DD.D
+        # ...
+        # -----------------------------------------
+        #
+        # Support --> GP XX, WLD WW-LL-DD
+        # -----------------------------------------
+        # Hero #1 --> GP XX, R WW.W-LL.L-DD.D
+        # ...
+        # -----------------------------------------
+        hero_usage = self.ow_tracker_manager.getHeroUsage(interaction.user.id)
+        hero_usage_by_result = self.ow_tracker_manager.getHeroUsageByResult(
+            interaction.user.id)
+
+        num_format = lambda v: '{:.2f}'.format(v).rstrip('0').rstrip('.')
+
+        lines = []
+        for role in ROLES:
+            gp_role = sum(
+                hero_usage.get(h, 0.0) for h, r in HEROES.items() if r == role)
+            result_role = {
+                result: sum(
+                    hero_usage_by_result.get(h, {result: 0.0})[result]
+                    for h, r in HEROES.items() if r == role)
+                for result in OverwatchGame.RESULTS
+            }
+
+            rows = []
+            for hero, hr in HEROES.items():
+                if hr != role:
+                    continue
+
+                if not include_zero_gp_heroes and hero_usage.get(hero,
+                                                                 0.0) <= 0.0:
+                    continue
+
+                rows.append(
+                    (hero, hero_usage.get(hero, 0.0),
+                     hero_usage_by_result.get(
+                         hero, {OverwatchGame.WIN: 0.0})[OverwatchGame.WIN],
+                     hero_usage_by_result.get(
+                         hero, {OverwatchGame.LOSS: 0.0})[OverwatchGame.LOSS],
+                     hero_usage_by_result.get(
+                         hero, {OverwatchGame.DRAW: 0.0})[OverwatchGame.DRAW]))
+
+            # Sort heroes by (usage descending, name ascending)
+            rows.sort(key=lambda vs: (-vs[1], vs[0]))
+
+            if num_heroes is not None and len(rows) > num_heroes:
+                rows = rows[:num_heroes]
+
+            # Format each value
+            rows = [(h, num_format(u), num_format(w), num_format(l),
+                     num_format(d)) for i, (h, u, w, l, d) in enumerate(rows)]
+
+            if len(rows) > 0:
+                # Add padding to make each row evenly spaced
+                max_row_size = [max(len(r[i]) for r in rows) for i in range(2)]
+                rows = [(row[0] + ' ' * (max_row_size[0] - len(row[0])),
+                         ' ' * (max_row_size[1] - len(row[1])) + row[1],
+                         row[2], row[3], row[4]) for row in rows]
+
+                lines.append('{0} -> GP {1}, WLD {2}-{3}-{4}'.format(
+                    role, num_format(gp_role),
+                    num_format(result_role[OverwatchGame.WIN]),
+                    num_format(result_role[OverwatchGame.LOSS]),
+                    num_format(result_role[OverwatchGame.DRAW])))
+                lines.append('-')
+
+                for vs in rows:
+                    lines.append(' {} -> GP {}, WLD {}-{}-{}'.format(*vs))
+                lines.append('-')
+                lines.append('')
+        max_len = max(len(line) for line in lines)
+        for i in range(len(lines)):
+            if lines[i] == '-':
+                lines[i] = '-' * (max_len)
+
+        message = '```\n' + '\n'.join(lines) + '```'
+        if len(message) >= 2000:
+            message = 'Result is too large, use the "num_heroes" arg to decrease size of the result.'
         await interaction.response.send_message(message, ephemeral=True)
 
     # TODO Add commands/support for
@@ -361,6 +517,13 @@ class OverwatchTrackerManager:
 
         f = open(self.ow_tracker_fname, 'rb')
         self.overwatch_trackers = pickle.load(f)
+
+        # TODO This code is only temporary until pickled get hero usage and season params.
+        for _, owt in self.overwatch_trackers.items():
+            if not hasattr(owt, 'season'):
+                owt.season = 5
+
+            owt._calculateHeroUsage()
 
     # TODO make this async
     def saveTrackersToFile(self):
@@ -396,13 +559,30 @@ class OverwatchTrackerManager:
         overwatch_tracker = self._getOrCreateOwTrackerForUser(user_id)
         updated_game = overwatch_tracker.updateGame(result, map, hero, weight)
         if updated_game is not None:
-            self.saveTrackersToFile
+            self.saveTrackersToFile()
         return updated_game
 
     def _getOrCreateOwTrackerForUser(self, user_id):
         if user_id not in self.overwatch_trackers:
             self.overwatch_trackers[user_id] = OverwatchTracker()
         return self.overwatch_trackers[user_id]
+
+    def getSeason(self, user_id):
+        overwatch_tracker = self._getOrCreateOwTrackerForUser(user_id)
+        return overwatch_tracker.season
+
+    def updateSeason(self, user_id, new_season):
+        overwatch_tracker = self._getOrCreateOwTrackerForUser(user_id)
+        season_changed = overwatch_tracker.updateSeason(new_season)
+        if season_changed:
+            self.saveTrackersToFile()
+
+    def getHeroUsage(self, user_id):
+        return self._getOrCreateOwTrackerForUser(user_id).getHeroUsage()
+
+    def getHeroUsageByResult(self, user_id):
+        return self._getOrCreateOwTrackerForUser(
+            user_id).getHeroUsageByResult()
 
 
 # Tracks OW games for a single person
@@ -413,16 +593,22 @@ class OverwatchTracker:
         self.games = []
 
         self.selected_game = None
+        self.hero_usage = None
+
+        self.season = -1
 
     def addGame(self, overwatch_game):
         self.games.append(overwatch_game)
         self.selected_game = self.games[-1]
+        self._addGameToHeroUsage(self.selected_game)
         return self.selected_game
 
     def addHeroToSelectedGame(self, hero, weight):
         if self.selected_game is None:
             return None
+        self._removeGameFromHeroUsage(self.selected_game)
         self.selected_game.heroes.append((hero, weight))
+        self._addGameToHeroUsage(self.selected_game)
         return self.selected_game
 
     def getGamesFromPastDays(self, num_days=7):
@@ -456,7 +642,7 @@ class OverwatchTracker:
         self.selected_game = self.games[-game_ind]
         return self.selected_game
 
-    def updateGame(self, result, map, hero, weight):
+    def updateGame(self, result, map, hero, weight, season):
         if self.selected_game is None:
             return None
 
@@ -467,13 +653,76 @@ class OverwatchTracker:
             self.selected_game.map = map
 
         if hero is not None:
+            self._removeGameFromHeroUsage(self.selected_game)
             if hero in HEROES:
                 self.selected_game.role = HEROES[hero]
             else:
                 self.selected_game.role = 'Invalid hero: ' + hero
             self.selected_game.heroes = [(hero, weight)]
+            self._addGameToHeroUsage(self.selected_game)
+
+        if season is not None:
+            self.selected_game.season = season
 
         return self.selected_game
+
+    def updateSeason(self, new_season):
+        season_changed = (self.season != new_season)
+        self.season = new_season
+
+        # When the season is changed, redo hero usage statistics, since we only care about last two seasons.
+        if season_changed:
+            self._calculateHeroUsage()
+        return season_changed
+
+    def getHeroUsage(self):
+        if self.hero_usage is None:
+            self._calculateHeroUsage()
+        return self.hero_usage
+
+    def getHeroUsageByResult(self):
+        if self.hero_usage_by_result is None:
+            self._calculateHeroUsage()
+        return self.hero_usage_by_result
+
+    def _calculateHeroUsage(self):
+        self.hero_usage = {}
+        self.hero_usage_by_result = {}
+
+        for game in self.games:
+            if not hasattr(game, 'season'):
+                game.season = 5
+
+            # Only consider games from the current season and previous 2 seasons.
+            if self.season - game.season > 2:
+                continue
+            self._addGameToHeroUsage(game)
+
+    def _removeGameFromHeroUsage(self, game):
+        total_weight = sum(w for _, w in game.heroes)
+        for h, w in game.heroes:
+            if h in self.hero_usage:
+                self.hero_usage[h] -= w / total_weight
+                self.hero_usage_by_result[h][game.result] -= w / total_weight
+
+            if self.hero_usage[h] <= 0:
+                del self.hero_usage[h]
+                del self.hero_usage_by_result[h]
+
+    def _addGameToHeroUsage(self, game):
+        total_weight = sum(w for _, w in game.heroes)
+        for h, w in game.heroes:
+            if h not in self.hero_usage:
+                self.hero_usage[h] = 0.0
+                self.hero_usage_by_result[h] = {
+                    v: 0.0
+                    for v in OverwatchGame.RESULTS
+                }
+
+            self.hero_usage[h] += w / total_weight
+            self.hero_usage_by_result[h][game.result] += w / total_weight
+
+    # TODO Add a function to check that hero_usage is consistent (Sum should be total games in last k seasons, no values should be negative)
 
 
 class OverwatchGame:
@@ -482,7 +731,7 @@ class OverwatchGame:
     DRAW = 'Draw'
     RESULTS = [WIN, LOSS, DRAW]
 
-    def __init__(self, result, map, hero, weight):
+    def __init__(self, result, map, hero, weight, season):
         self.result = result
         self.map = map
         if hero in HEROES:
@@ -490,8 +739,7 @@ class OverwatchGame:
         else:
             self.role = 'Invalid hero: ' + hero
 
-        # TODO Have a way to update this as time passes
-        self.season = 4
+        self.season = season
 
         # List of two-ples of (hero, weight)
         self.heroes = [(hero, weight)]
@@ -515,3 +763,28 @@ class OverwatchGame:
         # TODO format this message better
         return '```\nMap    --> {}\nRole   --> {}\nResult --> {}\nHeroes --> {}\n```'.format(
             self.map, self.role, self.result, self.heroList())
+
+
+if __name__ == '__main__':
+    # TMP Script to fix errors in games
+    f = open(OW_TRACKER_FILENAME, 'rb')
+    overwatch_trackers = pickle.load(f)
+
+    for _, owt in overwatch_trackers.items():
+        if not hasattr(owt, 'season'):
+            owt.season = 5
+
+        remove_games = []
+        for game in owt.games:
+            if game.date >= date(2023, 6, 18):
+                game.season = 5
+
+                if game.result == OverwatchGame.DRAW:
+                    remove_games.append(game)
+        for rg in remove_games:
+            owt.games.remove(rg)
+
+        owt._calculateHeroUsage()
+
+    f = open(OW_TRACKER_FILENAME, 'wb')
+    pickle.dump(overwatch_trackers, f)
