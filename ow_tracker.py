@@ -694,7 +694,7 @@ class OverwatchTracker:
                 game.season = 5
 
             # Only consider games from the current season and previous 2 seasons.
-            if self.season - game.season > 2:
+            if self.season - game.season >= 2:
                 continue
             self._addGameToHeroUsage(game)
 
@@ -763,28 +763,3 @@ class OverwatchGame:
         # TODO format this message better
         return '```\nMap    --> {}\nRole   --> {}\nResult --> {}\nHeroes --> {}\n```'.format(
             self.map, self.role, self.result, self.heroList())
-
-
-if __name__ == '__main__':
-    # TMP Script to fix errors in games
-    f = open(OW_TRACKER_FILENAME, 'rb')
-    overwatch_trackers = pickle.load(f)
-
-    for _, owt in overwatch_trackers.items():
-        if not hasattr(owt, 'season'):
-            owt.season = 5
-
-        remove_games = []
-        for game in owt.games:
-            if game.date >= date(2023, 6, 18):
-                game.season = 5
-
-                if game.result == OverwatchGame.DRAW:
-                    remove_games.append(game)
-        for rg in remove_games:
-            owt.games.remove(rg)
-
-        owt._calculateHeroUsage()
-
-    f = open(OW_TRACKER_FILENAME, 'wb')
-    pickle.dump(overwatch_trackers, f)
