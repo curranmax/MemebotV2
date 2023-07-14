@@ -5,7 +5,6 @@ import discord
 from discord import app_commands
 from datetime import date, datetime, time, timedelta
 import pytz
-import typing
 import calendar
 
 DAILY = 'Daily'
@@ -15,6 +14,7 @@ MONTHLY = 'Monthly'
 ALL_FREQUENCIES = [DAILY, WEEKLY, MONTHLY]
 
 
+# TODO split this off into its own bot.
 class ChoreCalendarDiscordCommands(app_commands.Group):
 
     def __init__(self, chore_calendar, *args, **kwargs):
@@ -36,7 +36,7 @@ class ChoreCalendarDiscordCommands(app_commands.Group):
         name='add-daily-chore',
         description='Adds a new chore that must be done every day.')
     @app_commands.describe(
-        name='Name of the chore.',)
+        name='Name of the chore.', )
     async def add_daily_chore(self, interaction: discord.Interaction,
                               name: str):
         chore_frequency = DailyFrequency()
@@ -79,14 +79,14 @@ class ChoreCalendarDiscordCommands(app_commands.Group):
         await self._addChore(interaction, name, chore_frequency)
 
     async def _addChore(self, interaction, name, chore_frequency):
-        result = await self.chore_calendar.addChore(Chore(name, chore_frequency))
+        result = await self.chore_calendar.addChore(
+            Chore(name, chore_frequency))
         if result:
             await interaction.response.send_message('Chore added!',
                                                     ephemeral=True)
         else:
             await interaction.response.send_message('Error adding chore!',
                                                     ephemeral=True)
-
 
     @app_commands.command(
         name='bind',
