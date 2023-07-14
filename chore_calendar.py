@@ -6,6 +6,8 @@ from discord import app_commands
 from datetime import date, datetime, time, timedelta
 import pytz
 import calendar
+import os.path
+import pickle
 
 DAILY = 'Daily'
 WEEKLY = 'Weekly'
@@ -13,6 +15,7 @@ MONTHLY = 'Monthly'
 
 ALL_FREQUENCIES = [DAILY, WEEKLY, MONTHLY]
 
+CHORES_FILENAME = 'data/chores.pickle'
 
 # TODO split this off into its own bot.
 class ChoreCalendarDiscordCommands(app_commands.Group):
@@ -170,9 +173,11 @@ class ChoreCalendar:
         self.discord_client = discord_client
         self.event_calendar = event_calendar
 
-        # TODO change this to two mapss with keys of name and react.
+        # TODO change this to two maps with keys of name and react.
         self.chores = []
         self.chores_lock = asyncio.Lock()
+        self.chores_filename = CHORES_FILENAME
+        self._loadChores()
 
         self.post_time = time(hour=8, tzinfo=pytz.timezone('US/Pacific'))
         self.channel = None
@@ -186,6 +191,27 @@ class ChoreCalendar:
     def setChannel(self, new_channel):
         self.channel = new_channel
 
+    def _loadChores(self):
+        if not os.path.exists(self.chores_filename):
+            asyncio.run(self._saveChores())
+            return
+
+        f = open(self.chores_filename, 'rb')
+        loaded_chores = pickle.load(f)
+        f.close()
+
+        # Update the chores in case there are any compatibility issues (i.e. add any new fields to old data).
+
+        for chore in loaded_chores:
+            # TODO Skip saving for this case?
+            asyncio.run(self.addChore(chore))
+
+    async def _saveChores(self):
+        async with self.chores_lock:
+            f = open(self.chores_filename, 'wb')
+            pickle.dump(self.chores, f)
+            f.close()
+
     async def addChore(self, new_chore):
         async with self.chores_lock:
             for existing_chore in self.chores:
@@ -194,7 +220,7 @@ class ChoreCalendar:
 
             self.chores.append(new_chore)
 
-        # TODO save chores to file
+        await self._saveChores()
         return True
 
     async def postDailyUpdate(self, schedule_new_post=True, channel=None):
@@ -206,7 +232,9 @@ class ChoreCalendar:
         await self.discord_client.get_channel(channel).send(message)
 
         if schedule_new_post:
-            await self.schedulePostForTomorrow()
+            return self.createEventForTomorrow()
+        else:
+            return None
 
     async def getChoreMessage(self):
         async with self.chores_lock:
@@ -229,6 +257,5 @@ class ChoreCalendar:
         return datetime.combine(date.today() + timedelta(days=1),
                                 self.post_time)
 
-    async def schedulePostForTomorrow(self):
-        await self.event_calendar.addEventWithLock(
-            EC.Event(self.getPostTimeForTomorrow(), self.postDailyUpdate))
+    async def createEventForTomorrow(self):
+        return EC.Event(self.getPostTimeForTomorrow(), self.postDailyUpdate)

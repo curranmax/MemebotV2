@@ -9,6 +9,8 @@ class Event:
 
     def __init__(self, datetime, callback):
         self.datetime = datetime
+
+        # Takes no input, and returns an event if a new event should be added to the calendar
         self.callback = callback
 
 
@@ -20,6 +22,7 @@ class EventCalendar(commands.Cog):
         self.lock = asyncio.Lock()
 
     def start(self):
+        print('STARTING EVENT CALENDAR')
         self.checkEventCalendar.start()
 
     async def addEventWithLock(self, event):
@@ -32,14 +35,18 @@ class EventCalendar(commands.Cog):
     def cog_unload(self):
         self.checkEventCalendar.cancel()
 
-    @tasks.loop(seconds=60)
+    @tasks.loop(seconds=6000)
     async def checkEventCalendar(self):
         if not self.lock.locked():
             async with self.lock:
                 now = datetime.now(tz=pytz.timezone('US/Pacific'))
+                print('CHECKING EVENT CALENDAR at', str(now))
                 while len(self.events) > 0 and now > self.events[0][0]:
+                    print('POPPING AN EVENT')
                     _, event = heapq.heappop(self.events)
-                    await event.callback()
+                    new_event = await event.callback()
+                    if new_event is not None:
+                        self.addEvent(new_event)
 
     @checkEventCalendar.before_loop
     async def before_checkEventCalendar(self):
