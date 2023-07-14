@@ -122,7 +122,7 @@ class WeeklyFrequency(ChoreFrequency):
     def __init__(self, day_of_the_week, offset):
         super(WeeklyFrequency, self).__init__(WEEKLY)
 
-        self.day_of_the_week = self.day_of_the_week
+        self.day_of_the_week = day_of_the_week
         self.offset = offset
 
 
