@@ -15,6 +15,7 @@ MONTHLY = 'Monthly'
 
 ALL_FREQUENCIES = [DAILY, WEEKLY, MONTHLY]
 
+CHORE_CHANNEL_FILENAME = 'data/chore_channel.pickle'
 CHORES_FILENAME = 'data/chores.pickle'
 
 # TODO split this off into its own bot.
@@ -181,6 +182,8 @@ class ChoreCalendar:
 
         self.post_time = time(hour=8, tzinfo=pytz.timezone('US/Pacific'))
         self.channel = None
+        self.chore_channel_filename = CHORE_CHANNEL_FILENAME
+        self._loadChannel()
 
         self.event_calendar.addEvent(
             EC.Event(self.getPostTimeForTomorrow(), self.postDailyUpdate))
@@ -188,8 +191,23 @@ class ChoreCalendar:
     def getDiscordCommands(self):
         return [ChoreCalendarDiscordCommands(self)]
 
+    def _loadChannel(self):
+        if not os.path.exists(self.chore_channel_filename):
+            self._saveChannel()
+            return
+        
+        f = open(self.chore_channel_filename, 'rb')
+        self.channel = pickle.load(f)
+        f.close()
+
+    def _saveChannel(self):
+        f = open(self.chore_channel_filename, 'wb')
+        pickle.dump(self.channel, f)
+        f.close()
+
     def setChannel(self, new_channel):
         self.channel = new_channel
+        self._saveChannel()
 
     def _loadChores(self):
         if not os.path.exists(self.chores_filename):

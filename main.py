@@ -1,11 +1,15 @@
 import bot
+import args as ARGS
 
 from datetime import datetime
 import discord
 import logging
 import os
 
-TESTING_MODE = False
+parser = ARGS.createParser()
+args = parser.parse_args()
+
+TESTING_MODE = args.testing_mode
 token = os.getenv('DISCORD_TOKEN')
 command_guilds = bot.DEFAULT_GUILDS
 if TESTING_MODE:
