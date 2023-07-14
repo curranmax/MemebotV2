@@ -114,13 +114,13 @@ class ChoreFrequency:
 class DailyFrequency(ChoreFrequency):
 
     def __init__(self):
-        super(DailyFrequency, self, DAILY)
+        super(DailyFrequency, self).__init__(DAILY)
 
 
 class WeeklyFrequency(ChoreFrequency):
 
     def __init__(self, day_of_the_week, offset):
-        super(WeeklyFrequency, self, WEEKLY)
+        super(WeeklyFrequency, self).__init__(WEEKLY)
 
         self.day_of_the_week = self.day_of_the_week
         self.offset = offset
@@ -129,7 +129,7 @@ class WeeklyFrequency(ChoreFrequency):
 class MonthlyFrequency(ChoreFrequency):
 
     def __init__(self, day_of_the_month, offset):
-        super(MonthlyFrequency, self, MONTHLY)
+        super(MonthlyFrequency, self).__init__(MONTHLY)
 
         self.day_of_the_month = day_of_the_month
         self.offset = offset
