@@ -189,7 +189,7 @@ class ChoreCalendar:
     async def addChore(self, new_chore):
         async with self.chores_lock:
             for existing_chore in self.chores:
-                if existing_chore.name == new_chore.name or existing_chore.react == new_chore.react:
+                if existing_chore.name == new_chore.name:
                     return False
 
             self.chores.append(new_chore)
