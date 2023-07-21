@@ -275,5 +275,5 @@ class ChoreCalendar:
         return datetime.combine(date.today() + timedelta(days=1),
                                 self.post_time)
 
-    async def createEventForTomorrow(self):
+    def createEventForTomorrow(self):
         return EC.Event(self.getPostTimeForTomorrow(), self.postDailyUpdate)

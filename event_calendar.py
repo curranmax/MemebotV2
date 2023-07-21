@@ -22,7 +22,6 @@ class EventCalendar(commands.Cog):
         self.lock = asyncio.Lock()
 
     def start(self):
-        print('STARTING EVENT CALENDAR')
         self.checkEventCalendar.start()
 
     async def addEventWithLock(self, event):
@@ -35,14 +34,12 @@ class EventCalendar(commands.Cog):
     def cog_unload(self):
         self.checkEventCalendar.cancel()
 
-    @tasks.loop(seconds=6000)
+    @tasks.loop(seconds=60)
     async def checkEventCalendar(self):
         if not self.lock.locked():
             async with self.lock:
                 now = datetime.now(tz=pytz.timezone('US/Pacific'))
-                print('CHECKING EVENT CALENDAR at', str(now))
                 while len(self.events) > 0 and now > self.events[0][0]:
-                    print('POPPING AN EVENT')
                     _, event = heapq.heappop(self.events)
                     new_event = await event.callback()
                     if new_event is not None:
