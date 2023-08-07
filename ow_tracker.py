@@ -555,9 +555,9 @@ class OverwatchTrackerManager:
         overwatch_tracker = self._getOrCreateOwTrackerForUser(user_id)
         return overwatch_tracker.selectGame(game_ind)
 
-    def updateGame(self, user_id, result, map, hero, weight):
+    def updateGame(self, user_id, result, map, hero, weight, season):
         overwatch_tracker = self._getOrCreateOwTrackerForUser(user_id)
-        updated_game = overwatch_tracker.updateGame(result, map, hero, weight)
+        updated_game = overwatch_tracker.updateGame(result, map, hero, weight, season)
         if updated_game is not None:
             self.saveTrackersToFile()
         return updated_game
