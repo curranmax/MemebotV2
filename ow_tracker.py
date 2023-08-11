@@ -82,6 +82,7 @@ HEROES = {
     'Ana': SUPPORT,
     'Baptiste': SUPPORT,
     'Brigitte': SUPPORT,
+    'Illari': SUPPORT,
     'Kiriko': SUPPORT,
     'Lifeweaver': SUPPORT,
     'Lúcio': SUPPORT,
