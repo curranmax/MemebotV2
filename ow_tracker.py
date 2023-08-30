@@ -6,7 +6,6 @@ import os.path
 import pickle
 from datetime import date, timedelta
 import logging
-from collections import defaultdict
 
 MAPS = [
     # Escort
@@ -40,6 +39,10 @@ MAPS = [
     'Colosseo',
     'Esperança',
     'New Queen Street',
+
+    # Flashpoint
+    'New Junk City',
+    'Suravasa'
 ]
 TANK = 'Tank'
 DPS = 'DPS'
@@ -558,7 +561,8 @@ class OverwatchTrackerManager:
 
     def updateGame(self, user_id, result, map, hero, weight, season):
         overwatch_tracker = self._getOrCreateOwTrackerForUser(user_id)
-        updated_game = overwatch_tracker.updateGame(result, map, hero, weight, season)
+        updated_game = overwatch_tracker.updateGame(result, map, hero, weight,
+                                                    season)
         if updated_game is not None:
             self.saveTrackersToFile()
         return updated_game
