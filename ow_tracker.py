@@ -42,7 +42,7 @@ MAPS = [
 
     # Flashpoint
     'New Junk City',
-    'Suravasa'
+    'Suravasa',
 ]
 TANK = 'Tank'
 DPS = 'DPS'

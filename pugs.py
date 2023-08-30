@@ -16,7 +16,7 @@ DEFAULT_COMP = [TANK, DPS, DPS, SUPPORT, SUPPORT]
 MAPS_BY_MODE = {
     'Control': {
         'Antarctic Peninsula': [],
-        'Busan': ['Night', 'Morning'],
+        'Busan': ['Overcast', 'Night', 'Morning'],
         'Ilios': ['Evening', 'Morning'],
         'Lijiang': ['Dawn', 'Night', 'Lunar New Year'],
         'Nepal': ['Dawn', 'Morning'],
@@ -27,19 +27,23 @@ MAPS_BY_MODE = {
         'Dorado': ['Evening', 'Night'],
         'Havana': ['Morning', 'Night'],
         'Junkertown': [],
-        'Rialto': [],
+        'Rialto': ['Evening', 'Morning'],
         'Route 66': ['Morning', 'Night'],
         'Shambali Monastery': [],
         'Watchpoint: Gibraltar': ['Evening', 'Morning'],
     },
+    'Flashpoint': {
+        'New Junk City': [],
+        'Suravasa': [],
+    },
     'Hybrid': {
-        'Blizzard World': ['Overcast', 'Morning', 'Winter'],
+        'Blizzard World': ['Overcast', 'Night', 'Morning', 'Winter'],
         'Eichenwalde': ['Evening', 'Morning', 'Halloween'],
         'Hollywood': ['Night', 'Morning', 'Halloween'],
         'King\'s Row': ['Night', 'Evening', 'Winter'],
         'Midtown': [],
         'Numbani': [],
-        'Paraíso': [],
+        'Paraíso': ['Evening', 'Morning'],
     },
     'Push': {
         'Colosseo': ['Evening', 'Morning'],
@@ -561,13 +565,15 @@ class PugsAdminDiscordCommands(app_commands.Group):
         escort='Include Escort maps.',
         hybrid='Include Hybrid maps.',
         push='Include Push maps.',
+        flashpoint='Includ Flashpoint maps.',
     )
     async def random_map(self,
                          interaction: discord.Interaction,
                          control: typing.Optional[bool] = True,
                          escort: typing.Optional[bool] = True,
                          hybrid: typing.Optional[bool] = True,
-                         push: typing.Optional[bool] = True):
+                         push: typing.Optional[bool] = True,
+                         flashpoint: typing.Optional[bool] = True):
         modes = []
         if control:
             modes.append('Control')
@@ -577,6 +583,8 @@ class PugsAdminDiscordCommands(app_commands.Group):
             modes.append('Hybrid')
         if push:
             modes.append('Push')
+        if flashpoint:
+            modes.append('Flashpoint')
 
         if len(modes) == 0:
             await interaction.response.send_message(
@@ -609,6 +617,7 @@ class PugsAdminDiscordCommands(app_commands.Group):
         escort='Include Escort maps.',
         hybrid='Include Hybrid maps.',
         push='Include Push maps.',
+        flashpoint='Includ Flashpoint maps.',
     )
     async def make_map_vote(self,
                             interaction: discord.Interaction,
@@ -617,6 +626,7 @@ class PugsAdminDiscordCommands(app_commands.Group):
                             escort: typing.Optional[bool] = True,
                             hybrid: typing.Optional[bool] = True,
                             push: typing.Optional[bool] = True,
+                            flashpoint: typing.Optional[bool] = True,
                             make_post: typing.Optional[bool] = False):
         if not make_post:
             self.map_vote_choices = None
@@ -631,6 +641,8 @@ class PugsAdminDiscordCommands(app_commands.Group):
                 modes.append('Hybrid')
             if push:
                 modes.append('Push')
+            if flashpoint:
+                modes.append('Flashpoint')
 
             if len(modes) == 0:
                 await interaction.response.send_message(
