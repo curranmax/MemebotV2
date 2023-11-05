@@ -34,6 +34,7 @@ MAPS = [
     'Lijiang Tower',
     'Nepal',
     'Oasis',
+    'Samoa',
 
     # Push
     'Colosseo',
