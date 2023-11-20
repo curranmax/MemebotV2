@@ -626,10 +626,12 @@ class OverwatchTracker:
                 logging.info('Games are not in sorted order by date.')
 
         rv = []
-        todays_cutoff = datetime.combine(date.today(), time(hour=6, minute=0),
-                                         pytz.timezone("US/Pacific"))
-        cutoff_day = todays_cutoff - timedelta(
-            days=num_days - (1 if datetime.now() >= todays_cutoff else 0))
+        # tz = pytz.timezone("US/Pacific")
+        # todays_cutoff = datetime.combine(date.today(), time(hour=6, minute=0),
+        #                                  tz)
+        # cutoff_day = todays_cutoff - timedelta(
+        #     days=num_days - (1 if datetime.now(tz=tz) >= todays_cutoff else 0))
+        cutoff_day = date.today() - timedelta(days=num_days)
         for game in reversed(self.games):
             if game.date <= cutoff_day:
                 break
