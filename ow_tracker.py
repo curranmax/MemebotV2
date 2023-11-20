@@ -4,7 +4,7 @@ import typing
 import os
 import os.path
 import pickle
-from datetime import date, timedelta
+from datetime import date, datetime, time, timedelta, tzinfo
 import logging
 
 MAPS = [
@@ -625,7 +625,9 @@ class OverwatchTracker:
                 logging.info('Games are not in sorted order by date.')
 
         rv = []
-        cutoff_day = date.today() - timedelta(days=num_days)
+        cutoff_day = datetime.combine(
+            date.today(), time(hour=6, minute=0),
+            tzinfo.tzname("US/Pacific")) - timedelta(days=num_days - 1)
         for game in reversed(self.games):
             if game.date <= cutoff_day:
                 break
