@@ -15,12 +15,13 @@ DEFAULT_COMP = [TANK, DPS, DPS, SUPPORT, SUPPORT]
 
 MAPS_BY_MODE = {
     'Control': {
-        'Antarctic Peninsula': [],
+        'Antarctic Peninsula': ['Night', 'Morning'],
         'Busan': ['Overcast', 'Night', 'Morning'],
         'Ilios': ['Evening', 'Morning'],
         'Lijiang': ['Dawn', 'Night', 'Lunar New Year'],
-        'Nepal': ['Dawn', 'Morning'],
+        'Nepal': ['Evening', 'Morning'],
         'Oasis': ['Evening', 'Night', 'Morning'],
+        'Samoa': [],
     },
     'Escort': {
         'Circuit Royal': ['Morning', 'Night'],
@@ -28,7 +29,7 @@ MAPS_BY_MODE = {
         'Havana': ['Morning', 'Night'],
         'Junkertown': [],
         'Rialto': ['Evening', 'Morning'],
-        'Route 66': ['Morning', 'Night'],
+        'Route 66': ['Morning', 'Overcast', 'Night'],
         'Shambali Monastery': [],
         'Watchpoint: Gibraltar': ['Evening', 'Morning'],
     },
@@ -41,7 +42,7 @@ MAPS_BY_MODE = {
         'Eichenwalde': ['Evening', 'Morning', 'Halloween'],
         'Hollywood': ['Night', 'Morning', 'Halloween'],
         'King\'s Row': ['Night', 'Evening', 'Winter'],
-        'Midtown': [],
+        'Midtown': ['Night', 'Morning'],
         'Numbani': [],
         'Paraíso': ['Evening', 'Morning'],
     },
