@@ -55,6 +55,7 @@ HEROES = {
     'D.Va': TANK,
     'Doomfist': TANK,
     'Junker Queen': TANK,
+    'Mauga': TANK,
     'Orisa': TANK,
     'Ramattra': TANK,
     'Reinhardt': TANK,
@@ -515,7 +516,7 @@ class OverwatchTrackerManager:
 
     # TODO make this async
     def loadTrackersFromFile(self):
-        # If file does not exist, then init self.twitch_streams to empty dict
+        # If file does not exist, then init self.overwatch_trackers to empty dict
         if not os.path.exists(self.ow_tracker_fname):
             self.overwatch_trackers = {}
             self.saveTrackersToFile()
@@ -530,6 +531,13 @@ class OverwatchTrackerManager:
                 owt.season = 5
 
             owt._calculateHeroUsage()
+
+        # TODO This temporarily converts games from date to datetime.
+        for _, owt in self.overwatch_trackers.items():
+            for game in owt.games:
+                if not hasattr(game, 'datetime'):
+                    game.datetime = datetime.combine(
+                        game.date, time(hour=18), pytz.timezone('US/Pacific'))
 
     # TODO make this async
     def saveTrackersToFile(self):
@@ -622,18 +630,21 @@ class OverwatchTracker:
         # TMP check that games are in sorted order by date.
         prev_date = None
         for game in self.games:
-            if prev_date is not None and game.date < prev_date:
+            if prev_date is not None and game.datetime < prev_date:
                 logging.info('Games are not in sorted order by date.')
+            prev_date = game.datetime
 
         rv = []
-        # tz = pytz.timezone("US/Pacific")
-        # todays_cutoff = datetime.combine(date.today(), time(hour=6, minute=0),
-        #                                  tz)
-        # cutoff_day = todays_cutoff - timedelta(
-        #     days=num_days - (1 if datetime.now(tz=tz) >= todays_cutoff else 0))
-        cutoff_day = date.today() - timedelta(days=num_days)
+        tz = pytz.timezone("US/Pacific")
+        todays_cutoff = datetime.combine(date.today(), time(hour=6, minute=0),
+                                         tz)
+        cutoff_day = todays_cutoff - timedelta(
+            days=num_days - (0 if datetime.now(tz=tz) >= todays_cutoff else 1))
+        # cutoff_day = date.today() - timedelta(days=num_days)
+        logging.info('todays_cutoff: ', str(todays_cutoff), ', cutoff_day: ',
+                     str(cutoff_day))
         for game in reversed(self.games):
-            if game.date <= cutoff_day:
+            if game.datetime <= cutoff_day:
                 break
             rv.append(game)
         return reversed(rv)
@@ -756,7 +767,10 @@ class OverwatchGame:
         # List of two-ples of (hero, weight)
         self.heroes = [(hero, weight)]
 
+        # Date is now deprecated!
         self.date = date.today()
+        self.datetime = datetime.now(tz=pytz.timezone('US/Pacific'))
+        logging.info('Created game with datetime: ', str(self.datetime))
 
     def heroList(self):
         if len(self.heroes) == 0:
