@@ -639,11 +639,12 @@ class OverwatchTracker:
         todays_cutoff = datetime.combine(date.today(), time(hour=6, minute=0),
                                          tz)
         cutoff_day = todays_cutoff - timedelta(
-            days=num_days - (0 if datetime.now(tz=tz) >= todays_cutoff else 1))
+            days=num_days - (1 if datetime.now(tz=tz) >= todays_cutoff else 0))
         # cutoff_day = date.today() - timedelta(days=num_days)
         logging.info('todays_cutoff: %s, cutoff_day: %s', str(todays_cutoff),
                      str(cutoff_day))
         for game in reversed(self.games):
+            logging.info('game.datetime: %s', str(game.datetime))
             if game.datetime <= cutoff_day:
                 break
             rv.append(game)
