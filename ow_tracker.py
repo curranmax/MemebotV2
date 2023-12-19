@@ -770,7 +770,7 @@ class OverwatchGame:
         # Date is now deprecated!
         self.date = date.today()
         self.datetime = datetime.now(tz=pytz.timezone('US/Pacific'))
-        logging.info('Created game with datetime: ', str(self.datetime))
+        logging.info('Created game with datetime: %s', str(self.datetime))
 
     def heroList(self):
         if len(self.heroes) == 0:
