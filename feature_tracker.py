@@ -68,9 +68,9 @@ class FeatureTracker:
         print('--------------------')
         for ef in enabled_features:
             print('    ' + ef)
-        
+
         print('---------------------')
         print('| Disabled Features |')
         print('---------------------')
         for df in disabled_features:
-            print(df)
+            print('    ' + df)
