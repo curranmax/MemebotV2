@@ -22,53 +22,81 @@ TESTING_GUILDS = [discord.Object(id=599237897580970005)]
 
 class CustomDiscordClient(discord.Client):
 
-    def __init__(self, command_guilds=[], *args, **kwargs):
-        super(CustomDiscordClient, self).__init__(command_prefix='/',
-                                                  *args,
-                                                  **kwargs)
+    def __init__(self,
+                 feature_tracker=None,
+                 command_guilds=[],
+                 command_prefix='/',
+                 *args,
+                 **kwargs):
+        super(CustomDiscordClient,
+              self).__init__(command_prefix=command_prefix, *args, **kwargs)
+
+        self.feature_tracker = feature_tracker
 
         self.command_guilds = command_guilds
         self.command_tree = app_commands.CommandTree(self)
 
-        self.event_calendar = event_calendar.EventCalendar(self)
+        # TODO only create this if its needed.
+        if self.feature_tracker is not None and self.feature_tracker.isEnabled(
+                'chore_calendar'):
+            self.event_calendar = event_calendar.EventCalendar(self)
+        else:
+            self.event_calendar = None
 
         # Add copy pasta / meme commands
-        self.command_tree.add_command(memes.MemesCommands(),
-                                      guilds=self.command_guilds)
+        if self.feature_tracker is not None and self.feature_tracker.isEnabled(
+                'memes'):
+            self.command_tree.add_command(memes.MemesCommands(),
+                                          guilds=self.command_guilds)
 
         # Add OWL calendar.
-        # self.owl_calendar_manager = owl_calendar.OwlCalendarManager()
-        # for command_group in self.owl_calendar_manager.getDiscordCommands():
-        #     self.command_tree.add_command(command_group,
-        #                                   guilds=self.command_guilds)
+        # if self.feature_tracker is not None and self.feature_tracker.isEnabled('owl_calendar'):
+        #     self.owl_calendar_manager = owl_calendar.OwlCalendarManager()
+        #     for command_group in self.owl_calendar_manager.getDiscordCommands():
+        #         self.command_tree.add_command(command_group,
+        #                                       guilds=self.command_guilds)
 
         # Add PUGs commands
-        self.pugs_manager = pugs.PugsManager()
-        for command_group in self.pugs_manager.getDiscordCommands():
-            self.command_tree.add_command(command_group,
-                                          guilds=self.command_guilds)
+        if self.feature_tracker is not None and self.feature_tracker.isEnabled(
+                'pugs'):
+            self.pugs_manager = pugs.PugsManager()
+            for command_group in self.pugs_manager.getDiscordCommands():
+                self.command_tree.add_command(command_group,
+                                              guilds=self.command_guilds)
 
         # Creates the class to add auto reacts
-        self.auto_react_manager = auto_reacts.AutoReactManager()
+        if self.feature_tracker is not None and self.feature_tracker.isEnabled(
+                'auto_reacts'):
+            self.auto_react_manager = auto_reacts.AutoReactManager()
+        else:
+            self.auto_react_manager = None
 
         # Creates the class for the twitch checker
-        self.twitch_manager = twitch_checker.TwitchManager()
-        for command_group in self.twitch_manager.getDiscordCommands():
-            self.command_tree.add_command(command_group,
-                                          guilds=self.command_guilds)
+        if self.feature_tracker is not None and self.feature_tracker.isEnabled(
+                'twitch_checker'):
+            self.twitch_manager = twitch_checker.TwitchManager()
+            for command_group in self.twitch_manager.getDiscordCommands():
+                self.command_tree.add_command(command_group,
+                                              guilds=self.command_guilds)
+        else:
+            self.twitch_manager = None
 
         # Add commands for Overwatch Tracker
-        self.ow_tracker_manager = ow_tracker.OverwatchTrackerManager()
-        for command_group in self.ow_tracker_manager.getDiscordCommands():
-            self.command_tree.add_command(command_group,
-                                          guilds=self.command_guilds)
+        if self.feature_tracker is not None and self.feature_tracker.isEnabled(
+                'ow_tracker'):
+            self.ow_tracker_manager = ow_tracker.OverwatchTrackerManager()
+            for command_group in self.ow_tracker_manager.getDiscordCommands():
+                self.command_tree.add_command(command_group,
+                                              guilds=self.command_guilds)
 
         # Add commands for the Chore Calendar
-        self.chore_calendar = chore_calendar.ChoreCalendar(
-            self, self.event_calendar)
-        for command_group in self.chore_calendar.getDiscordCommands():
-            self.command_tree.add_command(command_group,
-                                          guilds=self.command_guilds)
+        if self.feature_tracker is not None and self.feature_tracker.isEnabled(
+                'chore_calendar'):
+            self.chore_calendar = chore_calendar.ChoreCalendar(
+                self, self.event_calendar)
+            for command_group in self.chore_calendar.getDiscordCommands():
+                self.command_tree.add_command(command_group,
+                                              guilds=self.command_guilds)
 
     async def on_ready(self):
         logging.info(
@@ -80,12 +108,17 @@ class CustomDiscordClient(discord.Client):
         print(self.user.id)
         print('-' * 50)
 
+        self.feature_tracker.printEnabledFeature()
+
         for guild in self.command_guilds:
             await self.command_tree.sync(guild=guild)
 
         # Setup twitch task to incremently check streams
-        self.twitch_cog = twitch_checker.TwitchCog(self, self.twitch_manager)
-        self.event_calendar.start()
+        if self.twitch_manager is not None:
+            self.twitch_cog = twitch_checker.TwitchCog(self,
+                                                       self.twitch_manager)
+        if self.event_calendar is not None:
+            self.event_calendar.start()
 
     async def on_message(self, message):
         if message.author == self.user:
@@ -96,19 +129,22 @@ class CustomDiscordClient(discord.Client):
                 'Ignoring message, because it is surronded by spoiler tags')
             return
 
-        emotes = self.auto_react_manager.getEmotes(message.content)
-        for emote in emotes:
-            logging.info(
-                'Adding automatic reaction to message: message = "{}" reaction = {}'
-                .format(message.content, emote))
-            await message.add_reaction(emote)
+        if self.auto_react_manager is not None:
+            emotes = self.auto_react_manager.getEmotes(message.content)
+            for emote in emotes:
+                logging.info(
+                    'Adding automatic reaction to message: message = "{}" reaction = {}'
+                    .format(message.content, emote))
+                await message.add_reaction(emote)
 
     async def on_reaction_add(self, reaction, user):
         if user == self.user:
             logging.info('Ignoring reaction, because it is from the bot')
             return
 
-        if reaction.emoji in emote_speller.TRIGGER_EMOJIS:
+        if self.feature_tracker is not None and self.feature_tracker.isEnabled(
+                'emote_speller'
+        ) and reaction.emoji in emote_speller.TRIGGER_EMOJIS:
             logging.info('Trying to spell words on message: "{}"'.format(
                 reaction.message.content))
             spelling = emote_speller.onReactionAdd(reaction)

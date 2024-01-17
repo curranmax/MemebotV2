@@ -138,6 +138,8 @@ class MonthlyFrequency(ChoreFrequency):
         self.day_of_the_month = day_of_the_month
         self.offset = offset
 
+# One time event
+
 
 class Chore:
 

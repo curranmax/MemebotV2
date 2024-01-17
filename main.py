@@ -1,18 +1,17 @@
 import bot
-import args as ARGS
+import feature_tracker as FT
 
 from datetime import datetime
 import discord
 import logging
 import os
 
-parser = ARGS.createParser()
-args = parser.parse_args()
+feature_tracker = FT.FeatureTracker()
 
-TESTING_MODE = args.testing_mode
+# Get discord tokens and guilds.
 token = os.getenv('DISCORD_TOKEN')
 command_guilds = bot.DEFAULT_GUILDS
-if TESTING_MODE:
+if feature_tracker.isTestingMode():
     print('RUNNING IN TESTING MODE')
     token = os.getenv('DISCORD_TESTING_TOKEN')
     command_guilds = bot.TESTING_GUILDS
@@ -30,6 +29,7 @@ intents = discord.Intents.default()
 intents.message_content = True
 
 # Start discord bot
-client = bot.CustomDiscordClient(command_guilds=command_guilds,
+client = bot.CustomDiscordClient(feature_tracker=feature_tracker,
+                                 command_guilds=command_guilds,
                                  intents=intents)
 client.run(token)
