@@ -46,6 +46,7 @@ MAPS = [
     'New Junk City',
     'Suravasa',
 ]
+
 TANK = 'Tank'
 DPS = 'DPS'
 SUPPORT = 'Support'
@@ -97,11 +98,60 @@ HEROES = {
     'Zenyatta': SUPPORT,
 }
 
+
+def customEditDistance(v1, v2):
+    # Convert to lower case
+    v1 = v1.lower()
+    v2 = v2.lower()
+
+    # Swap the strings if v1 is longer.
+    if len(v1) > len(v2):
+        v1, v2 = v2, v1
+
+    best_score = None
+    for ind in range(0, len(v2) - len(v1) + 1):
+        this_score = 0
+        for c1, c2 in zip(v1, v2[ind:ind + len(v1)]):
+            # TODO handle special characters
+            if c1 != c2:
+                this_score += 1
+        if best_score is None or this_score < best_score:
+            best_score = this_score
+        if best_score == 0:
+            return best_score
+    return best_score
+
+
+def getMap(map):
+    if map not in MAPS:
+        best_match = None
+        best_ed = None
+        for m in MAPS:
+            m_ed = customEditDistance(map, m)
+            if best_match is None or m_ed < best_ed:
+                best_match = m
+                best_ed = m_ed
+        map = best_match
+    return map
+
+
+def getHero(hero):
+    if hero not in HEROES:
+        best_match = None
+        best_ed = None
+        for h, _ in HEROES.items():
+            h_ed = customEditDistance(hero, h)
+            if best_match is None or h_ed < best_ed:
+                best_match = h
+                best_ed = h_ed
+        hero = best_match
+    return hero
+
+
 OW_TRACKER_FILENAME = 'data/ow_tracker.pickle'
 SEASON_FILENAME = 'data/season.pickle'
 
 AUTOCOMPLETE_LIMIT = 25
-SORT_HERO_AUTOCOMPLETE_BY_USAGE = True
 
 
 class OwTrackerDiscordCommands(app_commands.Group):
@@ -117,36 +167,60 @@ class OwTrackerDiscordCommands(app_commands.Group):
 
         self.ow_tracker_manager = ow_tracker_manager
 
+    MAP_CHOICES = [app_commands.Choice(name=map, value=map) for map in MAPS]
+
     async def map_autocomplete(
             self, interaction: discord.Interaction,
             current: str) -> typing.List[app_commands.Choice[str]]:
-        map_choices = [
-            app_commands.Choice(name=map, value=map) for map in MAPS
-            if current.lower() in map.lower()
-        ]
+        map_choices = list(OwTrackerDiscordCommands.MAP_CHOICES)
+
+        # Get the edit distance between the current string and map name.
+        map_edit_distance = {
+            map: customEditDistance(map, current)
+            for map in MAPS
+        }
+
+        # Debug printing
+        print('-' * 80)
+        print('Current =', current)
+        for m, ed in map_edit_distance.items():
+            print('  Map =', m, ', Ed =', ed)
+
+        print('-' * 80)
+
+        # Sort maps by edit distance
+        map_choices.sort(
+            key=lambda map: (map_edit_distance[map.value], map.value))
+
         if len(map_choices) > AUTOCOMPLETE_LIMIT:
             map_choices = map_choices[:AUTOCOMPLETE_LIMIT]
 
         return map_choices
 
+    HERO_CHOICES = [
+        app_commands.Choice(name=hero, value=hero)
+        for hero, _ in HEROES.items()
+    ]
+
     async def hero_autocomplete(
             self, interaction: discord.Interaction,
             current: str) -> typing.List[app_commands.Choice[str]]:
-        hero_choices = [
-            app_commands.Choice(name=hero, value=hero)
+        hero_choices = list(OwTrackerDiscordCommands.HERO_CHOICES)
+
+        # Get the edit distance between the current string and heroes. Subtract
+        # out the difference between the hero name and current string to account
+        # for extra characters.
+        hero_edit_distance = {
+            hero: customEditDistance(hero, current)
             for hero, _ in HEROES.items()
-            if current.lower() in hero.lower() or (
-                hero == 'Lúcio' and current.lower() in 'lucio')
-        ]
+        }
 
-        # Sort by usage rate of the user
-        if SORT_HERO_AUTOCOMPLETE_BY_USAGE:
-            hero_usage = self.ow_tracker_manager.getHeroUsage(
-                interaction.user.id)
+        # Get the usage rate of the heroes
+        hero_usage = self.ow_tracker_manager.getHeroUsage(interaction.user.id)
 
-            # The heroes are sorted by (hero usage descending, hero name ascending)
-            hero_choices.sort(key=lambda hero:
-                              (-hero_usage.get(hero.value, 0.0), hero.value))
+        # The heroes are sorted by (hero edit distance ascending, hero usage descending, hero name ascending)
+        hero_choices.sort(key=lambda hero: (hero_edit_distance[
+            hero.value], -hero_usage.get(hero.value, 0.0), hero.value))
 
         if len(hero_choices) > AUTOCOMPLETE_LIMIT:
             hero_choices = hero_choices[:AUTOCOMPLETE_LIMIT]
@@ -499,7 +573,6 @@ class OwTrackerDiscordCommands(app_commands.Group):
 
     # TODO Add commands/support for
     #    Weekly goals
-    #    Progress towards rank updates
     #    Look at arbirtary range of dates
     #    Look at stats per hero/map/mode
     #    Look at stats per season
@@ -622,7 +695,7 @@ class OverwatchTracker:
         if self.selected_game is None:
             return None
         self._removeGameFromHeroUsage(self.selected_game)
-        self.selected_game.heroes.append((hero, weight))
+        self.selected_game.heroes.append((getHero(hero), weight))
         self._addGameToHeroUsage(self.selected_game)
         return self.selected_game
 
@@ -640,7 +713,7 @@ class OverwatchTracker:
                                          tz)
         cutoff_day = todays_cutoff - timedelta(
             days=num_days - (1 if datetime.now(tz=tz) >= todays_cutoff else 0))
-        # cutoff_day = date.today() - timedelta(days=num_days)
+
         logging.info('todays_cutoff: %s, cutoff_day: %s', str(todays_cutoff),
                      str(cutoff_day))
         for game in reversed(self.games):
@@ -757,11 +830,11 @@ class OverwatchGame:
 
     def __init__(self, result, map, hero, weight, season):
         self.result = result
-        self.map = map
-        if hero in HEROES:
-            self.role = HEROES[hero]
-        else:
-            self.role = 'Invalid hero: ' + hero
+
+        self.map = getMap(map)
+
+        hero = getHero(hero)
+        self.role = HEROES[hero]
 
         self.season = season
 
