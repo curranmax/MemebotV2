@@ -180,14 +180,6 @@ class OwTrackerDiscordCommands(app_commands.Group):
             for map in MAPS
         }
 
-        # Debug printing
-        print('-' * 80)
-        print('Current =', current)
-        for m, ed in map_edit_distance.items():
-            print('  Map =', m, ', Ed =', ed)
-
-        print('-' * 80)
-
         # Sort maps by edit distance
         map_choices.sort(
             key=lambda map: (map_edit_distance[map.value], map.value))
