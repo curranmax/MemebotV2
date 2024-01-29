@@ -17,6 +17,8 @@ DEFAULT_GUILDS = [
     discord.Object(id=400805068934348800)
 ]
 
+CHOREBOT_GUILDS = [discord.Object(id=400805068934348800)]
+
 TESTING_GUILDS = [discord.Object(id=599237897580970005)]
 
 

@@ -24,13 +24,17 @@ class FeatureTracker:
                                  action='store_true')
 
         # Switches for for feature groups
-        self.parser.add_argument('-mb', '--meme_bot', action='store_true')
+        self.parser.add_argument('-mb', '--memebot', action='store_true')
+        self.parser.add_argument('-cb', '--chorebot', action='store_true')
         self.parser.add_argument('-all', '--all_features', action='store_true')
 
         self.feature_groups = {
-            'meme_bot': [
+            'memebot': [
                 'auto_reacts', 'emote_speller', 'memes', 'ow_tracker', 'pugs',
                 'twitch_checker'
+            ],
+            'chorebot': [
+                'chore_calendar',
             ],
             'all_features': [
                 'auto_reacts', 'chore_calendar', 'emote_speller', 'memes',
@@ -42,6 +46,9 @@ class FeatureTracker:
 
     def isTestingMode(self):
         return self.args.testing_mode
+
+    def isChorebot(self):
+        return self.args.chorebot
 
     def isEnabled(self, feature):
         vs = vars(self.args)

@@ -9,12 +9,17 @@ import os
 feature_tracker = FT.FeatureTracker()
 
 # Get discord tokens and guilds.
-token = os.getenv('DISCORD_TOKEN')
-command_guilds = bot.DEFAULT_GUILDS
+
 if feature_tracker.isTestingMode():
     print('RUNNING IN TESTING MODE')
     token = os.getenv('DISCORD_TESTING_TOKEN')
     command_guilds = bot.TESTING_GUILDS
+elif feature_tracker.isChorebot():
+    token = os.getenv('CHOREBOT_TOKEN')
+    command_guilds = bot.CHOREBOT_GUILDS
+else:
+    token = os.getenv('DISCORD_TOKEN')
+    command_guilds = bot.DEFAULT_GUILDS
 
 # Configure logging
 logging_fname = datetime.now().strftime('logs/log_%b-%d-%Y_%I:%M:%S_%p.txt')
