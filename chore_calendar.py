@@ -75,6 +75,11 @@ class ChoreCalendarDiscordCommands(app_commands.Group):
                     ephemeral=True)
                 return
             chore_frequency = MonthlyFrequency(day_of_the_month, offset)
+
+        if chore_frequency == None:
+            await interaction.response.send_message('Invalid settings supplied! Must specify exactly one of "daily", "day_of_week", "day_of_month"!',
+                ephemeral=True)
+            return
         
         result = await self.chore_calendar.addChore(
             Chore(name, chore_frequency))
