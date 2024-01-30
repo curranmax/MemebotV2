@@ -382,7 +382,7 @@ class ChoreCalendar:
     def createEventForTomorrow(self):
         return EC.Event(self.getPostTimeForTomorrow(), self.postDailyUpdate)
 
-    async def chore_calendar.onReactionAdd(reaction, user):
+    async def onReactionAdd(reaction, user):
         if reaction.message != self.monitor_message:
             return
     
