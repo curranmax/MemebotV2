@@ -157,3 +157,6 @@ class CustomDiscordClient(discord.Client):
                     await reaction.message.add_reaction(emote)
             else:
                 logging.info('No valid spelling')
+
+        if self.feature_tracker is not None and self.feature_tracker.isEnabled('chore_calendar'):
+            await self.chore_calendar.onReactionAdd(reaction, user)

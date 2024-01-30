@@ -8,6 +8,7 @@ import pytz
 import calendar
 import os.path
 import pickle
+import typing
 
 DAILY = 'Daily'
 WEEKLY = 'Weekly'
@@ -18,6 +19,7 @@ ALL_FREQUENCIES = [DAILY, WEEKLY, MONTHLY]
 CHORE_CHANNEL_FILENAME = 'data/chore_channel.pickle'
 CHORES_FILENAME = 'data/chores.pickle'
 
+
 # TODO split this off into its own bot.
 class ChoreCalendarDiscordCommands(app_commands.Group):
 
@@ -27,62 +29,53 @@ class ChoreCalendarDiscordCommands(app_commands.Group):
 
         self.chore_calendar = chore_calendar
 
-    # Add a chore (with a name/description, emote, when should it happen (weekly/monthly, day of the week/day of the month))
-    # Maybe separate monthly/weekly commands
-    # Change the time the daily post occurs
+    # add-chore-one-time
     # Debug/print command
+    # delete-chore
 
-    @app_commands.context_menu(name='test')
-    async def test(interaction: discord.Interaction, message: discord.Message):
-        await interaction.response.send_message('Chore added!', ephemeral=True)
-
-    @app_commands.command(
-        name='add-daily-chore',
-        description='Adds a new chore that must be done every day.')
+    @app_commands.command(name='add-chore-recurring',
+                          description='Adds a new recurring chore')
     @app_commands.describe(
-        name='Name of the chore.', )
-    async def add_daily_chore(self, interaction: discord.Interaction,
-                              name: str):
-        chore_frequency = DailyFrequency()
-        await self._addChore(interaction, name, chore_frequency)
-
-    @app_commands.command(
-        name='add-weekly-chore',
-        description='Adds a new chore that must be done every week.')
-    @app_commands.describe(
-        name='Name of the chore.',
-        day_of_the_week='Day of the week the chore needs to be done.')
+        name='The name of the chore',
+        daily='Whether or not the chore should be posted daily',
+        day_of_the_week='The day of the week the chore should be posted',
+        day_of_the_month='The day of the month the chore should be posted',
+        offset=
+        'How frequently the chore should be done. Ex. a value of 2 means the chore will be done once every 2 days/weeks/months',
+    )
     @app_commands.choices(day_of_the_week=[
-        app_commands.Choice(name='Monday', value=0),
-        app_commands.Choice(name='Tuesday', value=1),
-        app_commands.Choice(name='Wednesday', value=2),
-        app_commands.Choice(name='Thursday', value=3),
-        app_commands.Choice(name='Friday', value=4),
-        app_commands.Choice(name='Saturday', value=5),
-        app_commands.Choice(name='Sunday', value=6),
+        app_commands.Choice(name='Monday', value='Monday'),
+        app_commands.Choice(name='Tuesday', value='Tuesday'),
+        app_commands.Choice(name='Wednesday', value='Wednesday'),
+        app_commands.Choice(name='Thursday', value='Thursday'),
+        app_commands.Choice(name='Friday', value='Friday'),
+        app_commands.Choice(name='Saturday', value='Saturday'),
+        app_commands.Choice(name='Sunday', value='Sunday'),
     ])
-    async def add_weekly_chore(self, interaction: discord.Interaction,
-                               name: str,
-                               day_of_the_week: app_commands.Choice[int]):
-        chore_frequency = WeeklyFrequency(day_of_the_week.value, 0)
-        await self._addChore(interaction, name, chore_frequency)
-
-    @app_commands.command(
-        name='add-monthly-chore',
-        description='Adds a new chore that must be done every week.')
-    @app_commands.describe(
-        name='Name of the chore.',
-        day_of_the_month='Day of the week the chore needs to be done.')
-    async def add_monthly_chore(self, interaction: discord.Interaction,
-                                name: str, day_of_the_month: int):
-        if day_of_the_month < 1 or day_of_the_month > 31:
-            await interaction.response.send_message(
-                'Invalid day of the month!', ephemeral=True)
-            return
-        chore_frequency = MonthlyFrequency(day_of_the_month, 0)
-        await self._addChore(interaction, name, chore_frequency)
-
-    async def _addChore(self, interaction, name, chore_frequency):
+    async def add_chore_recurring(
+            self,
+            interaction: discord.Interaction,
+            name: str,
+            daily: typing.Optional[bool] = False,
+            day_of_the_week: typing.Optional[app_commands.Choice[str]] = None,
+            day_of_the_month: typing.Optional[int] = None,
+            offset: typing.Optional[int] = 1):
+        chore_frequency = None
+        if daily:
+            chore_frequency = DailyFrequency(offset)
+        if day_of_the_week != None:
+            if chore_frequency != None:
+                await interaction.response.send_message('Invalid settings supplied! Must specify exactly one of "daily", "day_of_week", "day_of_month"!',
+                    ephemeral=True)
+                return
+            chore_frequency = WeeklyFrequency(day_of_the_week.value, offset)
+        if day_of_the_month != None:
+            if chore_frequency != None:
+                await interaction.response.send_message('Invalid settings supplied! Must specify exactly one of "daily", "day_of_week", "day_of_month"!',
+                    ephemeral=True)
+                return
+            chore_frequency = MonthlyFrequency(day_of_the_month, offset)
+        
         result = await self.chore_calendar.addChore(
             Chore(name, chore_frequency))
         if result:
@@ -111,32 +104,52 @@ class ChoreCalendarDiscordCommands(app_commands.Group):
 
 class ChoreFrequency:
 
-    def __init__(self, frequency):
+    def __init__(self, frequency, offset):
         self.frequency = frequency
+
+        # A value of 1 means that the chore triggers every day/week/month.
+        # A value of 2 means that the chore triggers every other day/week/month.
+        # A value of 3 means that the chore triggers every third day/week/month.
+        # etc.
+        self.offset = offset
 
 
 class DailyFrequency(ChoreFrequency):
 
-    def __init__(self):
-        super(DailyFrequency, self).__init__(DAILY)
+    def __init__(self, offset):
+        super(DailyFrequency, self).__init__(DAILY, offset)
+
+    def __eq__(self, other):
+        if not isinstance(other, DailyFrequency):
+            return False
+        return self.offset == other.offset
 
 
 class WeeklyFrequency(ChoreFrequency):
 
     def __init__(self, day_of_the_week, offset):
-        super(WeeklyFrequency, self).__init__(WEEKLY)
+        super(WeeklyFrequency, self).__init__(WEEKLY, offset)
 
         self.day_of_the_week = day_of_the_week
-        self.offset = offset
+
+    def __eq__(self, other):
+        if not isinstance(other, WeeklyFrequency):
+            return False
+        return self.day_of_the_week == other.day_of_the_week and self.offset == other.offset
 
 
 class MonthlyFrequency(ChoreFrequency):
 
     def __init__(self, day_of_the_month, offset):
-        super(MonthlyFrequency, self).__init__(MONTHLY)
+        super(MonthlyFrequency, self).__init__(MONTHLY, offset)
 
         self.day_of_the_month = day_of_the_month
-        self.offset = offset
+
+    def __eq__(self, other):
+        if not isinstance(other, MonthlyFrequency):
+            return False
+        return self.day_of_the_month == other.day_of_the_month and self.offset == other.offset
+
 
 # One time event
 
@@ -165,10 +178,53 @@ class Chore:
                 calendar.monthrange(date.year, date.month)[1])
             return clamped_day_of_the_month == date.day
 
-    def getMessageLine(self):
-        # TODO Add a react for the calendar
-        return str(self.name)
+    def getMessageLine(self, emote):
+        return '  {} --> {}'.format(emote, str(self.name))
 
+    def __eq__(self, other):
+        if not isinstance(other, Chore):
+            return False
+        return self.namne == other.name and self.chore_frequency == other.chore_frequency
+
+
+CHORE_EMOTES = {
+    'a': ['🇦'],
+    'b': ['🇧'],
+    'c': ['🇨'],
+    'd': ['🇩'],
+    'e': ['🇪'],
+    'f': ['🇫'],
+    'g': ['🇬'],
+    'h': ['🇭'],
+    'i': ['🇮'],
+    'j': ['🇯'],
+    'k': ['🇰'],
+    'l': ['🇱'],
+    'm': ['🇲'],
+    'n': ['🇳'],
+    'o': ['🇴'],
+    'p': ['🇵'],
+    'q': ['🇶'],
+    'r': ['🇷'],
+    's': ['🇸'],
+    't': ['🇹'],
+    'u': ['🇺'],
+    'v': ['🇻'],
+    'w': ['🇼'],
+    'x': ['🇽'],
+    'y': ['🇾'],
+    'z': ['🇿'],
+    '0': ['0️⃣'],
+    '1': ['1️⃣'],
+    '2': ['2️⃣'],
+    '3': ['3️⃣'],
+    '4': ['4️⃣'],
+    '5': ['5️⃣'],
+    '6': ['6️⃣'],
+    '7': ['7️⃣'],
+    '8': ['8️⃣'],
+    '9': ['9️⃣'],
+}
 
 class ChoreCalendar:
 
@@ -176,16 +232,22 @@ class ChoreCalendar:
         self.discord_client = discord_client
         self.event_calendar = event_calendar
 
-        # TODO change this to two maps with keys of name and react.
+        # The saved chores
         self.chores = []
         self.chores_lock = asyncio.Lock()
         self.chores_filename = CHORES_FILENAME
         self._loadChores()
 
+        # Details about when and where to post
         self.post_time = time(hour=8, tzinfo=pytz.timezone('US/Pacific'))
         self.channel = None
         self.chore_channel_filename = CHORE_CHANNEL_FILENAME
         self._loadChannel()
+
+        # Outstanding chores, and the message to watch for reacts.
+        # Outstanding chores is keyed by an emote, and the value is a chore.
+        self.outstanding_chores = {}
+        self.monitor_message = None
 
         self.event_calendar.addEvent(
             EC.Event(self.getPostTimeForTomorrow(), self.postDailyUpdate))
@@ -197,7 +259,7 @@ class ChoreCalendar:
         if not os.path.exists(self.chore_channel_filename):
             self._saveChannel()
             return
-        
+
         f = open(self.chore_channel_filename, 'rb')
         self.channel = pickle.load(f)
         f.close()
@@ -249,7 +311,7 @@ class ChoreCalendar:
 
         message = await self.getChoreMessage()
 
-        await self.discord_client.get_channel(channel).send(message)
+        self.monitor_message = await self.discord_client.get_channel(channel).send(message)
 
         if schedule_new_post:
             return self.createEventForTomorrow()
@@ -264,14 +326,54 @@ class ChoreCalendar:
                 if chore.shouldPost(today):
                     chores_for_today.append(chore)
 
-            if len(chores_for_today) == 0:
+            # Go through self.outstanding_chores and remove duplicates.
+            for k, chore in list(self.outstanding_chores.items()):
+                if chore in chores_for_today:
+                    del self.outstanding_chores[k]
+
+            if len(self.outstanding_chores) and len(chores_for_today) == 0:
                 return 'No chores for today!'
 
             for chore in chores_for_today:
                 chore.last_post = today
 
-            return 'The chores for today are:\n' + '\n'.join(
-                chore.getMessageLine() for chore in chores_for_today)
+            msg = '```'
+            if len(self.outstanding_chores) > 0:
+                msg += 'The outstanding chores for today are:\n' + '\n'.join(
+                    chore.getMessageLine(emote) for emote, chore in self.outstanding_chores)
+
+            if len(self.outstanding_chores) > 0 and len(chores_for_today) > 0:
+                msg += '\n' + '=' * 20 + '\n'
+            
+            if len(chores_for_today) > 0:
+                # Determine the emotes for the new chores.
+                chores_with_emotes = []
+                for chore in chores_for_today:
+                    for char in chore.name:
+                        # Try to use a character in the name
+                        e = EMOTES[char]
+                        if e not in self.outstanding_chores:
+                            self.outstanding_chores[e] = chore
+                            chores_with_emotes = (e, chore)
+                            break
+
+                        # Otherwise choose randomly
+                        es = [e for _, e in EMOTES.items() if e not in self.outstanding_chores]
+                        if len(es) == 0:
+                            raise Exception('No emotes left!')
+                        e = random.choice(es)
+                        self.outstanding_chores[e] = chore
+                        chores_with_emotes = (e, chore)
+
+                if len(chores_with_emotes) != len(chores_for_today):
+                    raise Exception('Mismatch in length of chore arrays')
+                
+                msg += 'The new chores for today are:\n' + '\n'.join(
+                    chore.getMessageLine(e) for e, chore in chores_with_emotes)
+            msg += '\n' + '=' * 20 + '\n'
+            msg += 'React with the corresponding emote to mark the chore as done.\n'
+            msg += '```'
+            return msg
 
     def getPostTimeForTomorrow(self):
         return datetime.combine(date.today() + timedelta(days=1),
@@ -279,3 +381,15 @@ class ChoreCalendar:
 
     def createEventForTomorrow(self):
         return EC.Event(self.getPostTimeForTomorrow(), self.postDailyUpdate)
+
+    async def chore_calendar.onReactionAdd(reaction, user):
+        if reaction.message != self.monitor_message:
+            return
+    
+        async with self.chores_lock:
+            if reaction.emoji in self.outstanding_chores:
+                completed_chore = self.outstanding_chores[reaction.emoji]
+                del self.outstanding_chores[reaction.emoji]
+
+                await self.discord_client.get_channel(channel).send('Marked chore as completed: {}'.format(completed_chore.name))
+            
