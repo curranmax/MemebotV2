@@ -9,6 +9,7 @@ import calendar
 import os.path
 import pickle
 import typing
+import random
 
 DAILY = 'Daily'
 WEEKLY = 'Weekly'
@@ -65,22 +66,25 @@ class ChoreCalendarDiscordCommands(app_commands.Group):
             chore_frequency = DailyFrequency(offset)
         if day_of_the_week != None:
             if chore_frequency != None:
-                await interaction.response.send_message('Invalid settings supplied! Must specify exactly one of "daily", "day_of_week", "day_of_month"!',
+                await interaction.response.send_message(
+                    'Invalid settings supplied! Must specify exactly one of "daily", "day_of_week", "day_of_month"!',
                     ephemeral=True)
                 return
             chore_frequency = WeeklyFrequency(day_of_the_week.value, offset)
         if day_of_the_month != None:
             if chore_frequency != None:
-                await interaction.response.send_message('Invalid settings supplied! Must specify exactly one of "daily", "day_of_week", "day_of_month"!',
+                await interaction.response.send_message(
+                    'Invalid settings supplied! Must specify exactly one of "daily", "day_of_week", "day_of_month"!',
                     ephemeral=True)
                 return
             chore_frequency = MonthlyFrequency(day_of_the_month, offset)
 
         if chore_frequency == None:
-            await interaction.response.send_message('Invalid settings supplied! Must specify exactly one of "daily", "day_of_week", "day_of_month"!',
+            await interaction.response.send_message(
+                'Invalid settings supplied! Must specify exactly one of "daily", "day_of_week", "day_of_month"!',
                 ephemeral=True)
             return
-        
+
         result = await self.chore_calendar.addChore(
             Chore(name, chore_frequency))
         if result:
@@ -231,6 +235,7 @@ CHORE_EMOTES = {
     '9': ['9️⃣'],
 }
 
+
 class ChoreCalendar:
 
     def __init__(self, discord_client, event_calendar):
@@ -316,7 +321,8 @@ class ChoreCalendar:
 
         message = await self.getChoreMessage()
 
-        self.monitor_message = await self.discord_client.get_channel(channel).send(message)
+        self.monitor_message = await self.discord_client.get_channel(
+            channel).send(message)
 
         if schedule_new_post:
             return self.createEventForTomorrow()
@@ -345,25 +351,29 @@ class ChoreCalendar:
             msg = '```'
             if len(self.outstanding_chores) > 0:
                 msg += 'The outstanding chores for today are:\n' + '\n'.join(
-                    chore.getMessageLine(emote) for emote, chore in self.outstanding_chores)
+                    chore.getMessageLine(emote)
+                    for emote, chore in self.outstanding_chores)
 
             if len(self.outstanding_chores) > 0 and len(chores_for_today) > 0:
                 msg += '\n' + '=' * 20 + '\n'
-            
+
             if len(chores_for_today) > 0:
                 # Determine the emotes for the new chores.
                 chores_with_emotes = []
                 for chore in chores_for_today:
                     for char in chore.name:
                         # Try to use a character in the name
-                        e = EMOTES[char]
+                        e = CHORE_EMOTES[char]
                         if e not in self.outstanding_chores:
                             self.outstanding_chores[e] = chore
                             chores_with_emotes = (e, chore)
                             break
 
                         # Otherwise choose randomly
-                        es = [e for _, e in EMOTES.items() if e not in self.outstanding_chores]
+                        es = [
+                            e for _, e in CHORE_EMOTES.items()
+                            if e not in self.outstanding_chores
+                        ]
                         if len(es) == 0:
                             raise Exception('No emotes left!')
                         e = random.choice(es)
@@ -372,7 +382,7 @@ class ChoreCalendar:
 
                 if len(chores_with_emotes) != len(chores_for_today):
                     raise Exception('Mismatch in length of chore arrays')
-                
+
                 msg += 'The new chores for today are:\n' + '\n'.join(
                     chore.getMessageLine(e) for e, chore in chores_with_emotes)
             msg += '\n' + '=' * 20 + '\n'
@@ -390,11 +400,12 @@ class ChoreCalendar:
     async def onReactionAdd(reaction, user):
         if reaction.message != self.monitor_message:
             return
-    
+
         async with self.chores_lock:
             if reaction.emoji in self.outstanding_chores:
                 completed_chore = self.outstanding_chores[reaction.emoji]
                 del self.outstanding_chores[reaction.emoji]
 
-                await self.discord_client.get_channel(channel).send('Marked chore as completed: {}'.format(completed_chore.name))
-            
+                await self.discord_client.get_channel(channel).send(
+                    'Marked chore as completed: {}'.format(
+                        completed_chore.name))
