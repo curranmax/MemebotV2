@@ -193,7 +193,7 @@ class Chore:
     def __eq__(self, other):
         if not isinstance(other, Chore):
             return False
-        return self.namne == other.name and self.chore_frequency == other.chore_frequency
+        return self.name == other.name and self.chore_frequency == other.chore_frequency
 
 
 CHORE_EMOTES = {
@@ -361,15 +361,20 @@ class ChoreCalendar:
                 # Determine the emotes for the new chores.
                 chores_with_emotes = []
                 for chore in chores_for_today:
+                    # Try to use a character in the name.
+                    emote_found = False
                     for char in chore.name:
-                        # Try to use a character in the name
-                        e = CHORE_EMOTES[char]
-                        if e not in self.outstanding_chores:
-                            self.outstanding_chores[e] = chore
-                            chores_with_emotes = (e, chore)
-                            break
+                        c = char.lower()
+                        if c in CHORE_EMOTES:
+                            e = CHORE_EMOTES[c]
+                            if e not in self.outstanding_chores:
+                                self.outstanding_chores[e] = chore
+                                chores_with_emotes = (e, chore)
+                                emote_found = True
+                                break
 
-                        # Otherwise choose randomly
+                    # Otherwise choose randomly.
+                    if not emote_found:
                         es = [
                             e for _, e in CHORE_EMOTES.items()
                             if e not in self.outstanding_chores
@@ -379,6 +384,10 @@ class ChoreCalendar:
                         e = random.choice(es)
                         self.outstanding_chores[e] = chore
                         chores_with_emotes = (e, chore)
+
+                    # TMP Check that chore is in chores_with_emotes
+                    if all(chore != ch for _, ch in chores_with_emotes):
+                        raise Exception('Chore not added to chores_with_emotes')
 
                 if len(chores_with_emotes) != len(chores_for_today):
                     raise Exception('Mismatch in length of chore arrays')
@@ -397,7 +406,7 @@ class ChoreCalendar:
     def createEventForTomorrow(self):
         return EC.Event(self.getPostTimeForTomorrow(), self.postDailyUpdate)
 
-    async def onReactionAdd(reaction, user):
+    async def onReactionAdd(self, reaction, user):
         if reaction.message != self.monitor_message:
             return
 
@@ -406,6 +415,6 @@ class ChoreCalendar:
                 completed_chore = self.outstanding_chores[reaction.emoji]
                 del self.outstanding_chores[reaction.emoji]
 
-                await self.discord_client.get_channel(channel).send(
+                await self.discord_client.get_channel(self.channel).send(
                     'Marked chore as completed: {}'.format(
                         completed_chore.name))
