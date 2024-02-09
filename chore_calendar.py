@@ -366,28 +366,31 @@ class ChoreCalendar:
                     for char in chore.name:
                         c = char.lower()
                         if c in CHORE_EMOTES:
-                            e = CHORE_EMOTES[c]
-                            if e not in self.outstanding_chores:
-                                self.outstanding_chores[e] = chore
-                                chores_with_emotes = (e, chore)
-                                emote_found = True
-                                break
+                            es = CHORE_EMOTES[c]
+                            random.shuffle(es)
+                            for e in es:
+                                if e not in self.outstanding_chores:
+                                    self.outstanding_chores[e] = chore
+                                    chores_with_emotes = (e, chore)
+                                    emote_found = True
+                                    break
 
                     # Otherwise choose randomly.
                     if not emote_found:
-                        es = [
-                            e for _, e in CHORE_EMOTES.items()
+                        all_es = [
+                            e for _, es in CHORE_EMOTES.items() for e in es
                             if e not in self.outstanding_chores
                         ]
-                        if len(es) == 0:
+                        if len(all_es) == 0:
                             raise Exception('No emotes left!')
-                        e = random.choice(es)
+                        e = random.choice(all_es)
                         self.outstanding_chores[e] = chore
                         chores_with_emotes = (e, chore)
 
                     # TMP Check that chore is in chores_with_emotes
                     if all(chore != ch for _, ch in chores_with_emotes):
-                        raise Exception('Chore not added to chores_with_emotes')
+                        raise Exception(
+                            'Chore not added to chores_with_emotes')
 
                 if len(chores_with_emotes) != len(chores_for_today):
                     raise Exception('Mismatch in length of chore arrays')
