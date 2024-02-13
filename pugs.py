@@ -72,6 +72,16 @@ def RolesListFromInt(role_int):
     return []
 
 
+def normalizeWeight(v, min_v, max_v):
+    if min_v is None or max_v is None:
+        return 0.0
+    if min_v > max_v:
+        min_v, max_v = max_v, min_v
+    if abs(max_v - min_v) <= 1e-6:
+        return 0.0
+    return (v - min_v) / (max_v - min_v)
+
+
 # Set of discord commands to interact with the PUGs feature.
 async def sendUpdatedPlayerCount(channel, pugs_count):
     if pugs_count == 0:
@@ -492,11 +502,14 @@ class PugsAdminDiscordCommands(app_commands.Group):
     )
     @app_commands.describe(
         num_choices=
-        'Number of possible to generate before choosing the one that minimizes the defined heuristic.'
-    )
+        'Number of possible to generate before choosing the one that minimizes the defined heuristic.',
+        role_weight='Weight to give to the role balancing heuristic.',
+        teammate_weight='Weight to give to the teammate balancing heuristic.')
     async def generate(self,
                        interaction: discord.Interaction,
-                       num_choices: typing.Optional[int] = 10):
+                       num_choices: typing.Optional[int] = 50,
+                       role_weight: typing.Optional[float] = 1.0,
+                       teammate_weight: typing.Optional[float] = 1.0):
         pugs_picker = self.pugs_manager.getPugsPicker(interaction.channel_id)
         if pugs_picker == None:
             await interaction.response.send_message(
@@ -510,7 +523,10 @@ class PugsAdminDiscordCommands(app_commands.Group):
                 ephemeral=True)
 
         pending_game, failure_reason = pugs_picker.generateGame(
-            DEFAULT_COMP, num_choices=num_choices)
+            DEFAULT_COMP,
+            num_choices=num_choices,
+            role_weight=role_weight,
+            teammate_weight=teammate_weight)
 
         if pending_game is None:
             # TODO Figure out why no game could be generated (not enough of a given role)
@@ -799,6 +815,7 @@ class PugsPicker:
         logging.info('Saving pending game')
         next_game = self.pending_game
         self._updateRoleWeights(next_game)
+        self._updateTeammateCounts(next_game)
         self.pending_game = None
         self.past_games.append(next_game)
         return next_game
@@ -806,7 +823,9 @@ class PugsPicker:
     def generateGame(self,
                      team_format=DEFAULT_COMP,
                      max_iterations=100,
-                     num_choices=10):
+                     num_choices=10,
+                     role_weight=1.0,
+                     teammate_weight=1.0):
         logging.info('Generating new PUGs game')
         valid, reason = self._checkIfGenerationPossible(team_format)
         logging.info('Check returned with: valid = {}, reason = {}'.format(
@@ -823,7 +842,10 @@ class PugsPicker:
                 game_choices.append(pos_game)
             i += 1
 
-        self.pending_game = self._chooseBestPossibleGame(game_choices)
+        self.pending_game = self._chooseBestPossibleGame(
+            game_choices,
+            role_weight=role_weight,
+            teammate_weight=teammate_weight)
 
         logging.info('Generation took {} iterations. {}'.format(
             i, 'Unable to generate game'
@@ -893,16 +915,47 @@ class PugsPicker:
         # TODO If no game was generated, figure out if its impossible, and why (are there not enough tanks?)
         return None
 
-    def _chooseBestPossibleGame(self, game_choices):
+    def _chooseBestPossibleGame(self,
+                                game_choices,
+                                role_weight=1.0,
+                                teammate_weight=1.0):
+        min_role_val = None
+        max_role_val = None
+
+        min_teammate_val = None
+        max_teammate_val = None
+
+        weighted_choices = []
+        for game in game_choices:
+            role_val = self._evaluateRoleFrequency(game)
+            teammate_val = self._evaluateTeammateFrequency(game)
+
+            weighted_choices.append((game, role_val, teammate_val))
+
+            if min_role_val is None or role_val < min_role_val:
+                min_role_val = role_val
+            if max_role_val is None or role_val > max_role_val:
+                max_role_val = role_val
+
+            if min_teammate_val is None or teammate_val < min_teammate_val:
+                min_teammate_val = teammate_val
+            if max_teammate_val is None or teammate_val > max_teammate_val:
+                max_teammate_val = teammate_val
+
         best_game = None
         best_game_val = None
 
-        for game in game_choices:
-            val = self._evaluateRoleFrequency(game)
+        for g, rv, tv in weighted_choices:
+            # Normalizes weights
+            nrv = normalizeWeight(rv, min_role_val, max_role_val)
+            ntv = normalizeWeight(tv, min_teammate_val, max_teammate_val)
+
+            # Combine normalized weights
+            val = nrv * role_weight + ntv * teammate_weight
+
             if best_game_val is None or val < best_game_val:
                 best_game = game
                 best_game_val = val
-
         return best_game
 
     def _evaluateRoleFrequency(self, game):
@@ -965,6 +1018,41 @@ class PugsPicker:
                     player.role_weights[role] += -role_count[role] / sum(
                         c for _, c in role_count.items())
 
+    def _evaluateTeammateFrequency(self, game):
+        total_weight = 0.0
+        for _, player in self.players.items():
+            teammates = None
+            if player in game.team1:
+                teammates = game.team1
+            if player in game.team2:
+                teammates = game.team2
+
+            if teammates is None:
+                continue
+
+            for teammate in teammates:
+                if player == teammates:
+                    continue
+                total_weight += player.teammate_counts[teammate]
+
+        return total_weight
+
+    def _updateTeammateCounts(self, game):
+        for _, player in self.players.items():
+            teammates = None
+            if player in game.team1:
+                teammates = game.team1
+            if player in game.team2:
+                teammates = game.team2
+
+            if teammates is None:
+                continue
+
+            for teammate in teammates:
+                if teammate == player:
+                    continue
+                player.teammate_counts[teammate] += 1
+
 
 class Player:
 
@@ -975,6 +1063,9 @@ class Player:
         self.roles = roles
 
         self.role_weights = {TANK: 0.0, DPS: 0.0, SUPPORT: 0.0}
+
+        # Key is other player, value is count of games as teammates
+        self.teammate_counts = defaultdict(int)
 
     def getRolesStr(self):
         if len(self.roles) == 0:
@@ -996,6 +1087,9 @@ class Player:
         if not isinstance(other, Player):
             return False
         return self.discord_id == other.discord_id
+
+    def __hash__(self):
+        return hash(self.discord_id)
 
 
 class Game:
@@ -1040,11 +1134,11 @@ if __name__ == "__main__":
     test_picker.addPlayer(4, 'd', [TANK, DPS, SUPPORT])
     test_picker.addPlayer(5, 'e', [TANK, DPS, SUPPORT])
 
-    test_picker.addPlayer(6, 'f', [TANK])
-    test_picker.addPlayer(7, 'g', [DPS])
-    test_picker.addPlayer(8, 'h', [DPS])
-    test_picker.addPlayer(9, 'i', [SUPPORT])
-    test_picker.addPlayer(10, 'j', [SUPPORT])
+    test_picker.addPlayer(6, 'f', [TANK, DPS, SUPPORT])
+    test_picker.addPlayer(7, 'g', [TANK, DPS, SUPPORT])
+    test_picker.addPlayer(8, 'h', [TANK, DPS, SUPPORT])
+    test_picker.addPlayer(9, 'i', [TANK, DPS, SUPPORT])
+    test_picker.addPlayer(10, 'j', [TANK, DPS, SUPPORT])
 
     game, failure_reason = test_picker.generateGame(num_choices=10)
     test_picker.lockInPendingGame()
