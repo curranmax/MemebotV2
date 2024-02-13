@@ -385,7 +385,7 @@ class ChoreCalendar:
                             raise Exception('No emotes left!')
                         e = random.choice(all_es)
                         self.outstanding_chores[e] = chore
-                        chores_with_emotes = (e, chore)
+                        chores_with_emotes.append((e, chore))
 
                     # TMP Check that chore is in chores_with_emotes
                     if all(chore != ch for _, ch in chores_with_emotes):
