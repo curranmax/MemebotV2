@@ -27,7 +27,7 @@ MAPS_BY_MODE = {
         'Circuit Royal': ['Morning', 'Night'],
         'Dorado': ['Evening', 'Night'],
         'Havana': ['Morning', 'Night'],
-        'Junkertown': [],
+        'Junkertown': ['Morning', 'Night'],
         'Rialto': ['Evening', 'Morning'],
         'Route 66': ['Morning', 'Overcast', 'Night'],
         'Shambali Monastery': [],
