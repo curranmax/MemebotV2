@@ -71,23 +71,17 @@ class CustomCommandsAdmin(app_commands.Group):
     # Add / update command
     @app_commands.command(
         name='add-command',
-        description='Adds a command. Can also overwrite an existing one.')
+        description=
+        'Opens a modal to add a command. Can also overwrite an existing one.')
     @app_commands.describe(
-        name='The name of the command to add.',
-        output='The output of the command.',
         visible=
         'Whether, by default, the command is visibile to everyone or just the person that runs it. Defaults to False (so command is only visible to the person that runs it).',
     )
     async def add_command(self,
                           interaction: discord.Interaction,
-                          name: str,
-                          output: str,
                           visible: typing.Optional[bool] = None):
-        command = Command(name, output, visible=visible)
-        success, msg = await self.custom_command_manager.addCommand(command)
-        await interaction.response.send_message('{} --> {}'.format(
-            'Success' if success else 'Failed', msg),
-                                                ephemeral=True)
+        await interaction.response.send_modal(
+            AddCommandModal(self.custom_command_manager, visible=visible))
 
     # Remove command
     @app_commands.command(name='remove-command',
@@ -98,6 +92,28 @@ class CustomCommandsAdmin(app_commands.Group):
     async def remove_command(self, interaction: discord.Interaction,
                              name: str):
         success, msg = await self.custom_command_manager.removeCommand(name)
+        await interaction.response.send_message('{} --> {}'.format(
+            'Success' if success else 'Failed', msg),
+                                                ephemeral=True)
+
+
+class AddCommandModal(discord.ui.Modal, title='Add Command'):
+    name = discord.ui.TextInput(label='Name')
+    output = discord.ui.TextInput(label='Output',
+                                  style=discord.TextStyle.paragraph)
+
+    def __init__(self, custom_command_manager, visible=None, *args, **kwargs):
+        super(AddCommandModal, self).__init__(title='Add a Command',
+                                              *args,
+                                              **kwargs)
+        self.custom_command_manager = custom_command_manager
+        self.visible = visible
+
+    async def on_submit(self, interaction: discord.Interaction):
+        command = Command(str(self.name),
+                          str(self.output),
+                          visible=self.visible)
+        success, msg = await self.custom_command_manager.addCommand(command)
         await interaction.response.send_message('{} --> {}'.format(
             'Success' if success else 'Failed', msg),
                                                 ephemeral=True)
