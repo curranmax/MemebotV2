@@ -6,6 +6,7 @@ import twitch_checker
 import ow_tracker
 import event_calendar
 import chore_calendar
+import custom_commands
 
 import discord
 from discord import app_commands
@@ -100,6 +101,16 @@ class CustomDiscordClient(discord.Client):
                 self.command_tree.add_command(command_group,
                                               guilds=self.command_guilds)
 
+        # Add commands for custom commands
+        if self.feature_tracker is not None and self.feature_tracker.isEnabled(
+                'custom_commands'):
+            self.custom_command_manager = custom_commands.CustomCommandManager(
+            )
+            for command_group in self.custom_command_manager.getDiscordCommands(
+            ):
+                self.command_tree.add_command(command_group,
+                                              guilds=self.command_guilds)
+
     async def on_ready(self):
         logging.info(
             'Logged in as (name: {0.user.name}, id: {0.user.id})'.format(self))
@@ -158,5 +169,6 @@ class CustomDiscordClient(discord.Client):
             else:
                 logging.info('No valid spelling')
 
-        if self.feature_tracker is not None and self.feature_tracker.isEnabled('chore_calendar'):
+        if self.feature_tracker is not None and self.feature_tracker.isEnabled(
+                'chore_calendar'):
             await self.chore_calendar.onReactionAdd(reaction, user)

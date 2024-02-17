@@ -7,3 +7,4 @@ replit.nix
 pyproject.toml
 poetry.lock
 *.pickle
+data/custom_commands.txt

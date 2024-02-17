@@ -22,6 +22,9 @@ class FeatureTracker:
         self.parser.add_argument('-tc',
                                  '--twitch_checker',
                                  action='store_true')
+        self.parser.add_argument('-comms',
+                                 '--custom_commands',
+                                 action='store_true')
 
         # Switches for for feature groups
         self.parser.add_argument('-mb', '--memebot', action='store_true')
@@ -38,7 +41,8 @@ class FeatureTracker:
             ],
             'all_features': [
                 'auto_reacts', 'chore_calendar', 'emote_speller', 'memes',
-                'ow_tracker', 'owl_calendar', 'pugs', 'twitch_checker'
+                'ow_tracker', 'owl_calendar', 'pugs', 'twitch_checker',
+                'custom_commands'
             ],
         }
 
@@ -64,10 +68,7 @@ class FeatureTracker:
         return False
 
     def printEnabledFeature(self):
-        features = [
-            'auto_reacts', 'chore_calendar', 'emote_speller', 'memes',
-            'ow_tracker', 'owl_calendar', 'pugs', 'twitch_checker'
-        ]
+        features = self.feature_groups['all_features']
         enabled_features = [f for f in features if self.isEnabled(f)]
         disabled_features = [f for f in features if not self.isEnabled(f)]
         print('--------------------')
