@@ -194,6 +194,8 @@ class OwTrackerDiscordCommands(app_commands.Group):
         for hero, _ in HEROES.items()
     ]
 
+    # Be able to pass the role of heroes, and then only show those (either first or only).
+    # This wouldn't work with open queue.
     async def hero_autocomplete(
             self, interaction: discord.Interaction,
             current: str) -> typing.List[app_commands.Choice[str]]:
