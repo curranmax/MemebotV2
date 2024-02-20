@@ -371,7 +371,7 @@ class ChoreCalendar:
                             for e in es:
                                 if e not in self.outstanding_chores:
                                     self.outstanding_chores[e] = chore
-                                    chores_with_emotes.appppend((e, chore))
+                                    chores_with_emotes.append((e, chore))
                                     emote_found = True
                                     break
 
