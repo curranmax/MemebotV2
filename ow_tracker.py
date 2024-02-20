@@ -167,6 +167,9 @@ class OwTrackerDiscordCommands(app_commands.Group):
 
         self.ow_tracker_manager = ow_tracker_manager
 
+        # This is a workaround to make hero_autocomplete accept an optional role.
+        self.autocomplete_role = None
+
     MAP_CHOICES = [app_commands.Choice(name=map, value=map) for map in MAPS]
 
     async def map_autocomplete(
@@ -194,12 +197,24 @@ class OwTrackerDiscordCommands(app_commands.Group):
         for hero, _ in HEROES.items()
     ]
 
-    # Be able to pass the role of heroes, and then only show those (either first or only).
-    # This wouldn't work with open queue.
+    async def hero_autocomplete_with_role(
+            self, interaction: discord.Interaction,
+            current: str) -> typing.List[app_commands.Choice[str]]:
+        # This is a workaround to make hero_autocomplete accept an optional role.
+        self.autocomplete_role = self.ow_tracker_manager.getSelectedRole(
+            interaction.user.id)
+        return self.hero_autocomplete(interaction, current)
+
     async def hero_autocomplete(
             self, interaction: discord.Interaction,
             current: str) -> typing.List[app_commands.Choice[str]]:
-        hero_choices = list(OwTrackerDiscordCommands.HERO_CHOICES)
+        hero_choices = [
+            v for v in OwTrackerDiscordCommands.HERO_CHOICES
+            if self.autocomplete_role is None
+            or HEROES[v.value] == self.autocomplete_role
+        ]
+        # This is a workaround to make hero_autocomplete accept an optional role.
+        self.autocomplete_role = None
 
         # Get the edit distance between the current string and heroes. Subtract
         # out the difference between the hero name and current string to account
@@ -355,7 +370,7 @@ class OwTrackerDiscordCommands(app_commands.Group):
     @app_commands.describe(
         hero='Additional hero played on the map.',
         percent='Percent of the map where this hero was played.')
-    @app_commands.autocomplete(hero=hero_autocomplete)
+    @app_commands.autocomplete(hero=hero_autocomplete_with_role)
     async def add_hero(self, interaction: discord.Interaction, hero: str,
                        percent: float):
         result = self.ow_tracker_manager.addHeroToSelectedGame(
@@ -666,6 +681,11 @@ class OverwatchTrackerManager:
         return self._getOrCreateOwTrackerForUser(
             user_id).getHeroUsageByResult()
 
+    def getSelectedRole(self, user_id):
+        if user_id not in self.overwatch_trackers:
+            return None
+        return self._getOrCreateOwTrackerForUser(user_id).getSelectedRole()
+
 
 # Tracks OW games for a single person
 class OverwatchTracker:
@@ -775,6 +795,11 @@ class OverwatchTracker:
         if self.hero_usage_by_result is None:
             self._calculateHeroUsage()
         return self.hero_usage_by_result
+
+    def getSelectedRole(self):
+        if self.selected_game is None:
+            return None
+        return self.selected_game.role
 
     def _calculateHeroUsage(self):
         self.hero_usage = {}
