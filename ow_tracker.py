@@ -203,7 +203,7 @@ class OwTrackerDiscordCommands(app_commands.Group):
         # This is a workaround to make hero_autocomplete accept an optional role.
         self.autocomplete_role = self.ow_tracker_manager.getSelectedRole(
             interaction.user.id)
-        return self.hero_autocomplete(interaction, current)
+        return await self.hero_autocomplete(interaction, current)
 
     async def hero_autocomplete(
             self, interaction: discord.Interaction,
