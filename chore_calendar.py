@@ -38,6 +38,7 @@ class ChoreCalendarDiscordCommands(app_commands.Group):
                           description='Adds a new recurring chore')
     @app_commands.describe(
         name='The name of the chore',
+        emote='The emote for the chore',
         daily='Whether or not the chore should be posted daily',
         day_of_the_week='The day of the week the chore should be posted',
         day_of_the_month='The day of the month the chore should be posted',
@@ -57,10 +58,13 @@ class ChoreCalendarDiscordCommands(app_commands.Group):
             self,
             interaction: discord.Interaction,
             name: str,
+            emote: str,
             daily: typing.Optional[bool] = False,
             day_of_the_week: typing.Optional[app_commands.Choice[str]] = None,
             day_of_the_month: typing.Optional[int] = None,
             offset: typing.Optional[int] = 1):
+        # TODO Check that emote is valid
+
         chore_frequency = None
         if daily:
             chore_frequency = DailyFrequency(offset)
@@ -86,7 +90,7 @@ class ChoreCalendarDiscordCommands(app_commands.Group):
             return
 
         result = await self.chore_calendar.addChore(
-            Chore(name, chore_frequency))
+            Chore(name, emote, chore_frequency))
         if result:
             await interaction.response.send_message('Chore added!',
                                                     ephemeral=True)
@@ -165,8 +169,9 @@ class MonthlyFrequency(ChoreFrequency):
 
 class Chore:
 
-    def __init__(self, name, chore_frequency):
+    def __init__(self, name, emote, chore_frequency):
         self.name = name
+        self.emote = emote
 
         self.chore_frequency = chore_frequency
 
@@ -187,53 +192,13 @@ class Chore:
                 calendar.monthrange(date.year, date.month)[1])
             return clamped_day_of_the_month == date.day
 
-    def getMessageLine(self, emote):
-        return '  {} --> {}'.format(emote, str(self.name))
+    def getMessageLine(self):
+        return '\t{} ---> {}'.format(str(self.emote), str(self.name))
 
     def __eq__(self, other):
         if not isinstance(other, Chore):
             return False
         return self.name == other.name and self.chore_frequency == other.chore_frequency
-
-
-CHORE_EMOTES = {
-    'a': ['🇦'],
-    'b': ['🇧'],
-    'c': ['🇨'],
-    'd': ['🇩'],
-    'e': ['🇪'],
-    'f': ['🇫'],
-    'g': ['🇬'],
-    'h': ['🇭'],
-    'i': ['🇮'],
-    'j': ['🇯'],
-    'k': ['🇰'],
-    'l': ['🇱'],
-    'm': ['🇲'],
-    'n': ['🇳'],
-    'o': ['🇴'],
-    'p': ['🇵'],
-    'q': ['🇶'],
-    'r': ['🇷'],
-    's': ['🇸'],
-    't': ['🇹'],
-    'u': ['🇺'],
-    'v': ['🇻'],
-    'w': ['🇼'],
-    'x': ['🇽'],
-    'y': ['🇾'],
-    'z': ['🇿'],
-    '0': ['0️⃣'],
-    '1': ['1️⃣'],
-    '2': ['2️⃣'],
-    '3': ['3️⃣'],
-    '4': ['4️⃣'],
-    '5': ['5️⃣'],
-    '6': ['6️⃣'],
-    '7': ['7️⃣'],
-    '8': ['8️⃣'],
-    '9': ['9️⃣'],
-}
 
 
 class ChoreCalendar:
@@ -243,7 +208,7 @@ class ChoreCalendar:
         self.event_calendar = event_calendar
 
         # The saved chores
-        self.chores = []
+        self.chores = {}  # Key is Chore.emote, and value is Chore
         self.chores_lock = asyncio.Lock()
         self.chores_filename = CHORES_FILENAME
         self._loadChores()
@@ -255,8 +220,7 @@ class ChoreCalendar:
         self._loadChannel()
 
         # Outstanding chores, and the message to watch for reacts.
-        # Outstanding chores is keyed by an emote, and the value is a chore.
-        self.outstanding_chores = {}
+        self.outstanding_chores = {}  # Key is Chore.emote, and value is Chore
         self.monitor_message = None
 
         self.event_calendar.addEvent(
@@ -294,9 +258,9 @@ class ChoreCalendar:
 
         # Update the chores in case there are any compatibility issues (i.e. add any new fields to old data).
 
-        for chore in loaded_chores:
+        for _, chore in loaded_chores.items():
             # TODO Skip saving for this case?
-            asyncio.run(self.addChore(chore))
+            asyncio.run(self.addChore(chore, skip_save=True))
 
     async def _saveChores(self):
         async with self.chores_lock:
@@ -304,25 +268,26 @@ class ChoreCalendar:
             pickle.dump(self.chores, f)
             f.close()
 
-    async def addChore(self, new_chore):
+    async def addChore(self, new_chore, skip_save=False):
         async with self.chores_lock:
-            for existing_chore in self.chores:
-                if existing_chore.name == new_chore.name:
-                    return False
+            if new_chore.emote in self.chores:
+                return False
 
-            self.chores.append(new_chore)
+            self.chores[new_chore.emote] = new_chore
 
-        await self._saveChores()
+        if not skip_save:
+            await self._saveChores()
         return True
 
     async def postDailyUpdate(self, schedule_new_post=True, channel=None):
         if channel is None:
             channel = self.channel
 
-        message = await self.getChoreMessage()
+        message, ordered_emotes = await self.getChoreMessage()
 
         self.monitor_message = await self.discord_client.get_channel(
             channel).send(message)
+        await self.addEmotes(self.monitor_message, ordered_emotes)
 
         if schedule_new_post:
             return self.createEventForTomorrow()
@@ -333,74 +298,50 @@ class ChoreCalendar:
         async with self.chores_lock:
             chores_for_today = []
             today = date.today()
-            for chore in self.chores:
+            for _, chore in self.chores.items():
                 if chore.shouldPost(today):
                     chores_for_today.append(chore)
 
-            # Go through self.outstanding_chores and remove duplicates.
-            for k, chore in list(self.outstanding_chores.items()):
-                if chore in chores_for_today:
-                    del self.outstanding_chores[k]
+                    # Remove the chore from oustanding Chore if triggers again.
+                    if chore.emote in self.outstanding_chores:
+                        del self.outstanding_chores[chore.emote]
 
-            if len(self.outstanding_chores) and len(chores_for_today) == 0:
+            if len(self.outstanding_chores) + len(chores_for_today) == 0:
                 return 'No chores for today!'
 
             for chore in chores_for_today:
                 chore.last_post = today
 
-            msg = '```'
+            msg = ''
+            ordered_emotes = []
             if len(self.outstanding_chores) > 0:
-                msg += 'The outstanding chores for today are:\n' + '\n'.join(
-                    chore.getMessageLine(emote)
-                    for emote, chore in self.outstanding_chores)
+                msg += '**Outstanding Chores**:\n' + '\n'.join(
+                    chore.getMessageLine()
+                    for _, chore in self.outstanding_chores.items())
+                for e, _ in self.outstanding_chores.items():
+                    ordered_emotes.append(e)
 
             if len(self.outstanding_chores) > 0 and len(chores_for_today) > 0:
-                msg += '\n' + '=' * 20 + '\n'
+                msg += '\n\n'
 
             if len(chores_for_today) > 0:
-                # Determine the emotes for the new chores.
-                chores_with_emotes = []
+                msg += '**New Chores**:\n' + '\n'.join(
+                    chore.getMessageLine() for chore in chores_for_today)
                 for chore in chores_for_today:
-                    # Try to use a character in the name.
-                    emote_found = False
-                    for char in chore.name:
-                        c = char.lower()
-                        if c in CHORE_EMOTES:
-                            es = CHORE_EMOTES[c]
-                            random.shuffle(es)
-                            for e in es:
-                                if e not in self.outstanding_chores:
-                                    self.outstanding_chores[e] = chore
-                                    chores_with_emotes.append((e, chore))
-                                    emote_found = True
-                                    break
+                    ordered_emotes.append(chore.emote)
 
-                    # Otherwise choose randomly.
-                    if not emote_found:
-                        all_es = [
-                            e for _, es in CHORE_EMOTES.items() for e in es
-                            if e not in self.outstanding_chores
-                        ]
-                        if len(all_es) == 0:
-                            raise Exception('No emotes left!')
-                        e = random.choice(all_es)
-                        self.outstanding_chores[e] = chore
-                        chores_with_emotes.append((e, chore))
+                # Add chores to outstanding_chores.
+                for chore in chores_for_today:
+                    self.outstanding_chores[chore.emote] = chore
 
-                    # TMP Check that chore is in chores_with_emotes
-                    if all(chore != ch for _, ch in chores_with_emotes):
-                        raise Exception(
-                            'Chore not added to chores_with_emotes')
+            msg += '\n\n'
+            msg += '**React with the corresponding emote to mark the chore as done.**'
+            return msg, ordered_emotes
 
-                if len(chores_with_emotes) != len(chores_for_today):
-                    raise Exception('Mismatch in length of chore arrays')
-
-                msg += 'The new chores for today are:\n' + '\n'.join(
-                    chore.getMessageLine(e) for e, chore in chores_with_emotes)
-            msg += '\n' + '=' * 20 + '\n'
-            msg += 'React with the corresponding emote to mark the chore as done.\n'
-            msg += '```'
-            return msg
+    async def addEmotes(self, message, ordered_emotes):
+        # Note that bot.py already filters out reactions from itself.
+        for emote in ordered_emotes:
+            await message.add_reaction(emote)
 
     def getPostTimeForTomorrow(self):
         return datetime.combine(date.today() + timedelta(days=1),
@@ -410,14 +351,23 @@ class ChoreCalendar:
         return EC.Event(self.getPostTimeForTomorrow(), self.postDailyUpdate)
 
     async def onReactionAdd(self, reaction, user):
+        # Note that bot.py already filters out reactions from itself.
         if reaction.message != self.monitor_message:
             return
 
         async with self.chores_lock:
-            if reaction.emoji in self.outstanding_chores:
-                completed_chore = self.outstanding_chores[reaction.emoji]
-                del self.outstanding_chores[reaction.emoji]
+            str_reaction = str(reaction.emoji)
+            if str_reaction in self.outstanding_chores:
+                completed_chore = self.outstanding_chores[str_reaction]
+                del self.outstanding_chores[str_reaction]
 
                 await self.discord_client.get_channel(self.channel).send(
                     'Marked chore as completed: {}'.format(
                         completed_chore.name))
+            else:
+                await self.discord_client.get_channel(
+                    self.channel
+                ).send('Reaction didn\'t match any existing chore.')
+
+    def getEmote(self, emote_string):
+        return self.discord_client.getEmote(emote_string)

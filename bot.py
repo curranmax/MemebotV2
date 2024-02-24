@@ -172,3 +172,24 @@ class CustomDiscordClient(discord.Client):
         if self.feature_tracker is not None and self.feature_tracker.isEnabled(
                 'chore_calendar'):
             await self.chore_calendar.onReactionAdd(reaction, user)
+
+    def getEmote(self, emote_string):
+        print(self.emojis)
+        for v in self.emojis:
+            print(v, v.id)
+
+        # Check if the string is a custom emote.
+        if emote_string.startswith('<:'):
+            print('Custome emote')
+            # Get the emote ID.
+            emote_id = int(emote_string[2:-1].split(':')[1])
+            # Create a Discord emote object.
+            emote = discord.utils.get(self.emojis, id=emote_id)
+            print(emote)
+        else:
+            print('Unicode emote')
+            # Create a Discord emote object from the string.
+            emote = discord.utils.get(self.emojis, name=emote_string)
+            print(emote)
+
+        return emote
