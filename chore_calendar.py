@@ -21,6 +21,32 @@ ALL_FREQUENCIES = [ONE_TIME, DAILY, WEEKLY, MONTHLY]
 CHORE_CHANNEL_FILENAME = 'data/chore_channel.pickle'
 CHORES_FILENAME = 'data/chores.pickle'
 
+AUTOCOMPLETE_LIMIT = 25
+
+
+# TODO Move this to a central util file.
+def customEditDistance(v1, v2):
+    # Convert to lower case
+    v1 = v1.lower()
+    v2 = v2.lower()
+
+    # Swap the strings if v1 is longer.
+    if len(v1) > len(v2):
+        v1, v2 = v2, v1
+
+    best_score = None
+    for ind in range(0, len(v2) - len(v1) + 1):
+        this_score = 0
+        for c1, c2 in zip(v1, v2[ind:ind + len(v1)]):
+            # TODO handle special characters
+            if c1 != c2:
+                this_score += 1
+        if best_score is None or this_score < best_score:
+            best_score = this_score
+        if best_score == 0:
+            return best_score
+    return best_score
+
 
 # TODO split this off into its own bot.
 class ChoreCalendarDiscordCommands(app_commands.Group):
@@ -142,7 +168,56 @@ class ChoreCalendarDiscordCommands(app_commands.Group):
             await interaction.response.send_message('Error adding chore!',
                                                     ephemeral=True)
 
-    # TODO add a remove-chore command.
+    async def chore_autocomplete(
+            self, interaction: discord.Interaction,
+            current: str) -> typing.List[app_commands.Choice[str]]:
+        chores = await self.chore_calendar.getAllChores()
+        chores_with_score = [(customEditDistance(current, c.name), c)
+                             for c in chores]
+        chores_with_score.sort(key=lambda x: (x[0], x[1].name))
+
+        if len(chores_with_score) > AUTOCOMPLETE_LIMIT:
+            chores_with_score = chores_with_score[:AUTOCOMPLETE_LIMIT]
+
+        chore_choices = [
+            app_commands.Choice(name=c.name, value=c.name)
+            for _, c in chores_with_score
+        ]
+        return chore_choices
+
+    @app_commands.command(name='remove-chore',
+                          description='Removes an existing chore')
+    @app_commands.describe(name='The name of the chore to remove.')
+    @app_commands.autocomplete(name=chore_autocomplete)
+    async def remove_chore(self, interaction: discord.Interaction, name: str):
+        chores = await self.chore_calendar.getAllChores()
+        this_chore = None
+        for chore in chores:
+            if chore.name == name:
+                this_chore = chore
+                break
+
+        if this_chore is None:
+            await interaction.response.send_message(
+                'Couldn\'t find given chore!', ephemeral=True)
+            return
+
+        await self.chore_calendar.removeChore(this_chore)
+        await interaction.response.send_message('Chore removed successfully!',
+                                                ephemeral=True)
+
+    @app_commands.command(name='list-chores',
+                          description='List existing chores')
+    async def list_chores(self, interaction: discord.Interaction):
+        chores = await self.chore_calendar.getAllChores()
+        # TODO Add in emote, next occurence, frequency, and offset.
+        message = 'The list of all chores is:\n\t' + '\n\t'.join(
+            ('{} (Last-Post: {}, Frequency: {}, Offset: {})'.format(
+                c.getMessageLine(),
+                'None' if c.last_post is None else c.last_post.isoformat(),
+                str(c.chore_frequency), str(c.chore_frequency.offset))
+             for c in chores))
+        await interaction.response.send_message(message, ephemeral=True)
 
     @app_commands.command(
         name='bind',
@@ -183,6 +258,9 @@ class OneTimeFrequency(ChoreFrequency):
             return False
         return True
 
+    def __str__(self):
+        return 'One-Time'
+
 
 class DailyFrequency(ChoreFrequency):
 
@@ -193,6 +271,9 @@ class DailyFrequency(ChoreFrequency):
         if not isinstance(other, DailyFrequency):
             return False
         return self.offset == other.offset
+
+    def __str__(self):
+        return 'Daily'
 
 
 class WeeklyFrequency(ChoreFrequency):
@@ -208,6 +289,9 @@ class WeeklyFrequency(ChoreFrequency):
             return False
         return self.day_of_the_week == other.day_of_the_week and self.offset == other.offset
 
+    def __str__(self):
+        return 'Weekly'
+
 
 class MonthlyFrequency(ChoreFrequency):
 
@@ -220,6 +304,9 @@ class MonthlyFrequency(ChoreFrequency):
         if not isinstance(other, MonthlyFrequency):
             return False
         return self.day_of_the_month == other.day_of_the_month and self.offset == other.offset
+
+    def __str__(self):
+        return 'Monthly'
 
 
 # One time event
@@ -296,6 +383,7 @@ class ChoreCalendar:
 
         # The saved chores
         self.chores = {}  # Key is Chore.emote, and value is Chore
+        self.cached_chore_list = None  # TODO Update this in a better way.
         self.chores_lock = asyncio.Lock()
         self.chores_filename = CHORES_FILENAME
         self._loadChores()
@@ -357,6 +445,8 @@ class ChoreCalendar:
 
     async def addChore(self, new_chore, skip_save=False):
         async with self.chores_lock:
+            self.cached_chore_list = None
+
             if new_chore.emote in self.chores:
                 return False
 
@@ -365,6 +455,27 @@ class ChoreCalendar:
         if not skip_save:
             await self._saveChores()
         return True
+
+    async def removeChore(self, chore):
+        async with self.chores_lock:
+            self.cached_chore_list = None
+            if chore.emote in self.chores:
+                del self.chores[chore.emote]
+            else:
+                print("ERROR IN REMOVE CHORE! Problem with self.chore")
+
+            if chore.emote in self.outstanding_chores:
+                del self.outstanding_chores[chore.emote]
+
+        await self._saveChores()
+
+    async def getAllChores(self):
+        async with self.chores_lock:
+            if self.cached_chore_list is None:
+                self.cached_chore_list = [
+                    chore for _, chore in self.chores.items()
+                ]
+            return self.cached_chore_list
 
     async def postDailyUpdate(self, schedule_new_post=True, channel=None):
         if channel is None:

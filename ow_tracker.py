@@ -99,7 +99,7 @@ HEROES = {
     'Zenyatta': SUPPORT,
 }
 
-
+# Move this to a central util file.
 def customEditDistance(v1, v2):
     # Convert to lower case
     v1 = v1.lower()
