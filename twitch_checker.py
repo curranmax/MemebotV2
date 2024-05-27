@@ -52,6 +52,7 @@ class TwitchManager:
         self.twitch_streams = pickle.load(f)
 
         for _, twitch_stream in self.twitch_streams.items():
+            twitch_stream.prev_state = TwitchState()
             twitch_stream.state = TwitchState()
 
     def saveTwitchStreamsToFile(self):
