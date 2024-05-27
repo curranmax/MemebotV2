@@ -239,8 +239,9 @@ class TwitchStream:
         post_cooldown_disabled = (self.post_cooldown <= datetime.timedelta())
 
         # 3c
-        post_cooldown_check = (self.last_post + self.post_cooldown <=
-                               datetime.datetime.now())
+        post_cooldown_check = (
+            self.last_post is not None
+            and self.last_post + self.post_cooldown <= datetime.datetime.now())
 
         post_on_transition = (
             stream_starting or stream_starting_in_just_chatting
