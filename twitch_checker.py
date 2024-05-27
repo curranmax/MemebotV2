@@ -147,7 +147,14 @@ class TwitchManager:
 class TwitchStream:
     DEFAULT_LIVE_MESSAGE_FORMATS = [
         '{user_name} has gone live, and is playing {game_name}!\n{twitch_link}',
-        '{user_name} is now live playing {game_name}!\n{twitch_link}'
+        '{user_name} is now live playing {game_name}!\n{twitch_link}',
+        'CRISIS ALERT! {user_name} is now live playing {game_name}!\n{twitch_link}',
+        'CRISIS ALERT! {user_name} has gone live, and is playing {game_name}!\n{twitch_link}'
+    ]
+
+    JUST_CHATTING_MESSAGE_FORMATS = [
+        '{user_name} is live now and is Just Chatting™!\n{twitch_link}',
+        '{user_name} is Just Chatting™!\n{twitch_link}'
     ]
 
     def __init__(self,
@@ -172,37 +179,97 @@ class TwitchStream:
         # Add in custom message formats,
         # Add new fields to pickled objects
 
+        self.prev_state = TwitchState()
         self.state = TwitchState()
 
     def getPostCooldownStr(self):
         # Posts the timedelta in HH:MM format
         return ':'.join(str(self.post_cooldown).split(':')[:2])
 
-    # Returns None if a message should not be sent, otherwise ()
+    # Returns None if a message should not be sent, otherwise returns the message to post.
     def updateState(self, new_state):
         rv = None
         # In order to post:
-        #   1) State must transition from Offline to Online -OR- Game is changing and stream is set to super mode.
-        #   2) Allowlist is empty (i.e. self.game_allowlist has a length of zero) -OR- new_state.game is in self.game_allowlist.
-        #   3) No post has ever been made (i.e. self.last_post is None) -OR- self.post_cooldown is less than or equal to zero -OR- The last post was at least self.post_cooldown ago (i.e. self.last_post + self.post_cooldown <= now()).
+        # 1. Valid transition:
+        #   a. Stream starting: self.state.status == OFFLINE and new_state.status == ONLINE.
+        #   b. Stream starting in Just Chatting: self.state.status == OFFLINE and new_state.status == JUST_CHATTING.
+        #   c. Stream that started in Just Chatting, starting a game: self.previous_state.status == OFFLINE and self.state.status == JUST_CHATTING and new_state.status == ONLINE.  Note that this case ignores the post cooldown requirement!!!!!!!!!!!
+        #   d. Stream in super mode changing games: self.super_mode == TRUE and self.state.status == new_state.status == ONLINE and self.state.game != new_state.game.
+        # 2. Allowlist:
+        #   a. Stream doesn't have an allowlist: len(self.game_allowlist) == 0.
+        #   b. Game is in stream's allowlist: new_state.game is in self.game_allowlist.
+        # 3. Post cooldown:
+        #   a. Bot never posted for stream: self.last_post is None.
+        #   b. Post cooldown is disabled for stream: self.post_cooldown <= datetime.timedelta()
+        #   c. It has been at least the post cooldown since the last post: self.last_post + self.post_cooldown <= datetime.datetime.now()
+        #   d. Case 1c ignores the cooldown.
 
-        offline_to_online = self.state.status == TwitchState.OFFLINE and new_state.status == TwitchState.ONLINE
-        game_changed_super_mode = self.state.status == TwitchState.ONLINE and new_state.status == TwitchState.ONLINE and self.super_mode and self.state.game != new_state.game
-        valid_game = len(
-            self.game_allowlist) == 0 or new_state.game in self.game_allowlist
-        post_cooldown = self.last_post is None or self.post_cooldown <= datetime.timedelta(
-        ) or self.last_post + self.post_cooldown <= datetime.datetime.now()
+        # 1a
+        stream_starting = (self.state.status == TwitchState.OFFLINE
+                           and new_state.status == TwitchState.ONLINE)
 
-        if (offline_to_online
-                or game_changed_super_mode) and valid_game and post_cooldown:
+        # 1b
+        stream_starting_in_just_chatting = (
+            self.state.status == TwitchState.OFFLINE
+            and new_state.status == TwitchState.JUST_CHATTING)
+
+        # 1c
+        stream_starting_in_just_chatting_and_starting_a_game = (
+            self.prev_state.status == TwitchState.OFFLINE
+            and self.state.status == TwitchState.JUST_CHATTING
+            and new_state.status == TwitchState.ONLINE)
+
+        # 1d
+        stream_in_super_mode_changing_games = (
+            self.state.status == TwitchState.ONLINE
+            and new_state.status == TwitchState.ONLINE and self.super_mode
+            and self.state.game != new_state.game)
+
+        # 2a
+        empty_allowlist = (len(self.game_allowlist) <= 0)
+
+        # 2b
+        game_in_allowlist = (new_state.game in self.game_allowlist)
+
+        # 3a
+        never_posted = (self.last_post is None)
+
+        # 3b
+        post_cooldown_disabled = (self.post_cooldown <= datetime.timedelta())
+
+        # 3c
+        post_cooldown_check = (self.last_post + self.post_cooldown <=
+                               datetime.datetime.now())
+
+        post_on_transition = (
+            stream_starting or stream_starting_in_just_chatting
+            or stream_starting_in_just_chatting_and_starting_a_game
+            or stream_in_super_mode_changing_games
+        ) and (empty_allowlist or game_in_allowlist) and (
+            never_posted or post_cooldown_disabled or post_cooldown_check
+            or stream_starting_in_just_chatting_and_starting_a_game)
+
+        if post_on_transition:
             self.last_post = datetime.datetime.now()
-            message_format = random.choice(
-                TwitchStream.DEFAULT_LIVE_MESSAGE_FORMATS)
+
+            mfs = []
+            if new_state.status == TwitchState.JUST_CHATTING:
+                mfs = TwitchStream.JUST_CHATTING_MESSAGE_FORMATS
+            elif new_state.status == TwitchState.ONLINE:
+                mfs = TwitchStream.DEFAULT_LIVE_MESSAGE_FORMATS
+            else:
+                print('Invalid state for making a post: ', new_state.status)
+                return None
+
+            message_format = random.choice(mfs)
             message = message_format.format(
                 user_name=self.user_name,
                 game_name=new_state.game,
                 twitch_link='https://twitch.tv/{}'.format(self.user_name))
             rv = (message, self.discord_channel_id)
+        if self.state.status != new_state.status:
+            # Right now only care about the status of prev_state, so don't need to check game name or stream title.
+            self.prev_state = self.state
         self.state = new_state
         return rv
 
@@ -211,9 +278,15 @@ class TwitchState:
     NONE = 1
     OFFLINE = 2
     ONLINE = 3
+    # Special case where the stream is online but in the "Just Chatting" category.
+    JUST_CHATTING = 4
 
     def __init__(self, status=NONE, game=None, title=None):
-        self.status = status
+        # TODO Check the game_id or something instead of the game name.
+        if game == "Just Chatting" and status == TwitchState.ONLINE:
+            status = TwitchState.JUST_CHATTING
+        else:
+            self.status = status
         self.game = game
         self.title = title
 
