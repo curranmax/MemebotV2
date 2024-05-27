@@ -111,7 +111,11 @@ class TwitchManager:
             if not retry:
                 self.access_token = self.getTwitchAccessToken()
                 return self.checkStateOfAllStreams(retry=True)
-            return None
+            return []
+
+        if response.status_code != 200:
+            print("Got a non-200 response code: ", response.status_code)
+            return []
 
         new_states = {
             user_name: TwitchState(status=TwitchState.OFFLINE)
@@ -119,7 +123,13 @@ class TwitchManager:
         }
 
         # response.json()['data'] is a list that contains an entry for each live stream in the set of streams included in the 'user_login' params on the URL. Offline streams won't have any entry in the list.
-        for live_stream in response.json()['data']:
+        try:
+            data = response.json()['data']
+        except requests.exceptions.JSONDecodeError as e:
+            print("Failed to parse JSON; error = ", e)
+            return []
+
+        for live_stream in data:
             user_name = live_stream['user_name']
             game = live_stream['game_name']
             title = live_stream['title']
