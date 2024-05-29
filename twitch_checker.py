@@ -286,7 +286,7 @@ class TwitchState:
     def __init__(self, status=NONE, game=None, title=None):
         # TODO Check the game_id or something instead of the game name.
         if game == "Just Chatting" and status == TwitchState.ONLINE:
-            status = TwitchState.JUST_CHATTING
+            self.status = TwitchState.JUST_CHATTING
         else:
             self.status = status
         self.game = game
