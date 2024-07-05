@@ -116,7 +116,8 @@ class CustomDiscordClient(discord.Client):
         # Add commands for the Food Chooser
         if self.feature_tracker is not None and self.feature_tracker.isEnabled(
                 'food_chooser'):
-            self.food_chooser = food_chooser.FoodManager(firebase_key='/home/curranmax/keys/firebase.json')
+            self.food_chooser = food_chooser.FoodManager(
+                firebase_key_fname='/home/curranmax/keys/firebase.json')
             for command_group in self.food_chooser.getDiscordCommands():
                 self.command_tree.add_command(command_group,
                                               guilds=self.command_guilds)

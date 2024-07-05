@@ -100,8 +100,8 @@ class FoodChooserDiscordCommands(app_commands.Group):
 
 class FoodManager:
 
-    def __init__(self, firebase_key=None, filename='data/food_options.txt'):
-        if self.firebase_key is not None:
+    def __init__(self, firebase_key_fname=None, filename='data/food_options.txt'):
+        if firebase_key_fname is not None:
             # Not sure if these need to be kept around
             self.cred = credentials.Certificate(self.firebase_key)
             self.app = firebase_admin.initialize_app(self.cred)
