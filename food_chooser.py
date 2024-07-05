@@ -189,7 +189,7 @@ class Option:
     def fromDict(option_dict):
         name = option_dict[Option.FIELD_NAME]
         types = option_dict[Option.FIELD_TYPES]
-        location = option_dict[Option.LOCATION]
+        location = option_dict[Option.FIELD_LOCATION]
 
         return Option(name, types=types, location=location)
 
