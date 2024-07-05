@@ -131,7 +131,7 @@ class FoodManager:
 
     def _loadOptions(self):
         if self.db is not None:
-            options_ref = self.db.collections(FIREBASE_COLLECTION)
+            options_ref = self.db.collection(FIREBASE_COLLECTION)
             options_stream = options_ref.stream()
             for option_ref in options_stream:
                 option = Option.fromDict(option_ref.to_dict())
