@@ -50,6 +50,7 @@ MAPS_BY_MODE = {
         'Colosseo': ['Evening', 'Morning'],
         'Esperança': [],
         'New Queen Street': ['Dawn', 'Morning'],
+        'Runasapi': [],
     },
 }
 

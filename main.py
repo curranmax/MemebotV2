@@ -17,6 +17,9 @@ if feature_tracker.isTestingMode():
 elif feature_tracker.isChorebot():
     token = os.getenv('CHOREBOT_TOKEN')
     command_guilds = bot.CHOREBOT_GUILDS
+elif feature_tracker.isFoodbot:
+    token = os.getenv('FOODBOT_TOKEN')
+    command_guilds = bot.FOODBOT_GUILDS
 else:
     token = os.getenv('DISCORD_TOKEN')
     command_guilds = bot.DEFAULT_GUILDS

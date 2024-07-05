@@ -8,6 +8,7 @@ from datetime import date, datetime, time, timedelta
 import logging
 import pytz
 
+# Move this data to firebase
 MAPS = [
     # Escort
     'Circuit Royal',
@@ -41,6 +42,7 @@ MAPS = [
     'Colosseo',
     'Esperança',
     'New Queen Street',
+    'Runasapi',
 
     # Flashpoint
     'New Junk City',
