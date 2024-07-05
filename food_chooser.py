@@ -38,6 +38,7 @@ class FoodChooserDiscordCommands(app_commands.Group):
     async def add_option(self, interaction: discord.Interaction, name: str,
                          is_dine_in: bool, is_pickup: bool, is_delivery: bool,
                          location: str):
+        option = None
         try:
             types = []
             if is_dine_in:
@@ -47,14 +48,20 @@ class FoodChooserDiscordCommands(app_commands.Group):
             if is_delivery:
                 types.append(Option.TYPE_DELIVERY)
             option = Option(name, types, location)
+        except Exception as e:
+            await interaction.response.send_message(
+                'Error creating Option: {}'.format(e), ephemeral=True)
+            return
 
+        try:
             await self.food_manager.addAndSaveOption(option)
         except Exception as e:
-            await interaction.response.send_message('Error: {}'.format(e))
+            await interaction.response.send_message(
+                'Error adding and saving Option: {}'.format(e), ephemeral=True)
             return
 
         await interaction.response.send_message(
-            'Adding new food option was sucessful')
+            'Adding new food option was sucessful', ephemeral=True)
 
     @app_commands.command(name='random',
                           description='Choose some random options.')
