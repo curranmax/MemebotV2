@@ -100,10 +100,12 @@ class FoodChooserDiscordCommands(app_commands.Group):
 
 class FoodManager:
 
-    def __init__(self, firebase_key_fname=None, filename='data/food_options.txt'):
+    def __init__(self,
+                 firebase_key_fname=None,
+                 filename='data/food_options.txt'):
         if firebase_key_fname is not None:
             # Not sure if these need to be kept around
-            self.cred = credentials.Certificate(self.firebase_key)
+            self.cred = credentials.Certificate(firebase_key_fname)
             self.app = firebase_admin.initialize_app(self.cred)
 
             self.db = firestore.client()
@@ -163,7 +165,8 @@ class FoodManager:
             if option.typeFilter(types) and option.locationFilter(locations)
         ]
 
-        return random.sample(matching_options, min(num_options, len(matching_options)))
+        return random.sample(matching_options,
+                             min(num_options, len(matching_options)))
 
 
 class Option:
