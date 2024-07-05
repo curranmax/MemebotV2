@@ -22,8 +22,7 @@ class FoodChooserDiscordCommands(app_commands.Group):
         self.food_manager = food_manager
 
     # Remove a place?
-    # List current options with filters for type and location.
-    # Choose k from random Add filters for types and locations.
+    # List current options with filters for option_type and location.
 
     @app_commands.command(name='add-option',
                           description='Adds a new food option')
@@ -40,14 +39,14 @@ class FoodChooserDiscordCommands(app_commands.Group):
                          location: str):
         option = None
         try:
-            types = []
+            option_types = []
             if is_dine_in:
-                types.append(Option.TYPE_DINE_IN)
+                option_types.append(Option.TYPE_DINE_IN)
             if is_pickup:
-                types.append(Option.TYPE_PICKUP)
+                option_types.append(Option.TYPE_PICKUP)
             if is_delivery:
-                types.append(Option.TYPE_DELIVERY)
-            option = Option(name, types, location)
+                option_types.append(Option.TYPE_DELIVERY)
+            option = Option(name, option_types, location)
         except Exception as e:
             await interaction.response.send_message(
                 'Error creating Option: {}'.format(e), ephemeral=True)
@@ -85,14 +84,14 @@ class FoodChooserDiscordCommands(app_commands.Group):
                      is_delivery: typing.Optional[bool] = False,
                      locations: typing.Optional[str] = ''):
         locations = list(filter(lambda v: len(v) > 0, locations.split(',')))
-        types = []
+        option_types = []
         if is_dine_in:
-            types.append(Option.TYPE_DINE_IN)
+            option_types.append(Option.TYPE_DINE_IN)
         if is_pickup:
-            types.append(Option.TYPE_PICKUP)
+            option_types.append(Option.TYPE_PICKUP)
         if is_delivery:
-            types.append(Option.TYPE_DELIVERY)
-        options = self.food_manager.getRandomOptions(num_options, types,
+            option_types.append(Option.TYPE_DELIVERY)
+        options = self.food_manager.getRandomOptions(num_options, option_types,
                                                      locations)
         if len(options) == 0:
             await interaction.response.send_message(
@@ -166,10 +165,11 @@ class FoodManager:
                 f.close()
                 return
 
-    def getRandomOptions(self, num_options, types, locations):
+    def getRandomOptions(self, num_options, option_types, locations):
         matching_options = [
             option for option in self.options
-            if option.typeFilter(types) and option.locationFilter(locations)
+            if option.typeFilter(option_types)
+            and option.locationFilter(locations)
         ]
 
         return random.sample(matching_options,
@@ -193,14 +193,14 @@ class Option:
 
         return Option(name, types=types, location=location)
 
-    def __init__(self, name, types=[], location=None):
+    def __init__(self, name, option_types=[], location=None):
         self.name = name
 
-        if len(type) == 0:
+        if len(option_types) == 0:
             raise Exception('At least one type must be specified')
-        if any(t not in Option.TYPES for t in types):
-            raise Exception('Invalid type: ' + ', '.join(types))
-        self.types = types
+        if any(t not in Option.TYPES for t in option_types):
+            raise Exception('Invalid types: ' + ', '.join(option_types))
+        self.option_types = option_types
 
         self.location = location
 
@@ -212,12 +212,12 @@ class Option:
     def toDict(self):
         return {
             Option.FIELD_NAME: self.name,
-            Option.FIELD_TYPES: self.types,
+            Option.FIELD_TYPES: self.option_types,
             Option.FIELD_LOCATION: self.location,
         }
 
-    def typeFilter(self, types):
-        return any(t in self.types for t in types)
+    def typeFilter(self, option_types):
+        return any(t in self.option_types for t in option_types)
 
     def locationFilter(self, locations):
         return len(locations) == 0 or self.location in locations
