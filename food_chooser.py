@@ -188,10 +188,10 @@ class Option:
 
     def fromDict(option_dict):
         name = option_dict[Option.FIELD_NAME]
-        types = option_dict[Option.FIELD_TYPES]
+        option_types = option_dict[Option.FIELD_TYPES]
         location = option_dict[Option.FIELD_LOCATION]
 
-        return Option(name, types=types, location=location)
+        return Option(name, option_types=option_types, location=location)
 
     def __init__(self, name, option_types=[], location=None):
         self.name = name
