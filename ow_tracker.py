@@ -47,6 +47,10 @@ MAPS = [
     # Flashpoint
     'New Junk City',
     'Suravasa',
+
+    # Clash
+    'Throne of Anubis',
+    'Hanaoka',
 ]
 
 TANK = 'Tank'
@@ -93,6 +97,7 @@ HEROES = {
     'Baptiste': SUPPORT,
     'Brigitte': SUPPORT,
     'Illari': SUPPORT,
+    'Juno': SUPPORT,
     'Kiriko': SUPPORT,
     'Lifeweaver': SUPPORT,
     'Lúcio': SUPPORT,
@@ -100,6 +105,7 @@ HEROES = {
     'Moira': SUPPORT,
     'Zenyatta': SUPPORT,
 }
+
 
 # Move this to a central util file.
 def customEditDistance(v1, v2):
