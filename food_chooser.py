@@ -9,6 +9,8 @@ import firebase_admin
 from firebase_admin import credentials
 from firebase_admin import firestore
 
+# TODO - Remove this file and feature.
+
 FIREBASE_COLLECTION = 'food_options'
 
 

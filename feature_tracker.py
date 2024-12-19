@@ -25,12 +25,12 @@ class FeatureTracker:
         self.parser.add_argument('-comms',
                                  '--custom_commands',
                                  action='store_true')
-        self.parser.add_argument('-fc', '--food_chooser', action='store_true')
+        self.parser.add_argument('-d', '--database', action='store_true')
 
         # Switches for for feature groups
         self.parser.add_argument('-mb', '--memebot', action='store_true')
         self.parser.add_argument('-cb', '--chorebot', action='store_true')
-        self.parser.add_argument('-fb', '--foodbot', action='store_true')
+        self.parser.add_argument('-db', '--databasebot', action='store_true')
         self.parser.add_argument('-all', '--all_features', action='store_true')
 
         self.feature_groups = {
@@ -41,8 +41,8 @@ class FeatureTracker:
             'chorebot': [
                 'chore_calendar',
             ],
-            'foodbot': [
-                'food_chooser',
+            'databasebot': [
+                'database',
             ],
             'all_features': [
                 'auto_reacts',
@@ -54,7 +54,7 @@ class FeatureTracker:
                 'pugs',
                 'twitch_checker',
                 'custom_commands',
-                'food_chooser',
+                'database',
             ],
         }
 
@@ -66,8 +66,8 @@ class FeatureTracker:
     def isChorebot(self):
         return self.args.chorebot
 
-    def isFoodbot(self):
-        return self.args.foodbot
+    def isDatabasebot(self):
+        return self.args.databasebot
 
     def isEnabled(self, feature):
         vs = vars(self.args)

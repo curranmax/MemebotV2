@@ -7,7 +7,7 @@ import ow_tracker
 import event_calendar
 import chore_calendar
 import custom_commands
-import food_chooser
+import database
 
 import discord
 from discord import app_commands
@@ -20,7 +20,7 @@ DEFAULT_GUILDS = [
 ]
 
 CHOREBOT_GUILDS = [discord.Object(id=400805068934348800)]
-FOODBOT_GUILDS = [discord.Object(id=400805068934348800)]
+DATABASEBOT_GUILDS = [discord.Object(id=400805068934348800)]
 
 TESTING_GUILDS = [discord.Object(id=599237897580970005)]
 
@@ -113,12 +113,12 @@ class CustomDiscordClient(discord.Client):
                 self.command_tree.add_command(command_group,
                                               guilds=self.command_guilds)
 
-        # Add commands for the Food Chooser
+        # Add commands for the Database feature.
         if self.feature_tracker is not None and self.feature_tracker.isEnabled(
-                'food_chooser'):
-            self.food_chooser = food_chooser.FoodManager(
+                'database'):
+            self.database_manager = database.DatabaseManager(
                 firebase_key_fname='/home/curranmax/keys/firebase.json')
-            for command_group in self.food_chooser.getDiscordCommands():
+            for command_group in self.database_manager.getDiscordCommands():
                 self.command_tree.add_command(command_group,
                                               guilds=self.command_guilds)
 
