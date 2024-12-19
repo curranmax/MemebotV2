@@ -286,7 +286,7 @@ class DatabaseManager:
         async with self.data_lock:
             return [t for _, sts in self.types.items() for t in sts]
 
-    async def getTagss(self):
+    async def getAllTags(self):
         async with self.data_lock:
             # Return a copy of self.tags.
             return [t for _, t in self.tags]
