@@ -27,6 +27,10 @@ def customEditDistance(v1, v2):
             # TODO handle special characters
             if c1 != c2:
                 this_score += 1
+
+        # Add score based on ind. The goal is that matches of equal length earlier in the string are better.
+        this_score += 0.5 * (ind / len(v2))
+        
         if best_score is None or this_score < best_score:
             best_score = this_score
         if best_score == 0:
