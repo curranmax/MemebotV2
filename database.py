@@ -50,21 +50,16 @@ class DatabaseDiscordCommands(app_commands.Group):
         return [t.strip() for t in v.split(',')]
 
     async def typeAutocomplete(self, interaction: discord.Interaction, current: str) -> typing.List[app_commands.Choice[str]]:
-        print('Start typeAutocomplete')
         all_types = await self.database_manager.getAllTypes()
-        print(f'all_types={all_types}')
         all_types_edit_distance = {
             t: customEditDistance(t, current)
             for t in all_types
         }
-        print(f'all_types_edit_distance={all_types_edit_distance}')
 
         all_types.sort(key=lambda t: (all_types_edit_distance[t], t))
-        print(f'all_types(sorted)={all_types}')
 
         if len(all_types) > AUTOCOMPLETE_LIMIT:
             all_types = all_types[:AUTOCOMPLETE_LIMIT]
-        print(f'all_types(sorted+trimmed)={all_types}')
 
         return [app_commands.Choice(name=t, value=t) for t in all_types]
 
@@ -95,40 +90,28 @@ class DatabaseDiscordCommands(app_commands.Group):
         return [app_commands.Choice(name=t, value=t) for t in all_types]
 
     async def multiTagAutocomplete(self, interaction: discord.Interaction, current: str) -> typing.List[app_commands.Choice[str]]:
-        print('Starting multiTagAutocomplete')
         # Only does autocomplete on the last tag in the list
         current_tags = self._splitVals(current)
-        print(f'current_tags={current_tags}')
         if len(current_tags) >= 1:
             current_tag = current_tags[-1]
             prefix_tags = current_tags[:-1]
         else:
             current_tag = ''
             prefix_tags = []
-        print(f'current_tag={current_tag}')
-        print(f'prefix_tags={prefix_tags}')
 
         all_tags = await self.database_manager.getAllTags()
-        print(f'all_tags={all_tags}')
         all_tags_edit_distance = {
             t: customEditDistance(t, current_tag)
             for t in all_tags
         }
-        print(f'all_tags_edit_distance={all_tags_edit_distance}')
 
         all_tags.sort(key=lambda t: (all_tags_edit_distance[t], t))
 
-        print(f'all_tags(sorted)={all_tags}')
-
         if len(all_tags) > AUTOCOMPLETE_LIMIT:
             all_tags = all_tags[:AUTOCOMPLETE_LIMIT]
-
-        print(f'all_tags(sorted+trimmed)={all_tags}')
         
         # Add in the previous tags that aren't apart of the autocomplete.
         all_tags = [', '.join(prefix_tags + [t]) for t in all_tags]
-
-        print(f'all_tags(sorted+trimmed+prefix)={all_tags}')
 
         return [app_commands.Choice(name=t, value=t) for t in all_tags]
 
@@ -263,8 +246,10 @@ class DatabaseManager:
             if new_thing in self.things:
                 return 'Thing with the same name already exists'
 
-            if not any(new_thing in sts for _, sts in self.types.items()):
+            if not any(new_thing.sub_type in sts for _, sts in self.types.items()):
                 return f'Type "{new_thing.sub_type}" is not valid'
+
+            # TODO - Maybe disallow duplicate tags in a thing.
 
             for tag in new_thing.tags:
                 if tag not in self.tags:
@@ -287,10 +272,7 @@ class DatabaseManager:
             return [t for _, sts in self.types.items() for t in sts]
 
     async def getAllTags(self):
-        print('starting getAllTags')
-        print(f'self.datalock.locked()={self.data_lock.locked()}')
         async with self.data_lock:
-            print(f'self.tags={self.tags}')
             # Return a copy of self.tags.
             return [t for t in self.tags]
 
