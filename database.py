@@ -280,7 +280,7 @@ class DatabaseManager:
         async with self.data_lock:
             # Return a copy of self.things.
             return [
-                thing for _, thing in self.things
+                thing for thing in self.things
                     if thing.sub_type in types and 
                     all(tag in thing.tags for tag in tags)
             ]
