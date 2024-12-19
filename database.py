@@ -123,7 +123,7 @@ class DatabaseDiscordCommands(app_commands.Group):
         tags='The tags of this thing. Tags should be separated by commas. Also all tags need to be registered first by using the "add-tag" command.'
     )
     @app_commands.autocomplete(type=typeAutocomplete, tags=multiTagAutocomplete)
-    async def add_thing(self, interaction: discord.Interaction, name: str, type: str, tags: typing.Optionhal[str]= ''):
+    async def add_thing(self, interaction: discord.Interaction, name: str, type: str, tags: typing.Optional[str]= ''):
         new_thing = Thing(
             name,
             type,
@@ -154,7 +154,7 @@ class DatabaseDiscordCommands(app_commands.Group):
         visible='Whether or not the results are shown to everyone (True + Default), or shown just to the user that ran the query (False).',
     )
     @app_commands.autocomplete(types=multiTypeAutocomplete, tags=multiTagAutocomplete)
-    async def query(self, interaction: discord.Interaction, types: str, tags: typing.Optionhal[str] = '', num: typing.Optional[int] = -1, visible: typing.Optional[bool] = True):
+    async def query(self, interaction: discord.Interaction, types: str, tags: typing.Optional[str] = '', num: typing.Optional[int] = -1, visible: typing.Optional[bool] = True):
         matching_things = await self.database_manager.query(self._splitVals(types), self._splitVals(tags))
 
         if len(matching_things) <= 0:
