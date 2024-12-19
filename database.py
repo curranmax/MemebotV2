@@ -240,6 +240,7 @@ class DatabaseManager:
                 return
             
             new_tag_ref = self.db.collection(DatabaseManager.TAGS_COLLECTION).document(new_tag)
+            new_tag_ref.set({})
     
     async def addThing(self, new_thing):
         async with self.data_lock:
