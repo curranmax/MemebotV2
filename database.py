@@ -134,7 +134,7 @@ class DatabaseDiscordCommands(app_commands.Group):
 
     @app_commands.command(name='add-tag', description='Add a tag that can be used for new things in the database')
     @app_commands.describe(tag='The name of the tag. Must be unique across all tags.')
-    async def add_thing(self, interaction: discord.Interaction, tag: str):
+    async def add_tag(self, interaction: discord.Interaction, tag: str):
         err_msg = await self.database_manager.addTag(tag)
         if err_msg is not None:
             await interaction.response.send_message(f'Error while adding "{tag}": {err_msg}.', ephemeral=True)
