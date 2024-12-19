@@ -4,6 +4,10 @@ from discord import app_commands
 import typing
 import random
 
+import firebase_admin
+from firebase_admin import credentials
+from firebase_admin import firestore
+
 AUTOCOMPLETE_LIMIT = 25
 
 # Move this to a central util file.
@@ -144,8 +148,8 @@ class DatabaseDiscordCommands(app_commands.Group):
         num='The number of things to return. If not set or less than or equal to zero, then all matching things will be returned. Note the order of the things will be randomized.',
         visible='Whether or not the results are shown to everyone (True + Default), or shown just to the user that ran the query (False).',
     )
-    @app_commands.autocomplete(type=multiTypeAutocomplete, tags=multiTagAutocomplete)
-    async def query(self, interaction: discord.Interaction, types: str, tags:str, num: typing.Optional[int] = -1, visible: typinbg.Optional[bool] = True):
+    @app_commands.autocomplete(types=multiTypeAutocomplete, tags=multiTagAutocomplete)
+    async def query(self, interaction: discord.Interaction, types: str, tags:str, num: typing.Optional[int] = -1, visible: typing.Optional[bool] = True):
         matching_things = await self.database_manager.query(self._splitVals(types), self._splitVals(tags))
 
         if len(matching_things) <= 0:
@@ -237,6 +241,10 @@ class DatabaseManager:
         async with self.data_lock:
             if new_thing in self.things:
                 return 'Thing with the same name already exists'
+
+            for tag in new_thing.tags:
+                if tag not in self.tags:
+                    return f'Tag "{tag}" does not exist (use add-tag command to add it)'
 
             self.things.append(new_thing)
 
