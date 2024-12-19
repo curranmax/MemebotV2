@@ -280,8 +280,10 @@ class DatabaseManager:
     async def query(self, types: typing.List[str], tags: typing.List[str]):
         async with self.data_lock:
             # Return the set of things the match the input parameters.
+            print(f'types={types}')
+            print(f'tags={tags}')
             for thing in self.things:
-                print(f'thing={thing.sub_type in types} and ({len(tags) == 0} or {all(tag in thing.tags for tag in tags)})')
+                print(f'thing({thing.name})={thing.sub_type in types} and ({len(tags) == 0} or {all(tag in thing.tags for tag in tags)})')
             return [
                 thing for thing in self.things
                     if thing.sub_type in types and 
