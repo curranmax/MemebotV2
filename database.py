@@ -283,7 +283,7 @@ class DatabaseManager:
             return [
                 thing for thing in self.things
                     if thing.sub_type in types and 
-                    all(tag in thing.tags for tag in tags)
+                    (len(tags) == 0 or all(tag in thing.tags for tag in tags))
             ]
 
 
