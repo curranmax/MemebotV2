@@ -47,6 +47,8 @@ class DatabaseDiscordCommands(app_commands.Group):
         self.database_manager = database_manager
 
     def _splitVals(self, v: str) -> typing.List[str]:
+        if v == '':
+            return []
         return [t.strip() for t in v.split(',')]
 
     async def typeAutocomplete(self, interaction: discord.Interaction, current: str) -> typing.List[app_commands.Choice[str]]:
