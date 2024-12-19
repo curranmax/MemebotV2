@@ -292,7 +292,7 @@ class DatabaseManager:
         async with self.data_lock:
             print(f'self.tags={self.tags}')
             # Return a copy of self.tags.
-            return [t for _, t in self.tags]
+            return [t for t in self.tags]
 
     async def query(self, types: typing.List[str], tags: typing.List[str]):
         async with self.data_lock:
