@@ -75,7 +75,7 @@ class DatabaseDiscordCommands(app_commands.Group):
             current_type = ''
             prefix_types = []
 
-        all_types = await self.database_manager.getAllTypes()
+        all_types = await self.database_manager.getAllTypes(exclude_types=prefix_types)
         all_types_edit_distance = {
             t: customEditDistance(t, current_type)
             for t in all_types
@@ -101,7 +101,8 @@ class DatabaseDiscordCommands(app_commands.Group):
             current_tag = ''
             prefix_tags = []
 
-        all_tags = await self.database_manager.getAllTags()
+        all_tags = await self.database_manager.getAllTags(exclude_tags = prefix_tags)
+        # Filter out value sin all_tags that are in prefix_tags
         all_tags_edit_distance = {
             t: customEditDistance(t, current_tag)
             for t in all_tags
@@ -276,14 +277,14 @@ class DatabaseManager:
                 'metadata': new_thing.metadata,
             })
 
-    async def getAllTypes(self):
+    async def getAllTypes(self, exclude_types = []):
         async with self.data_lock:
-            return [t for _, sts in self.types.items() for t in sts]
+            return [t for _, sts in self.types.items() for t in sts if t not in exclude_types]
 
-    async def getAllTags(self):
+    async def getAllTags(self, exclude_tags = []):
         async with self.data_lock:
             # Return a copy of self.tags.
-            return [t for t in self.tags]
+            return [t for t in self.tags if t not in exclude_tags]
 
     async def query(self, types: typing.List[str], tags: typing.List[str]):
         async with self.data_lock:
