@@ -121,16 +121,22 @@ class DatabaseDiscordCommands(app_commands.Group):
     @app_commands.describe(
         name='The name of the thing. Must be unique across all things.',
         type='The type of the thing.',
-        tags='The tags of this thing. Tags should be separated by commas. Also all tags need to be registered first by using the "add-tag" command.'
+        tags='The tags of this thing. Tags should be separated by commas. Also all tags need to be registered first by using the "add-tag" command.',
+        url='The url to add to the thing. Note this is optional',
     )
     @app_commands.autocomplete(type=typeAutocomplete, tags=multiTagAutocomplete)
-    async def add_thing(self, interaction: discord.Interaction, name: str, type: str, tags: typing.Optional[str]= ''):
+    async def add_thing(self, interaction: discord.Interaction, name: str, type: str, tags: typing.Optional[str]= '', url: typing.Optional[str] = None):
+        # TODO - Add a way to specify other metadata.
+        metadata = {}
+        if url is not None:
+            metadata['url'] = url
+        
         new_thing = Thing(
             name,
             type,
             self._splitVals(tags),
             # TODO - Add a way to specify metadata
-            {},
+            metadata,
         )
         err_msg = await self.database_manager.addThing(new_thing)
         if err_msg is not None:
@@ -169,7 +175,7 @@ class DatabaseDiscordCommands(app_commands.Group):
         message = 'The results of the query are:'
         for i, thing in enumerate(things):
             # TODO Include metadata possibly.
-            message += f'\n  {i + 1}) {thing.name}'
+            message += f'\n  {i + 1}) {thing.getDiscordMessageStr()}'
 
         # Send the output
         await interaction.response.send_message(message, ephemeral=not visible)
@@ -295,6 +301,21 @@ class Thing:
         self.sub_type = sub_type
         self.tags = tags
         self.metadata = metadata
+
+    def getDiscordMessageStr(self):
+        if 'url' in self.metadata:
+            return f'[{self.name}]({self.getUrl()})'
+
+        # Default is to output just the name
+        return self.name
+
+    def getUrl(self):
+        url = self.metadata['url']
+
+        if url.startswith('http'):
+            return url
+        else:
+            return 'https://' + url
 
     def __eq__(self, other):
         if not isinstance(other, Thing):
