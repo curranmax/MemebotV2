@@ -1028,6 +1028,9 @@ class HeroChallengeDiscordCommands(app_commands.Group):
         # TODO Use a different formating function.
         msg = 'The status of the hero challenge (sorted from most to least frequently played):\n' + \
               '\n'.join(hero_challenge_tracker.formatHeroForRandomHero(h) for _, h in sorted_heroes)
+
+        # TODO List heroes that have been played by last time they were played.
+        # TODO Group all heroes that haven't been played together.
         await interaction.response.send_message(msg, ephemeral=True)
 
 # Tracks the hero challenge for all users.
