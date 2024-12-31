@@ -972,13 +972,13 @@ class HeroChallengeDiscordCommands(app_commands.Group):
     )
     @app_commands.autocomplete(hero=hero_autocomplete)
     @app_commands.choices(add_or_remove=[
-        app_commands.Choice(name='Add', value=True),
-        app_commands.Choice(name='Remove', value=False),
+        app_commands.Choice(name='Add', value=1),
+        app_commands.Choice(name='Remove', value=0),
     ])
     async def set_hero(self,
             interaction: discord.Interaction,
             hero: str,
-            add_or_remove: typing.Optional[bool]=True,
+            add_or_remove: typing.Optional[int]=1,
             date: typing.Optional[str]=None):
         today = datetime.now(tz=pytz.timezone('US/Pacific')).date()
         if date is None:
@@ -1008,7 +1008,7 @@ class HeroChallengeDiscordCommands(app_commands.Group):
                 return
 
         hero_challenge_tracker = self.hero_challenge_manager.getTrackerForUser(interaction.user.id)
-        if add_or_remove:
+        if add_or_remove == 1:
             changed = hero_challenge_tracker.addHeroWithDate(hero, date)
         else:
             changed = hero_challenge_tracker.removeHeroWithDate(hero, date)
