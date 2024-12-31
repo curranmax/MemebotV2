@@ -903,7 +903,7 @@ class HeroChallengeDiscordCommands(app_commands.Group):
             self, interaction: discord.Interaction,
             current: str) -> typing.List[app_commands.Choice[str]]:
         hero_choices = [
-            v for v in OwTrackerDiscordCommands.HERO_CHOICES
+            v for v in HeroChallengeDiscordCommands.HERO_CHOICES
         ]
 
         # Get the edit distance between the current string and heroes. Subtract
@@ -914,12 +914,8 @@ class HeroChallengeDiscordCommands(app_commands.Group):
             for hero, _ in HEROES.items()
         }
 
-        # Get the usage rate of the heroes
-        hero_usage = self.ow_tracker_manager.getHeroUsage(interaction.user.id)
-
         # The heroes are sorted by (hero edit distance ascending, hero usage descending, hero name ascending)
-        hero_choices.sort(key=lambda hero: (hero_edit_distance[
-            hero.value], -hero_usage.get(hero.value, 0.0), hero.value))
+        hero_choices.sort(key=lambda hero: (hero_edit_distance[hero.value], hero.value))
 
         if len(hero_choices) > AUTOCOMPLETE_LIMIT:
             hero_choices = hero_choices[:AUTOCOMPLETE_LIMIT]
@@ -1108,11 +1104,11 @@ class HeroChallengeTracker:
 
     def formatHeroForRandomHero(self, hero):
         if hero not in self.heroes_with_date:
-            return f'  - Error with {hero}: not found in heroes_with_date'
+            return f'- Error with {hero}: not found in heroes_with_date'
         if len(self.heroes_with_date[hero]) == 0:
-            return f'  - {hero}'
+            return f'- {hero}'
         if len(self.heroes_with_date[hero]) > 0:
             plural = 's' if len(self.heroes_with_date[hero]) >= 2 else ''
             date_list = ', '.join(d.strftime('%x') for d in self.heroes_with_date[hero])
-            return f'  - {hero} (Played {len(self.heroes_with_date[hero])} time{plural} on {date_list})'
+            return f'- {hero} (Played {len(self.heroes_with_date[hero])} time{plural} on {date_list})'
     
