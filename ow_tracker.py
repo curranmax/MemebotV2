@@ -8,6 +8,7 @@ from datetime import date as date_cls, datetime, time, timedelta
 import logging
 import pytz
 import random
+import re
 
 # Move this data to firebase
 MAPS = [
