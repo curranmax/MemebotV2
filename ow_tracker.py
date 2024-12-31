@@ -4,9 +4,10 @@ import typing
 import os
 import os.path
 import pickle
-from datetime import date, datetime, time, timedelta
+from datetime import date as date_cls, datetime, time, timedelta
 import logging
 import pytz
+import random
 
 # Move this data to firebase
 MAPS = [
@@ -61,6 +62,7 @@ HEROES = {
     # Tanks
     'D.Va': TANK,
     'Doomfist': TANK,
+    'Hazard': TANK,
     'Junker Queen': TANK,
     'Mauga': TANK,
     'Orisa': TANK,
@@ -159,6 +161,7 @@ def getHero(hero):
 
 OW_TRACKER_FILENAME = 'data/ow_tracker.pickle'
 SEASON_FILENAME = 'data/season.pickle'
+HERO_CHALLENGE_FILENAME = 'data/hero_challenge.pickle'
 
 AUTOCOMPLETE_LIMIT = 25
 
@@ -616,20 +619,6 @@ class OverwatchTrackerManager:
         f = open(self.ow_tracker_fname, 'rb')
         self.overwatch_trackers = pickle.load(f)
 
-        # TODO This code is only temporary until pickled get hero usage and season params.
-        for _, owt in self.overwatch_trackers.items():
-            if not hasattr(owt, 'season'):
-                owt.season = 5
-
-            owt._calculateHeroUsage()
-
-        # TODO This temporarily converts games from date to datetime.
-        for _, owt in self.overwatch_trackers.items():
-            for game in owt.games:
-                if not hasattr(game, 'datetime'):
-                    game.datetime = datetime.combine(
-                        game.date, time(hour=18), pytz.timezone('US/Pacific'))
-
     # TODO make this async
     def saveTrackersToFile(self):
         f = open(self.ow_tracker_fname, 'wb')
@@ -732,7 +721,7 @@ class OverwatchTracker:
 
         rv = []
         tz = pytz.timezone("US/Pacific")
-        todays_cutoff = datetime.combine(date.today(), time(hour=6, minute=0),
+        todays_cutoff = datetime.combine(date_cls.today(), time(hour=6, minute=0),
                                          tz)
         cutoff_day = todays_cutoff - timedelta(
             days=num_days - (1 if datetime.now(tz=tz) >= todays_cutoff else 0))
@@ -870,7 +859,7 @@ class OverwatchGame:
         self.heroes = [(hero, weight)]
 
         # Date is now deprecated!
-        self.date = date.today()
+        self.date = date_cls.today()
         self.datetime = datetime.now(tz=pytz.timezone('US/Pacific'))
         logging.info('Created game with datetime: %s', str(self.datetime))
 
@@ -891,3 +880,238 @@ class OverwatchGame:
         # TODO format this message better
         return '```\nMap    --> {}\nRole   --> {}\nResult --> {}\nHeroes --> {}\n```'.format(
             self.map, self.role, self.result, self.heroList())
+
+
+# Hero Challenge Sub-Feature:
+
+class HeroChallengeDiscordCommands(app_commands.Group):
+    def __init__(self, hero_challenge_manager, *args, **kwargs):
+        super(HeroChallengeDiscordCommands, self).__init__(
+            name='hero-challenge', *args, **kwargs)
+        self.hero_challenge_manager = hero_challenge_manager
+
+    DATE_REGEX = re.compile(
+        r'^(?P<month>\d{1,2})\/(?P<day>\d{1,2})(?:\/(?P<year>\d{2}|\d{4}))?$')
+
+    HERO_CHOICES = [
+        app_commands.Choice(name=hero, value=hero)
+        for hero, _ in HEROES.items()
+    ]
+
+    async def hero_autocomplete(
+            self, interaction: discord.Interaction,
+            current: str) -> typing.List[app_commands.Choice[str]]:
+        hero_choices = [
+            v for v in OwTrackerDiscordCommands.HERO_CHOICES
+        ]
+
+        # Get the edit distance between the current string and heroes. Subtract
+        # out the difference between the hero name and current string to account
+        # for extra characters.
+        hero_edit_distance = {
+            hero: customEditDistance(hero, current)
+            for hero, _ in HEROES.items()
+        }
+
+        # Get the usage rate of the heroes
+        hero_usage = self.ow_tracker_manager.getHeroUsage(interaction.user.id)
+
+        # The heroes are sorted by (hero edit distance ascending, hero usage descending, hero name ascending)
+        hero_choices.sort(key=lambda hero: (hero_edit_distance[
+            hero.value], -hero_usage.get(hero.value, 0.0), hero.value))
+
+        if len(hero_choices) > AUTOCOMPLETE_LIMIT:
+            hero_choices = hero_choices[:AUTOCOMPLETE_LIMIT]
+
+        return hero_choices
+
+    @app_commands.command(
+        name='random-heroes',
+        description='Gives some random heroes for the hero challenge.',
+    )
+    @app_commands.describe(
+        num_heroes='The number of heroes to randomly choose. Default is 5.',
+        tank='Whether or not to include Tank hereos. Default is True.',
+        dps='Whether or not to include DPS hereos. Default is True.',
+        support='Whether or not to include Support hereos. Default is True.',
+        allow_repeats='Whether or not to include repeat heroes. Default is False.',
+    )
+    async def random_heroes(self,
+                      interaction: discord.Interaction,
+                      num_heroes: typing.Optional[int]=5,
+                      tank: typing.Optional[bool]=True,
+                      dps: typing.Optional[bool]=True,
+                      support: typing.Optional[bool]=True,
+                      allow_repeats: typing.Optional[bool] = False):
+        hero_challenge_tracker = self.hero_challenge_manager.getTrackerForUser(interaction.user.id)
+        heroes = hero_challenge_tracker.getRandomSetOfHeroes(
+            num_heroes=num_heroes,
+            tank=tank,
+            dps=dps,
+            support=support,
+            allow_repeats=allow_repeats,
+        )
+
+        msg = ''
+        if len(heroes) == 0:
+            msg = 'There were no heroes that matched the input params!'
+        else:
+            msg = 'Choose from one of the following heroes:\n' + \
+                  '\n'.join(hero_challenge_tracker.formatHeroForRandomHero(h) for h in heroes)
+        await interaction.response.send_message(msg, ephemeral=True)
+    
+    @app_commands.command(
+        name='set-hero',
+        description='Updates whether a hero was used in the heoro challenge.',
+    )
+    @app_commands.describe(
+        hero='The name of the hero to update.',
+        add_or_remove='Whether or not to add or remove the hero from the given date. Default is to add.',
+        date='The date to update in MM/DD/YYYY or MM/DD (year assumed to be current year) format. Default is today (in PT).'
+    )
+    @app_commands.autocomplete(hero=hero_autocomplete)
+    @app_commands.choices(add_or_remove=[
+        app_commands.Choice(name='Add', value=True),
+        app_commands.Choice(name='Remove', value=False),
+    ])
+    async def set_hero(self,
+            interaction: discord.Interaction,
+            hero: str,
+            add_or_remove: typing.Optional[bool]=True,
+            date: typing.Optional[str]=None):
+        today = datetime.now(tz=pytz.timezone('US/Pacific')).date()
+        if date is None:
+            # Use today as default.
+            date = today
+        else:
+            # Otherwise parse date.
+            match = HeroChallengeDiscordCommands.DATE_REGEX.match(date)
+            if match is None:
+                await interaction.response.send_message('Invalid date format!', ephemeral=True)
+                return
+            month = int(date_match.group('month'))
+            day = int(date_match.group('day'))
+            year = date_match.group('year')
+
+            if year is not None:
+                year = int(year)
+                if year < 100:
+                    year += 2000
+            else:
+                year = today.year
+
+            try:
+                date = date_cls(year, monthy, day)
+            except ValueError:
+                await interaction.response.send_message('Invalid date!', ephemeral=True)
+                return
+
+        hero_challenge_tracker = self.hero_challenge_manager.getTrackerForUser(interaction.user.id)
+        if add_or_remove:
+            changed = hero_challenge_tracker.addHeroWithDate(hero, date)
+        else:
+            changed = hero_challenge_tracker.removeHeroWithDate(hero, date)
+
+        if changed:
+            self.hero_challenge_manager.saveTrackersToFile()
+            await interaction.response.send_message('Hero challenge tracker sucessfullly updated!', ephemeral=True)
+        else:
+            await interaction.response.send_message('Error when updating tracker!', ephemeral=True)
+
+    @app_commands.command(
+        name='challenge-status',
+        description='Prints out the status of the challenge.',
+    )
+    async def challenge_status(self, interaction: discord.Interaction):
+        hero_challenge_tracker = self.hero_challenge_manager.getTrackerForUser(interaction.user.id)
+
+        # Heroes are sorted by (# of repeats (high to low), hero_name (low to high))
+        sorted_heroes = sorted([(-len(ds), h) for h, ds in hero_challenge_tracker.heroes_with_date])
+
+        # TODO Use a different formating function.
+        msg = 'The status of the hero challenge (sorted from most to least frequently played):\n' + \
+              '\n'.join(hero_challenge_tracker.formatHeroForRandomHero(h) for _, h in sorted_heroes)
+        await interaction.response.send_message(msg, ephemeral=True)
+
+# Tracks the hero challenge for all users.
+class HeroChallengeManager:
+    def __init__(self, hero_challenge_fname=HERO_CHALLENGE_FILENAME):
+        self.hero_challenge_fname = hero_challenge_fname
+        self.loadTrackersFromFile()
+
+    def loadTrackersFromFile(self):
+        # If file does not exist, then init self.hero_challenge_trackers to empty dict, and save to file (to create it).
+        if not os.path.exists(self.hero_challenge_fname):
+            self.hero_challenge_trackers = {}
+            self.saveTrackersToFile()
+            return
+
+        f = open(self.hero_challenge_fname, 'rb')
+        self.hero_challenge_trackers = pickle.load(f)
+
+        for _, hct in self.hero_challenge_trackers.items():
+            # Adds empty entries for any new heroes that have been added.
+            hct.addMissingHeroes()
+
+    def saveTrackersToFile(self):
+        f = open(self.hero_challenge_fname, 'wb')
+        pickle.dump(self.hero_challenge_trackers, f)
+
+
+    def getDiscordCommands(self):
+        return [HeroChallengeDiscordCommands(self)]
+
+    def getTrackerForUser(self, user_id):
+        if user_id not in self.hero_challenge_trackers:
+            self.hero_challenge_trackers[user_id] = HeroChallengeTracker()
+            self.saveTrackersToFile()
+        return self.hero_challenge_trackers[user_id]
+
+# Tracks the hero challenge for a single person
+class HeroChallengeTracker:
+    def __init__(self):
+        # Key is a hero name, value is a list of dates where that hero was played.
+        self.heroes_with_date = {}
+        self.addMissingHeroes()
+
+    def addMissingHeroes(self):
+        for h, _ in HEROES.items():
+            if h not in self.heroes_with_date:
+                self.heroes_with_date[h] = []
+
+    def addHeroWithDate(self, hero, date):
+        if hero not in self.heroes_with_date:
+            return False
+        self.heroes_with_date[hero].append(date)
+        return True
+    
+    def removeHeroWithDate(self, hero, date):
+        if hero not in self.heroes_with_date:
+            return False
+        if date not in self.heroes_with_date[hero]:
+            return False
+        self.heroes_with_date[hero].remove(date)
+        return True
+
+    def getRandomSetOfHeroes(self,
+            num_heroes=5,
+            tank=True, dps=True, support=True,
+            allow_repeats=False):
+        pos_heroes = [
+            h for h, r in HEROES.items()
+            if ((tank and r == TANK) or (dps and r == DPS) or (support and r == SUPPORT))
+            and (allow_repeats or len(self.heroes_with_date[h]) == 0)
+        ]
+        # TODO Change how the heroes are chosen to take into account roles (i.e. ensure that all roles are represented), repeats (weight each hero by how often they have been chosen in the past), and previous roles (prefer roles based on how recently they were played).
+        return random.sample(pos_heroes, min(num_heroes, len(pos_heroes)))
+
+    def formatHeroForRandomHero(self, hero):
+        if hero not in self.heroes_with_date:
+            return f'  - Error with {hero}: not found in heroes_with_date'
+        if len(self.heroes_with_date[hero]) == 0:
+            return f'  - {hero}'
+        if len(self.heroes_with_date[hero]) > 0:
+            plural = 's' if len(self.heroes_with_date[hero]) >= 2 else ''
+            date_list = ', '.join(d.strftime('%x') for d in self.heroes_with_date[hero])
+            return f'  - {hero} (Played {len(self.heroes_with_date[hero])} time{plural} on {date_list})'
+    
