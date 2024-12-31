@@ -1023,7 +1023,7 @@ class HeroChallengeDiscordCommands(app_commands.Group):
         hero_challenge_tracker = self.hero_challenge_manager.getTrackerForUser(interaction.user.id)
 
         # Heroes are sorted by (# of repeats (high to low), hero_name (low to high))
-        sorted_heroes = sorted([(-len(ds), h) for h, ds in hero_challenge_tracker.heroes_with_date])
+        sorted_heroes = sorted([(-len(ds), h) for h, ds in hero_challenge_tracker.heroes_with_date.items()])
 
         # TODO Use a different formating function.
         msg = 'The status of the hero challenge (sorted from most to least frequently played):\n' + \
