@@ -757,7 +757,7 @@ class OverwatchTrackerManager:
 
         et = datetime.combine((now + timedelta(days=pd)).date(), pt)
 
-        logging('getNextWeeklyGoalEventTime(): now = ', now.isoformat(), ', et = ', et.isoformat())
+        logging.info('getNextWeeklyGoalEventTime(): now = ', now.isoformat(), ', et = ', et.isoformat())
         return et
 
 
