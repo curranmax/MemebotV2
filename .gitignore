@@ -8,3 +8,4 @@ pyproject.toml
 poetry.lock
 *.pickle
 data/custom_commands.txt
+dev.nix

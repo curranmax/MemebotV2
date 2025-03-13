@@ -1,3 +1,5 @@
+import event_calendar as EC
+
 import discord
 from discord import app_commands
 import typing
@@ -324,6 +326,8 @@ class OwTrackerDiscordCommands(app_commands.Group):
         #  Tank  -> X-X-X      |   Tank  -> X-X-X
         #  DPS   -> X-X-X      |   DPS   -> X-X-X
         #  Supp  -> X-X-X      |   Supp  -> X-X-X
+        #
+        # Weekly Goal: XX out of XX games played
 
         session_header = 'Today\'s Results'
         session_lines = self._getSummaryMessageByLine(session_games)
@@ -342,9 +346,13 @@ class OwTrackerDiscordCommands(app_commands.Group):
             for sl, tl in zip(session_lines, total_lines)
         ]
 
-        # Progress towards weekly goal?
-        return '\n'.join(['```', header, '-' * (len(header) + 1)] + lines +
-                         ['```'])
+        msg = '\n'.join(['```', header, '-' * (len(header) + 1)] + lines + ['```'])
+
+        goal, goal_games = self.ow_tracker_manager.getCurrentWeeklyGoalStatus(user_id)
+        if goal is not None:
+            msg += '\n\n```Weekly Goal: ' + str(len(goal_games)) + ' out of ' + str(goal) + ' games played```'
+
+        return msg
 
     def _getSummaryMessageByLine(self, games):
         overall_result = {result: 0 for result in OverwatchGame.RESULTS}
@@ -593,6 +601,35 @@ class OwTrackerDiscordCommands(app_commands.Group):
             message = 'Result is too large, use the "num_heroes" arg to decrease size of the result.'
         await interaction.response.send_message(message, ephemeral=True)
 
+    @app_commands.command(
+        name='weekly-goal',
+        description=
+        'Set or get the number of games for the weekly goal.')
+    @app_commands.describe(
+        new_weekly_goal='The value for the new goal. If not set, then the current weekly goal will be returned.')
+    async def weekly_goal(
+        self,
+        interaction: discord.Interaction,
+        new_weekly_goal: typing.Opptional[int] = None,
+        # TODO Add a way to clear the weekly goal.
+    ):
+        # If user didn't include a parameter, just return their current goal.
+        if new_weekly_goal is None:
+            current_weekly_goal = self.ow_tracker_manager.getWeeklyGoal(interaction.user.id)
+
+            if current_weekly_goal is None:
+                message = 'Weekly goal is not set.'
+            else:
+                message = f'Weekly goal is {current_weekly_goal} game{'s' if current_weekly_goal != 1 else ''}.'
+
+            await interaction.response.send_message(message, ephemeral=True)
+            return
+        # If the user set a new goal, then update their tracker.
+        if new_weekly_goal is Not None:
+            self.ow_tracker_manager.setWeeklyGoal(interaction.user.id, new_weekly_goal)
+            await interaction.response.send_message(f'Weekly goal updated to {new_weekly_goal} game{'s' if new_weekly_goal != 1 else ''}.', ephemeral=True)
+
+
     # TODO Add commands/support for
     #    Weekly goals
     #    Look at arbirtary range of dates
@@ -602,9 +639,14 @@ class OwTrackerDiscordCommands(app_commands.Group):
 
 class OverwatchTrackerManager:
 
-    def __init__(self, ow_tracker_fname=OW_TRACKER_FILENAME):
+    def __init__(self, ow_tracker_fname=OW_TRACKER_FILENAME, event_calendar=None):
         self.ow_tracker_fname = ow_tracker_fname
         self.loadTrackersFromFile()
+
+        self.event_calendar = event_calendar
+
+        if self.event_calendar is not None:
+            self.event_calendar.addEvent(EC.Event(self.getNextWeeklyGoalEventTime(), self.upateWeeklyChallenge))
 
     def getDiscordCommands(self):
         return [OwTrackerDiscordCommands(self)]
@@ -685,6 +727,39 @@ class OverwatchTrackerManager:
             return None
         return self._getOrCreateOwTrackerForUser(user_id).getSelectedRole()
 
+    def getWeeklyGoal(self, user_id):
+        if user_id not in self.overwatch_trackers:
+            return None
+        return self._getOrCreateOwTrackerForUser(user_id).getWeeklyGoal()
+    
+    def setWeeklyGoal(self, user_id, new_weekly_goal):
+        return self._getOrCreateOwTrackerForUser(user_id).setWeeklyGoal(new_weekly_goal)
+
+    def getCurrentWeeklyGoalStatus(self, user_id):
+        return self._getOrCreateOwTrackerForUser(user_id).getCurrentWeeklyGoalStatus()
+
+    def upateWeeklyChallenge(self):
+        for _, tracker in self.overwatch_trackers.items():
+            # TODO Send a message to user's. They should be able to enable or disable this message and configure where its sent.
+            tracker.advanceWeek()
+
+        return EC.Event(self.getNextWeeklyGoalEventTime(), self.upateWeeklyChallenge)
+
+    def getNextWeeklyGoalEventTime(self):
+        now = datetime.now(pytz.timezone('US/Pacific'))
+        pt = time(hour=8, tzinfo=pytz.timezone('US/Pacific'))
+
+        # Advance to the next tuesday
+        # weekday returns Monday to Sunday as 0 to 6.
+        pd = 1 - now.weekday()
+        if pd < 0 or (pd == 0 and now.time() >= time(hour=7, minute=45, tzinfo=pytz.timezone('US/Pacific'))): # This is purposefully 15 minutes before pt.
+            pd += 7
+
+        et = datetime.combine((now + timedelta(days=pd)).date(), pt)
+
+        logging('getNextWeeklyGoalEventTime(): now = ', now.isoformat(), ', et = ', et.isoformat())
+        return et
+
 
 # Tracks OW games for a single person
 class OverwatchTracker:
@@ -698,10 +773,15 @@ class OverwatchTracker:
 
         self.season = -1
 
+        # Tracker for weekly goal of number of games.
+        self.weekly_tracker = WeeklyTracker()
+
     def addGame(self, overwatch_game):
         self.games.append(overwatch_game)
         self.selected_game = self.games[-1]
         self._addGameToHeroUsage(self.selected_game)
+        if hasattr(self, 'weekly_tracker'):
+            self.weekly_tracker.addGame(overwatch_game)
         return self.selected_game
 
     def addHeroToSelectedGame(self, hero, weight):
@@ -800,6 +880,27 @@ class OverwatchTracker:
             return None
         return self.selected_game.role
 
+    def getWeeklyGoal(self):
+        if not hasattr(self, 'weekly_tracker'):
+            return None
+        return self.weekly_tracker.getGoal()
+
+    def setWeeklyGoal(self, new_weekly_goal):
+        if not hasattr(self, 'weekly_tracker'):
+            self.weekly_tracker = WeeklyTracker()
+
+        self.weekly_tracker.setGoal(new_weekly_goal)
+
+    def getCurrentWeeklyGoalStatus(self):
+        if not hasattr(self, 'weekly_tracker'):
+            return None, None
+        return self.weekly_tracker.getCurrentStatus()
+
+    def advanceWeek(self):
+        if not hasattr(self, 'weekly_tracker'):
+            return None, None
+        return self.weekly_tracker.advanceWeek()
+
     def _calculateHeroUsage(self):
         self.hero_usage = {}
         self.hero_usage_by_result = {}
@@ -882,6 +983,40 @@ class OverwatchGame:
         return '```\nMap    --> {}\nRole   --> {}\nResult --> {}\nHeroes --> {}\n```'.format(
             self.map, self.role, self.result, self.heroList())
 
+
+class WeeklyTracker:
+    def __init__(self, goal = None):
+        self.current_goal = goal
+        self.current_games = []  # TODO Double check that if a game is uppdpated, it is doesn't need to be updated here and in self.previous_weeks
+        self.current_start = datetime.now(tz=pytz.timezone("US/Pacific"))
+
+        # 4-tuple of (goal: int, start: datetime, end: datetime, games: list of OverwatchGame)
+        self.previous_weeks = []
+
+    def getGoal(self):
+        return self.current_goal
+
+    def setGoal(self, new_goal):
+        self.current_goal = goal
+
+    def addGame(self, game):
+        self.current_games.apppend(game)
+
+    def getCurrentStatus(self):
+        return self.current_goal, self.current_games
+
+    def getPreviousWeeks(self):
+        return self.previous_weeks
+
+    def advanceWeek(self):
+        games = list(self.current_games)
+
+        end = datetime.now(tz=pytz.timezone("US/Pacific"))
+        self.previous_weeks.append((self.current_goal, self.current_start, end, games))
+        self.current_start = end
+        self.current_games.clear()
+
+        return self.current_goal, games
 
 # Hero Challenge Sub-Feature:
 
