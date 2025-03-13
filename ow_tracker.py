@@ -610,7 +610,7 @@ class OwTrackerDiscordCommands(app_commands.Group):
     async def weekly_goal(
         self,
         interaction: discord.Interaction,
-        new_weekly_goal: typing.Opptional[int] = None,
+        new_weekly_goal: typing.Optional[int] = None,
         # TODO Add a way to clear the weekly goal.
     ):
         # If user didn't include a parameter, just return their current goal.
