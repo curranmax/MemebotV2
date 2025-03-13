@@ -620,14 +620,14 @@ class OwTrackerDiscordCommands(app_commands.Group):
             if current_weekly_goal is None:
                 message = 'Weekly goal is not set.'
             else:
-                message = f'Weekly goal is {current_weekly_goal} game{'s' if current_weekly_goal != 1 else ''}.'
+                message = f'Weekly goal is {current_weekly_goal} games.'
 
             await interaction.response.send_message(message, ephemeral=True)
             return
         # If the user set a new goal, then update their tracker.
         if new_weekly_goal is Not None:
             self.ow_tracker_manager.setWeeklyGoal(interaction.user.id, new_weekly_goal)
-            await interaction.response.send_message(f'Weekly goal updated to {new_weekly_goal} game{'s' if new_weekly_goal != 1 else ''}.', ephemeral=True)
+            await interaction.response.send_message(f'Weekly goal updated to {new_weekly_goal} games.', ephemeral=True)
 
 
     # TODO Add commands/support for
