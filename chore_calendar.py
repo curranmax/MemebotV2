@@ -367,7 +367,7 @@ class Chore:
             clamped_day_of_the_month = min(
                 self.chore_frequency.day_of_the_month,
                 calendar.monthrange(date.year, date.month)[1])
-            logging.info("self.chore_frequency.day_of_the_month: %d clamped to %d", self.chore_frequency.day_of_the_month, clamped_day_of_the_month)"
+            logging.info("self.chore_frequency.day_of_the_month: %d clamped to %d", self.chore_frequency.day_of_the_month, clamped_day_of_the_month)
             if clamped_day_of_the_month != date.day:
                 logging.info("Monthly chore returning false b/c day_of_the_month isn't right (clamped_day_of_the_month: %d != date.day: %d)", clamped_day_of_the_month, date.day)
                 return False
