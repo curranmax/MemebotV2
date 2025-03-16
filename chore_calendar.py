@@ -10,6 +10,7 @@ import os.path
 import pickle
 import typing
 import re
+import logging
 
 ONE_TIME = 'One-Time'
 DAILY = 'Daily'
@@ -323,47 +324,64 @@ class Chore:
         self.start_date = start_date
         self.last_post = None
 
+        self.is_pending = False
+
     def shouldPost(self, date):
+        logging.info("Starting shouldPost(date: %s) for (emote: '%s', name: '%s', frequency: %s, offset: %d, start_date: %s, last_post: %s)",
+                date.isoformat(), self.emote, self.name, str(self.chore_frequency), self.chore_frequency.offset, self.start_date.isoformat(), ("None" if self.last_post is None else self.last_post.isoformat()))
+
         if self.chore_frequency.frequency == ONE_TIME:
             # Handle one-time chores.
-            return date == self.start_date
+            logging.info("One-time chore returning %s (date: %s >= self.start_date: %s)", ("true" if date >= self.start_date else "false"), date.isoformat(), self.start_date.isoformat())
+            return date >= self.start_date
 
         if self.chore_frequency.frequency == DAILY:
             if self.last_post is None:
                 # First post should be on start_date
+                logging.info("Daily chore with no last_post returning %s (date: %s >= self.start_date: %s)", ("true" if date >= self.start_date else "false"), date.isoformat(), self.start_date.isoformat())
                 return date >= self.start_date
             else:
                 # After that it should happen every K days.
-                return (date -
-                        self.last_post).days >= self.chore_frequency.offset
+                logging.info("Daily chore with last_post returning %s ((date: %s - self.last_post: %s).days: %d >= self.chore_frequency.offset: %d)",
+                        ("true" if (date - self.last_post).days >= self.chore_frequency.offset else "false"), date.isoformat(), self.last_post.isoformat(), (date - self.last_post).days, self.chore_frequency.offset)
+                return (date - self.last_post).days >= self.chore_frequency.offset
 
         if self.chore_frequency.frequency == WEEKLY:
             # Needs to be on the correct day of the week.
             if self.chore_frequency.day_of_the_week != date.weekday():
+                logging.info("Weekly chore returning false b/c weekday isn't right (self.chore_frequency.day_of_the_week: %d != date.weekday(): %d)", self.chore_frequency.day_of_the_week, date.weekday())
                 return False
 
             if self.last_post is None:
                 # First post should be on start_date
+                logging.info("Weekly chore with no last_post returning %s (date: %s >= self.start_date: %s)", ("true" if date >= self.start_date else "false"), date.isoformat(), self.start_date.isoformat())
                 return date >= self.start_date
             else:
                 # After that it should happen every K weeks.
-                return (date -
-                        self.last_post).days >= self.chore_frequency.offset * 7
+                logging.info("Weekly chore with last_post returning %s ((date: %s - self.last_post: %s).days: %d >= self.chore_frequency.offset: %d * 7)",
+                        ("true" if (date - self.last_post).days >= self.chore_frequency.offset * 7 else "false"), date.isoformat(), self.last_post.isoformat(), (date - self.last_post).days, self.chore_frequency.offset)
+                return (date - self.last_post).days >= self.chore_frequency.offset * 7
 
         if self.chore_frequency.frequency == MONTHLY:
             # Needs to be on the correct day of the week.
             clamped_day_of_the_month = min(
                 self.chore_frequency.day_of_the_month,
                 calendar.monthrange(date.year, date.month)[1])
+            logging.info("self.chore_frequency.day_of_the_month: %d clamped to %d", self.chore_frequency.day_of_the_month, clamped_day_of_the_month)"
             if clamped_day_of_the_month != date.day:
+                logging.info("Monthly chore returning false b/c day_of_the_month isn't right (clamped_day_of_the_month: %d != date.day: %d)", clamped_day_of_the_month, date.day)
                 return False
 
             if self.last_post is None:
                 # First post should be on start_date
+                logging.info("Monthly chore with no last_post returning %s (date: %s >= self.start_date: %s)", ("true" if date >= self.start_date else "false"), date.isoformat(), self.start_date.isoformat())
                 return date >= self.start_date
             else:
+                logging.info("Calculating month_difference; (date.year: %d - self.last_post.year: %d) * 12 + date.month: %d - self.last_post.month: %d", date.year, self.last_post.year, date.month, self.last_post.month)
                 month_difference = (date.year - self.last_post.year
                                     ) * 12 + date.month - self.last_post.month
+                logging.info("Monthly chore with last_post returning %s (month_difference: %d >= self.chore_frequency.offset: %d)",
+                        ("true" if month_difference >= self.chore_frequency.offset else "false"), month_difference, self.chore_frequency.offset)
                 return month_difference >= self.chore_frequency.offset
 
     def getMessageLine(self):
@@ -383,7 +401,7 @@ class ChoreCalendar:
 
         # The saved chores
         self.chores = {}  # Key is Chore.emote, and value is Chore
-        self.cached_chore_list = None  # TODO Update this in a better way.
+        self.cached_chore_list = None
         self.chores_lock = asyncio.Lock()
         self.chores_filename = CHORES_FILENAME
         self._loadChores()
@@ -394,8 +412,7 @@ class ChoreCalendar:
         self.chore_channel_filename = CHORE_CHANNEL_FILENAME
         self._loadChannel()
 
-        # Outstanding chores, and the message to watch for reacts.
-        self.outstanding_chores = {}  # Key is Chore.emote, and value is Chore
+        # The message to watch for reacts.
         self.monitor_message = None
 
         self.event_calendar.addEvent(
@@ -464,9 +481,6 @@ class ChoreCalendar:
             else:
                 print("ERROR IN REMOVE CHORE! Problem with self.chore")
 
-            if chore.emote in self.outstanding_chores:
-                del self.outstanding_chores[chore.emote]
-
         await self._saveChores()
 
     async def getAllChores(self):
@@ -495,43 +509,39 @@ class ChoreCalendar:
 
     async def getChoreMessage(self):
         async with self.chores_lock:
-            chores_for_today = []
+            new_chores = []
+            pending_chores = []
             today = datetime.now(pytz.timezone('US/Pacific')).date()
             for _, chore in self.chores.items():
                 if chore.shouldPost(today):
-                    chores_for_today.append(chore)
+                    new_chores.append(chore)
+                elif chore.is_pending:
+                    pending_chores.append(chore)
 
-                    # Remove the chore from oustanding Chore if triggers again.
-                    if chore.emote in self.outstanding_chores:
-                        del self.outstanding_chores[chore.emote]
-
-            if len(self.outstanding_chores) + len(chores_for_today) == 0:
+            if len(pending_chores) + len(new_chores) == 0:
                 return 'No chores for today!', []
 
-            for chore in chores_for_today:
+            for chore in new_chores:
                 chore.last_post = today
+                chore.is_pending = True
 
             msg = ''
             ordered_emotes = []
-            if len(self.outstanding_chores) > 0:
+            if len(pending_chores) > 0:
                 msg += '**Outstanding Chores**:\n' + '\n'.join(
                     chore.getMessageLine()
-                    for _, chore in self.outstanding_chores.items())
-                for e, _ in self.outstanding_chores.items():
-                    ordered_emotes.append(e)
-
-            if len(self.outstanding_chores) > 0 and len(chores_for_today) > 0:
-                msg += '\n\n'
-
-            if len(chores_for_today) > 0:
-                msg += '**New Chores**:\n' + '\n'.join(
-                    chore.getMessageLine() for chore in chores_for_today)
-                for chore in chores_for_today:
+                    for chore in pending_chores)
+                for chore in pending_chores:
                     ordered_emotes.append(chore.emote)
 
-                # Add chores to outstanding_chores.
-                for chore in chores_for_today:
-                    self.outstanding_chores[chore.emote] = chore
+            if len(pending_chores) > 0 and len(new_chores) > 0:
+                msg += '\n\n'
+
+            if len(new_chores) > 0:
+                msg += '**New Chores**:\n' + '\n'.join(
+                    chore.getMessageLine() for chore in new_chores)
+                for chore in new_chores:
+                    ordered_emotes.append(chore.emote)
 
             msg += '\n\n'
             msg += '**React with the corresponding emote to mark the chore as done.**'
@@ -557,9 +567,9 @@ class ChoreCalendar:
 
         async with self.chores_lock:
             str_reaction = str(reaction.emoji)
-            if str_reaction in self.outstanding_chores:
-                completed_chore = self.outstanding_chores[str_reaction]
-                del self.outstanding_chores[str_reaction]
+            if str_reaction in self.chores and self.chores[str_reaction].is_pending:
+                completed_chore = self.chores[str_reaction]
+                completed_chore.is_pending = False
 
                 # If it is a one-time chore, delete it.
                 if completed_chore.chore_frequency.frequency == ONE_TIME:
@@ -568,6 +578,9 @@ class ChoreCalendar:
                 await self.discord_client.get_channel(self.channel).send(
                     'Marked chore as completed: {}'.format(
                         completed_chore.name))
+                
+                async with self.chores_lock:
+                    await self._saveChores()
             else:
                 await self.discord_client.get_channel(
                     self.channel
