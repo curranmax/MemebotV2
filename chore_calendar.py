@@ -449,10 +449,7 @@ class ChoreCalendar:
         f.close()
 
         # Update the chores in case there are any compatibility issues (i.e. add any new fields to old data).
-        for _, chore in loaded_chores.items():
-            chore.is_pending = False
-
-        update_last_post = True
+        update_last_post = False
         if update_last_post:
             print('Starting update_last_post for saved chores.')
             cur_date = min(chore.start_date for _, chore in loaded_chores.items()) - timedelta(days=1)
