@@ -593,8 +593,7 @@ class ChoreCalendar:
                     'Marked chore as completed: {}'.format(
                         completed_chore.name))
                 
-                async with self.chores_lock:
-                    await self._saveChores()
+                await self._saveChores()
             else:
                 await self.discord_client.get_channel(
                     self.channel
