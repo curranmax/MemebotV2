@@ -469,12 +469,15 @@ class ChoreCalendar:
             asyncio.run(self.addChore(chore, skip_save=True))
 
     async def _saveChores(self):
+        logging.info("Obtain lock: _saveChores")
         async with self.chores_lock:
             f = open(self.chores_filename, 'wb')
             pickle.dump(self.chores, f)
             f.close()
+        logging.info("Release lock: _saveChores")
 
     async def addChore(self, new_chore, skip_save=False):
+        logging.info("Obtain lock: addChore")
         async with self.chores_lock:
             self.cached_chore_list = None
 
@@ -482,27 +485,31 @@ class ChoreCalendar:
                 return False
 
             self.chores[new_chore.emote] = new_chore
+        logging.info("Release lock: addChore")
 
         if not skip_save:
             await self._saveChores()
         return True
 
     async def removeChore(self, chore):
+        logging.info("Obtain lock: removeChore")
         async with self.chores_lock:
             self.cached_chore_list = None
             if chore.emote in self.chores:
                 del self.chores[chore.emote]
             else:
                 print("ERROR IN REMOVE CHORE! Problem with self.chore")
-
+        logging.info("Release lock: removeChore")
         await self._saveChores()
 
     async def getAllChores(self):
+        logging.info("Obtain lock: getAllChores")
         async with self.chores_lock:
             if self.cached_chore_list is None:
                 self.cached_chore_list = [
                     chore for _, chore in self.chores.items()
                 ]
+            logging.info("Release lock: getAllChores")
             return self.cached_chore_list
 
     async def postDailyUpdate(self, schedule_new_post=True, channel=None):
@@ -523,6 +530,7 @@ class ChoreCalendar:
 
     async def getChoreMessage(self):
         need_save = False
+        logging.info("Obtain lock: getChoreMessage")
         async with self.chores_lock:
             new_chores = []
             pending_chores = []
@@ -561,6 +569,7 @@ class ChoreCalendar:
 
             msg += '\n\n'
             msg += '**React with the corresponding emote to mark the chore as done.**'
+        logging.info("Release lock: getChoreMessage")
         if need_save:
             await self._saveChores()
         return msg, ordered_emotes
@@ -584,6 +593,8 @@ class ChoreCalendar:
             return
 
         need_save = False
+        
+        logging.info("Obtain lock: onReactionAdd")
         async with self.chores_lock:
             str_reaction = str(reaction.emoji)
             if str_reaction in self.chores and self.chores[str_reaction].is_pending:
@@ -602,6 +613,7 @@ class ChoreCalendar:
                 await self.discord_client.get_channel(
                     self.channel
                 ).send('Reaction didn\'t match any existing chore.')
+        logging.info("Release lock: onReactionAdd")
         if need_save:
             await self._saveChores()
 
