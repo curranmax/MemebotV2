@@ -1000,7 +1000,7 @@ class WeeklyTracker:
         self.current_goal = new_goal
 
     def addGame(self, game):
-        self.current_games.apppend(game)
+        self.current_games.append(game)
 
     def getCurrentStatus(self):
         return self.current_goal, self.current_games
