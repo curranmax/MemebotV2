@@ -522,6 +522,7 @@ class ChoreCalendar:
             return None
 
     async def getChoreMessage(self):
+        need_save = False
         async with self.chores_lock:
             new_chores = []
             pending_chores = []
@@ -538,6 +539,7 @@ class ChoreCalendar:
             for chore in new_chores:
                 chore.last_post = today
                 chore.is_pending = True
+                need_save = True
 
             msg = ''
             ordered_emotes = []
@@ -559,7 +561,9 @@ class ChoreCalendar:
 
             msg += '\n\n'
             msg += '**React with the corresponding emote to mark the chore as done.**'
-            return msg, ordered_emotes
+        if need_save:
+            await self._saveChores()
+        return msg, ordered_emotes
 
     async def addEmotes(self, message, ordered_emotes):
         # Note that bot.py already filters out reactions from itself.
@@ -579,6 +583,7 @@ class ChoreCalendar:
         if reaction.message != self.monitor_message:
             return
 
+        need_save = False
         async with self.chores_lock:
             str_reaction = str(reaction.emoji)
             if str_reaction in self.chores and self.chores[str_reaction].is_pending:
@@ -592,12 +597,13 @@ class ChoreCalendar:
                 await self.discord_client.get_channel(self.channel).send(
                     'Marked chore as completed: {}'.format(
                         completed_chore.name))
-                
-                await self._saveChores()
+                need_save = True
             else:
                 await self.discord_client.get_channel(
                     self.channel
                 ).send('Reaction didn\'t match any existing chore.')
+        if need_save:
+            await self._saveChores()
 
     def getEmote(self, emote_string):
         return self.getEmote(emote_string)
