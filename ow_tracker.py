@@ -82,6 +82,7 @@ HEROES = {
     'Bastion': DPS,
     'Cassidy': DPS,
     'Echo': DPS,
+    'Freja': DPS,
     'Genji': DPS,
     'Hanzo': DPS,
     'Junkrat': DPS,
@@ -635,6 +636,8 @@ class OwTrackerDiscordCommands(app_commands.Group):
     #    Look at arbirtary range of dates
     #    Look at stats per hero/map/mode
     #    Look at stats per season
+
+    # TODO stadium-win, stadium-loss, powers
 
 
 class OverwatchTrackerManager:
