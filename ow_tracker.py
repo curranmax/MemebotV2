@@ -112,6 +112,254 @@ HEROES = {
     'Zenyatta': SUPPORT,
 }
 
+# Map from heroes available in stadium to list of powers.
+# TODO Have a way to keep old powers that removed documented somewhere.
+STADIUM_HEROES = {
+    # Tank
+    'D.Va': [
+        'Focused Fusion',
+        'Legendary Loadout',
+        'Overstocked',
+        'Countermeasures',
+        'Facetanking',
+        'Ultrawide Matrix',
+        'Ignition Burst',
+        'MEKA Punch',
+        'Stat Boost',
+        'Tokki Slam',
+        'Express Detonation',
+        'Party Protector',
+    ],
+    'Junker Queen': [
+        'Thrill of Battle',
+        'Royal Bullets',
+        'Twist the Knife',
+        'Blade Parade',
+        'Cut \'em Gracie!',
+        'Let\'s Go Win',
+        'Merciless Magnetism',
+        'Reckoner\'s Roar',
+        'Chop Chop',
+        'Soaring Stone',
+        'Bloodcrazed',
+        'Bow Down',
+    ],
+    'Orisa': [
+        'Scorched Earh',
+        'Shield Divergence',
+        'Advanced Throwbotics',
+        'Hot Rotate-O',
+        'Spynstem Update',
+        'Factory Reset',
+        'Hooves of Steel',
+        'Restortify'
+        'Ride with Me',
+        'Lassoed',
+        'Centripetal Charge',
+        'Supercharger',
+    ],
+    'Reinhardt': [
+        'Amplification Barrier',
+        'Barrier Reconstruction',
+        'To Me, My Friends!',
+        'Wilhelmwagen',
+        'Shield Stampede',
+        'Vanguard',
+        'Vroom Boom Boom',
+        'Blazing Blitz',
+        'Impact Burst',
+        'Magma Strike',
+        'Feeling the Burn',
+        'Smashing!',
+    ],
+    'Zarya': [
+        'No Limits',
+        'Royal Bullets',
+        'Piercing Beam',
+        'Pre-workout',
+        'Barrier Benefits',
+        'Containment Shield',
+        'Fission Field',
+        'Here to Spot You',
+        'Lifelift',
+        'Major Flex',
+        'Volskaya Vortex',
+        'Graviton Anomaly',
+    ],
+
+    # DPS
+    'Ashe': [
+        'Head Honcho',
+        'Incendiary Rounds',
+        'My Business, My Rules',
+        'Reload Therapy',
+        'Calamity',
+        'Double Barreled',
+        'Incendiary Blast',
+        'Early Detonation',
+        'Molten Munitions',
+        'Out With a Bang',
+        'B.O.B. Jr.',
+        'Partners in Crime',
+    ],
+    'Cassidy': [
+        'Bullseye',
+        'Dead Man Walking',
+        'Full House',
+        'Quick Draw',
+        'Think Flasht',
+        'Barrel Roll',
+        'Just Roll with It',
+        'Flash in the Pan',
+        'Hot Potato',
+        'Easy Rider',
+        'Sunrise',
+        'Sunset',
+    ],
+    'Genji': [
+        'Cybernetic Speed',
+        'Hashimoto\'s Bane',
+        'Sacred Shuriken',
+        'Hanamura Healing',
+        'Hidden Blade',
+        'Laceration',
+        'Wyrm\'s Maw',
+        'Deflect-o-bot',
+        'Forged Under Fire',
+        'Iaido Strike',
+        'Spirit of Sojiro',
+        'Dragon\'s Breath',
+    ],
+    'Mei': [
+        'Extendothermics',
+        'Frost Armor',
+        'Permafrost',
+        'Slowball',
+        'Iceberg',
+        'Snowball Flight',
+        'Twice As Ice',
+        'Coulder',
+        'Cyclone',
+        'Frost Nova',
+        'Avalanche',
+        'Blizznado',
+    ],
+    'Reaper': [
+        'Backstabber',
+        'Harvest Fest',
+        'Revolving Ruin',
+        'Shared Siphon',
+        'Shrouded Shrapnel',
+        'Spirited to Slay',
+        'Vampiric Touch',
+        'Death Step',
+        'Silen as the Grave',
+        'Strangle Step',
+        'Ghosted',
+        'Wraith Renewal',
+    ],
+    'Soldier: 76': [
+        'Peripheral Pulse',
+        'Super Visor',
+        'Chaingun',
+        'Man on the Run',
+        'Cratered',
+        'Double Helix',
+        'Hunker Down',
+        'Back Off',
+        'Biotic Bullseye',
+        'Frontliners',
+        'On Me!',
+        'Track and Field',
+    ],
+
+    # Support
+    'Ana': [
+        'No Scope Needed',
+        'Pinpoint Prescription',
+        'Tactical Rifle',
+        'Comfy Cloud',
+        'Dreamy',
+        'Sleep Regimen',
+        'Home Remedy',
+        'Time Out',
+        'Venomous',
+        'My Turn',
+        'Our Turn',
+        'Your Full Potential',
+    ],
+    'Juno': [
+        'Medimaster',
+        'Stinger',
+        'Cosmic Coolant',
+        'Medicinal Missiles',
+        'Pulsar Plus',
+        'Blink Boots',
+        'Torpedo Glide',
+        'Black Hole',
+        'Hyper Healer',
+        'Rally Ring',
+        'Orbital Allignment',
+        'Stellar Focus',
+    ],
+    'Kiriko': [
+        'Foxy Fireworks',
+        'Keen Kunai',
+        'Triple Threat',
+        'Leaf on the Wind',
+        'Self-care',
+        'Supported Shooting',
+        'Clone Conjuration',
+        'Fleet Foot',
+        'Cleansing Charge',
+        'Two-zu',
+        'Crossing Guard',
+        'Spirit Veil',
+    ],
+    'Lúcio': [
+        'Fast Forward',
+        'Signature Shift',
+        'Sonic Boom',
+        'Mixtape',
+        'Megaphone',
+        'Radio Edit',
+        'Vivace',
+        'Wallvibing',
+        'Crowd Pleaser',
+        'Let\'s Bounce',
+        'Reverb',
+        'Beat Drop',
+    ],
+    'Mercy': [
+        'Distortion',
+        'Glass Extra Full',
+        'Protective Beam',
+        'Serenity',
+        'Threads of Fate',
+        'Battle Medic',
+        'Equivalent Exchange',
+        'First Responder',
+        'Renaissance',
+        'The Whambulance',
+        'Triage Unit',
+        'Crepuscular Circle'
+    ],
+    'Moira': [
+        'Chain Grasph',
+        'Deconstruction',
+        'Empowering You',
+        'Ethereal Excision',
+        'Optimal Overflow',
+        'Precarious Potency',
+        'Cross-orbal',
+        'Multiball',
+        'Phantasm',
+        'Scientific Deathod',
+        'Voidhoppers',
+        'Descruction\'s Divide',
+    ],
+}
+
 
 # Move this to a central util file.
 def customEditDistance(v1, v2):
@@ -251,6 +499,56 @@ class OwTrackerDiscordCommands(app_commands.Group):
             hero_choices = hero_choices[:AUTOCOMPLETE_LIMIT]
 
         return hero_choices
+
+    async def stadium_hero_autocomplete(
+            self, interaction: discord.Interaction,
+            current: str) -> typing.List[app_commands.Choice[str]]:
+        hero_choices = [
+            v for v in OwTrackerDiscordCommands.HERO_CHOICES
+            if v.value in STADIUM_HEROES.keys()
+        ]
+
+        # Get the edit distance between the current string and heroes.
+        hero_edit_distance = {
+            hero: customEditDistance(hero, current)
+            for hero, _ in STADIUM_HEROES.items()
+        }
+
+        # The heroes are sorted by (hero edit distance ascending, hero name ascending)
+        hero_choices.sort(key=lambda hero: (hero_edit_distance[hero.value], hero.value))
+
+        if len(hero_choices) > AUTOCOMPLETE_LIMIT:
+            hero_choices = hero_choices[:AUTOCOMPLETE_LIMIT]
+
+        return hero_choices
+
+    async def power_autocomplete(
+            self, interaction: discord.Interaction,
+            current: str) -> typing.List[app_commands.Choice[str]]:
+        current_hero = interaction.namespace['hero']
+        logging.info(f'power_autocomplete: interaction.namespace["hero"] = "{current_hero}"')
+
+        if current_hero in STADIUM_HEROES:
+            powers = [power for power in STADIUM_HEROES[current_hero]]
+        else:
+            powers = [power for _, powers in STADIUM_HEROES for power in powers]
+
+
+        power_choices = [
+            app_commands.Choice(name=power, value=power)
+            for power in powers
+        ]
+        power_edit_distances = {
+            power: customEditDistance(power, current)
+            for power in powers
+        }
+
+        power_choices.sort(key=lambda power: (power_edit_distances[power.value], power.value))
+
+        if len(power_choices) > AUTOCOMPLETE_LIMIT:
+            power_choices = power_choices[:AUTOCOMPLETE_LIMIT]
+
+        return power_choices
 
     @app_commands.command(name='add-win', description='Record win')
     @app_commands.describe(
@@ -637,7 +935,141 @@ class OwTrackerDiscordCommands(app_commands.Group):
     #    Look at stats per hero/map/mode
     #    Look at stats per season
 
-    # TODO stadium-win, stadium-loss, powers
+    @app_commands.command(name='add-stadium-game', description='Record stadium game.')
+    @app_commands.describe(
+        result='Whether you won or lost the game.',
+        hero='The hero played in this game.',
+        round_1_power='The power selected in Round #1.',
+        round_3_power='The power selected in Round #3.',
+        round_5_power='The power selected in Round #5. Leave blank, if the game didn\'t reach Round #5.',
+        round_7_power='The power selected in Round #7. Leave blank, if the game didn\'t reach Round #7.',
+        date='Optional way to record games that happened at a previous date. Use MM/DD(/YYYY)? format. If not set, game is recorded as today.')
+    @app_commands.autocomplete(
+        hero=stadium_hero_autocomplete,
+        round_1_power=power_autocomplete,
+        round_3_power=power_autocomplete,
+        round_5_power=power_autocomplete,
+        round_7_power=power_autocomplete)
+    @app_commands.choices(result=[
+        app_commands.Choice(name=StadiumGame.WIN, value=StadiumGame.WIN),
+        app_commands.Choice(name=StadiumGame.Loss, value=StadiumGame.WIN),
+    ])
+    async def add_stadium_game(
+            self,
+            interaction: discord.Interaction,
+            result: str,
+            hero: str,
+            round_1_power: str,
+            round_3_power: str,
+            round_5_power: typing.Optional[str] = None,
+            round_7_power: typing.Optional[str] = None,
+            date: typing.Optional[str] = None):
+
+        season = self.ow_tracker_manager.getSeason(interaction.user.id)
+
+        # Get current time in PT or use the supplied date parameter.
+        dt = datetime.now(tz=pytz.timezone('US/Pacific'))
+        if date is not None:
+            # If date is given override that date.
+            pattern = re.compile(r'^(?P<month>\d{1,2})\/(?P<day>\d{1,2})(?:\/(?P<year>\d{2}|\d{4}))?$')
+            match = pattern.match(date)
+            match = HeroChallengeDiscordCommands.DATE_REGEX.match(date)
+            if match is None:
+                await interaction.response.send_message('Invalid date format!', ephemeral=True)
+                return
+            month = int(date_match.group('month'))
+            day = int(date_match.group('day'))
+            year = date_match.group('year')
+
+            if year is not None:
+                year = int(year)
+                if year < 100:
+                    year += 2000
+            else:
+                year = dt.date().year
+
+            try:
+                date = date_cls(year, monthy, day)
+                dt = datetime.combine(date, dt.time())
+            except ValueError:
+                await interaction.response.send_message('Invalid date!', ephemeral=True)
+                return
+
+        stadium_game = StadiumGame(
+            result, hero, season,
+            round_1_power, round_3_power, round_5_power, round_7_power,
+            dt)
+
+        latest_game = self.ow_tracker_manager.addStadiumGame(interaction.user.id, stadium_game)
+        message = 'Game added.\n' + self._getRecentStadiumResultMessage(interaction.user.id, num_days=7)
+        message += '\nAdded Game:\n' + latest_game.msgStr()
+
+        await interaction.response.send_message(message, ephemeral=True)
+
+    def _getRecentStadiumResultMessage(self, user_id, num_days=7):
+        session_games = self.ow_tracker_manager.getStadiumGamesFromPastDays(
+            user_id, num_days=1)
+        total_games = self.ow_tracker_manager.getStadiumGamesFromPastDays(
+            user_id, num_days=num_days)
+
+        #  Today's Results | Recent Results (k days)
+        # ----------------------------------------------
+        #  Total -> XX-XX  | Total -> XX-XX
+        #  Tank  -> X-X    | Tank  -> X-X
+        #  DPS   -> X-X    | DPS   -> X-X
+        #  Supp  -> X-X    | Supp  -> X-X
+        #
+        # Weekly Goal: XX out of XX games played
+
+        session_header = 'Today\'s Results'
+        session_lines = self._getStadiumSummaryMessageByLine(session_games)
+
+        total_header = 'Recent Results ({} days)'.format(num_days)
+        total_lines = self._getStadiumSummaryMessageByLine(total_games)
+
+        session_width = max(map(len, [session_header] + session_lines))
+
+        joiner = ' | '
+
+        header = ' ' + session_header + ' ' * (
+            session_width - len(session_header)) + joiner + total_header
+        lines = [
+            ' ' + sl + ' ' * (session_width - len(sl)) + joiner + tl
+            for sl, tl in zip(session_lines, total_lines)
+        ]
+
+        msg = '\n'.join(['```', header, '-' * (len(header) + 1)] + lines + ['```'])
+
+        # TODO integrate stadium into the weekly goal
+        # goal, goal_games = self.ow_tracker_manager.getCurrentWeeklyGoalStatus(user_id)
+        # if goal is not None:
+        #     msg += '\n\n```Weekly Goal: ' + str(len(goal_games)) + ' out of ' + str(goal) + ' games played```'
+
+        return msg
+
+    def _getStadiumSummaryMessageByLine(self, games):
+        overall_result = {result: 0 for result in StadiumGame.RESULTS}
+        result_by_role = {(role, result): 0
+                          for role in ROLES
+                          for result in StadiumGame.RESULTS}
+        for game in games:
+            overall_result[game.result] += 1
+            if (game.role, game.result) in result_by_role:
+                result_by_role[(game.role, game.result)] += 1
+
+        return [
+            'Total -> {}-{}'.format(overall_result[StadiumGame.WIN],
+                                       overall_result[StadiumGame.LOSS]),
+            'Tank  -> {}-{}'.format(
+                result_by_role[(TANK, StadiumGame.WIN)],
+                result_by_role[(TANK, StadiumGame.LOSS)]),
+            'DPS   -> {}-{}'.format(
+                result_by_role[(DPS, StadiumGame.WIN)],
+                result_by_role[(DPS, StadiumGame.LOSS)]),
+            'Supp  -> {}-{}'.format(
+                result_by_role[(SUPPORT, StadiumGame.WIN)],
+                result_by_role[(SUPPORT, StadiumGame.LOSS)])
+        ]
 
 
 class OverwatchTrackerManager:
@@ -763,22 +1195,40 @@ class OverwatchTrackerManager:
         logging.info('getNextWeeklyGoalEventTime(): now = %s, et = %s', now.isoformat(), et.isoformat())
         return et
 
+    # Stadium
+    def addStadiumGame(self, user_id, stadium_game):
+        overwatch_tracker = self._getOrCreateOwTrackerForUser(user_id)
+        rv = overwatch_tracker.addStadiumGame(stadium_game)
+        self.saveTrackersToFile()
+        return rv
+
+    def getStadiumGamesFromPastDays(self, user_id, num_days=7):
+        overwatch_tracker = self._getOrCreateOwTrackerForUser(user_id)
+        return overwatch_tracker.getStadiumGamesFromPastDays(num_days=num_days)
+
 
 # Tracks OW games for a single person
 class OverwatchTracker:
 
     def __init__(self):
-        # List of OverwatchGames
+        # List of OverwatchGames (regular comp)
         self.games = []
-
         self.selected_game = None
+        
+        # Hero usage is just for regular comp
         self.hero_usage = None
 
+        # List of StadiumGames (stadium)
+        self.stadium_games = []
+        self.selected_stadium_game = None
+
+        # Season is shared between Regular comp + Stadium
         self.season = -1
 
         # Tracker for weekly goal of number of games.
         self.weekly_tracker = WeeklyTracker()
 
+    # Regular Comp
     def addGame(self, overwatch_game):
         self.games.append(overwatch_game)
         self.selected_game = self.games[-1]
@@ -796,28 +1246,7 @@ class OverwatchTracker:
         return self.selected_game
 
     def getGamesFromPastDays(self, num_days=7):
-        # TMP check that games are in sorted order by date.
-        prev_date = None
-        for game in self.games:
-            if prev_date is not None and game.datetime < prev_date:
-                logging.info('Games are not in sorted order by date.')
-            prev_date = game.datetime
-
-        rv = []
-        tz = pytz.timezone("US/Pacific")
-        todays_cutoff = datetime.combine(date_cls.today(), time(hour=6, minute=0),
-                                         tz)
-        cutoff_day = todays_cutoff - timedelta(
-            days=num_days - (1 if datetime.now(tz=tz) >= todays_cutoff else 0))
-
-        logging.info('todays_cutoff: %s, cutoff_day: %s', str(todays_cutoff),
-                     str(cutoff_day))
-        for game in reversed(self.games):
-            logging.info('game.datetime: %s', str(game.datetime))
-            if game.datetime <= cutoff_day:
-                break
-            rv.append(game)
-        return reversed(rv)
+        return self._getRecentGames(self, self.games, num_days)
 
     def getRecentGames(self, num_games=10):
         if len(self.games) == 0:
@@ -859,6 +1288,12 @@ class OverwatchTracker:
 
         return self.selected_game
 
+    def getSelectedRole(self):
+        if self.selected_game is None:
+            return None
+        return self.selected_game.role
+
+    # Season
     def updateSeason(self, new_season):
         season_changed = (self.season != new_season)
         self.season = new_season
@@ -868,6 +1303,8 @@ class OverwatchTracker:
             self._calculateHeroUsage()
         return season_changed
 
+    # Hero Usage
+    # TODO Add a function to check that hero_usage is consistent (Sum should be total games in last k seasons, no values should be negative)
     def getHeroUsage(self):
         if self.hero_usage is None:
             self._calculateHeroUsage()
@@ -877,32 +1314,6 @@ class OverwatchTracker:
         if self.hero_usage_by_result is None:
             self._calculateHeroUsage()
         return self.hero_usage_by_result
-
-    def getSelectedRole(self):
-        if self.selected_game is None:
-            return None
-        return self.selected_game.role
-
-    def getWeeklyGoal(self):
-        if not hasattr(self, 'weekly_tracker'):
-            return None
-        return self.weekly_tracker.getGoal()
-
-    def setWeeklyGoal(self, new_weekly_goal):
-        if not hasattr(self, 'weekly_tracker'):
-            self.weekly_tracker = WeeklyTracker()
-
-        self.weekly_tracker.setGoal(new_weekly_goal)
-
-    def getCurrentWeeklyGoalStatus(self):
-        if not hasattr(self, 'weekly_tracker'):
-            return None, None
-        return self.weekly_tracker.getCurrentStatus()
-
-    def advanceWeek(self):
-        if not hasattr(self, 'weekly_tracker'):
-            return None, None
-        return self.weekly_tracker.advanceWeek()
 
     def _calculateHeroUsage(self):
         self.hero_usage = {}
@@ -941,8 +1352,105 @@ class OverwatchTracker:
             self.hero_usage[h] += w / total_weight
             self.hero_usage_by_result[h][game.result] += w / total_weight
 
-    # TODO Add a function to check that hero_usage is consistent (Sum should be total games in last k seasons, no values should be negative)
+    # Weekly Goal
+    def getWeeklyGoal(self):
+        if not hasattr(self, 'weekly_tracker'):
+            return None
+        return self.weekly_tracker.getGoal()
 
+    def setWeeklyGoal(self, new_weekly_goal):
+        if not hasattr(self, 'weekly_tracker'):
+            self.weekly_tracker = WeeklyTracker()
+
+        self.weekly_tracker.setGoal(new_weekly_goal)
+
+    def getCurrentWeeklyGoalStatus(self):
+        if not hasattr(self, 'weekly_tracker'):
+            return None, None
+        return self.weekly_tracker.getCurrentStatus()
+
+    def advanceWeek(self):
+        if not hasattr(self, 'weekly_tracker'):
+            return None, None
+        return self.weekly_tracker.advanceWeek()
+
+    # Stadium
+    def _initStadium(self):
+        if not hasattr(self, 'stadium_games'):
+            self.stadium_games = []
+            self.selected_stadium_game = None
+
+    def addStadiumGame(self, stadium_game):
+        self._initStadium()
+        self.stadium_games.append(stadium_game)
+        self.selected_stadium_game = self.stadium_games[-1]
+        # TODO Add stadium games to the weekly tracker
+        # if hasattr(self, 'weekly_tracker'):
+        #     self.weekly_tracker.addStadiumGame(stadium_game)
+        return self.selected_stadium_game
+
+    def getStadiumGamesFromPastDays(self, num_days=7):
+        self._initStadium()
+        return self._getRecentGames(self, self.stadium_games, num_days)
+
+    def getRecentStadiumGames(self, num_games=10):
+        self._initStadium()
+        if len(self.stadium_games) == 0:
+            return []
+
+        if len(self.stadium_games) < num_games:
+            num_games = len(self.stadium_games)
+
+        return self.stadium_games[-num_games:]
+
+    def selectStadiumGame(self, game_ind):
+        self._initStadium()
+        if len(self.stadium_games) < game_ind:
+            return None
+
+        self.selected_stadium_game = self.stadium_games[-game_ind]
+        return self.selected_stadium_game
+
+    def updateStadiumGame(self, result, hero, season, power1, power2, power3, power4):
+        if result is not None:
+            self.selected_stadium_game.result = result
+
+        if hero is not None:
+            self.selected_stadium_game.hero = getHero(hero)
+
+        if season is not None:
+            self.selected_stadium_game.season = season
+
+        if power1 is not None and power2 is not None:
+            self.selected_stadium_game.power1 = power1
+            self.selected_stadium_game.power2 = power2
+            self.selected_stadium_game.power3 = power3
+            self.selected_stadium_game.power4 = power4
+
+    # Helper functions with code shared between regular comp and stadium
+    def _getRecentGames(self, games, num_days):
+        # TMP check that games are in sorted order by date.
+        prev_date = None
+        for game in games:
+            if prev_date is not None and game.datetime < prev_date:
+                logging.info('Games are not in sorted order by date.')
+            prev_date = game.datetime
+
+        rv = []
+        tz = pytz.timezone("US/Pacific")
+        todays_cutoff = datetime.combine(date_cls.today(), time(hour=6, minute=0),
+                                         tz)
+        cutoff_day = todays_cutoff - timedelta(
+            days=num_days - (1 if datetime.now(tz=tz) >= todays_cutoff else 0))
+
+        logging.info('todays_cutoff: %s, cutoff_day: %s', str(todays_cutoff),
+                     str(cutoff_day))
+        for game in reversed(games):
+            logging.info('game.datetime: %s', str(game.datetime))
+            if game.datetime <= cutoff_day:
+                break
+            rv.append(game)
+        return reversed(rv)
 
 class OverwatchGame:
     WIN = 'Win'
@@ -986,6 +1494,36 @@ class OverwatchGame:
         return '```\nMap    --> {}\nRole   --> {}\nResult --> {}\nHeroes --> {}\n```'.format(
             self.map, self.role, self.result, self.heroList())
 
+
+class StadiumGame:
+    WIN = 'Win'
+    LOSS = 'Loss'
+    RESULTS = [WIN, LOSS]
+
+    def __init__(self, result, hero, season, power1, power2, power3, power4, dt):
+        self.result = result
+        self.hero = getHero(hero)
+        self.role = HEROES[self.hero]
+        self.season = season
+        self.datetime = dt
+
+        self.power1 = power1  # Round 1 power
+        self.power2 = power2  # Round 3 power
+        self.power3 = power3  # Round 5 power (if None, then game ended before round 5)
+        self.power4 = power4  # Round 7 power (if None, then game ended before round 7)
+
+    def msgStr(self):
+        power_str = f'{self.power1}, {self.power2}'
+        if self.power3 is not None:
+            power_str += f', {self.power3}'
+            if self.power4 is not None:
+                power_str += f', {self.power4}'
+
+        dt_str = self.datetime.strftime('%b %-d %Y, %I:%M %p')
+
+        return f'```\nResult --> {self.result}\nHero --> {self.hero}\nPowers: {power_str}\nSeason: {self.season}\nDateTime: {dt_str}\n```'
+
+        
 
 class WeeklyTracker:
     def __init__(self, goal = None):
