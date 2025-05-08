@@ -972,9 +972,9 @@ class OwTrackerDiscordCommands(app_commands.Group):
         if date is not None:
             # If date is given override that date.
             pattern = re.compile(r'^(?P<month>\d{1,2})\/(?P<day>\d{1,2})(?:\/(?P<year>\d{2}|\d{4}))?$')
-            match = pattern.match(date)
-            match = HeroChallengeDiscordCommands.DATE_REGEX.match(date)
-            if match is None:
+            # TODO Define this REGEX in a common place
+            date_match = HeroChallengeDiscordCommands.DATE_REGEX.match(date)
+            if date_match is None:
                 await interaction.response.send_message('Invalid date format!', ephemeral=True)
                 return
             month = int(date_match.group('month'))
