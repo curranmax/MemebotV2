@@ -989,7 +989,7 @@ class OwTrackerDiscordCommands(app_commands.Group):
                 year = dt.date().year
 
             try:
-                date = date_cls(year, monthy, day)
+                date = date_cls(year, month, day)
                 dt = datetime.combine(date, dt.time())
             except ValueError:
                 await interaction.response.send_message('Invalid date!', ephemeral=True)
