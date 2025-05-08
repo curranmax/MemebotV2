@@ -951,8 +951,8 @@ class OwTrackerDiscordCommands(app_commands.Group):
         round_5_power=power_autocomplete,
         round_7_power=power_autocomplete)
     @app_commands.choices(result=[
-        app_commands.Choice(name=StadiumGame.WIN, value=StadiumGame.WIN),
-        app_commands.Choice(name=StadiumGame.Loss, value=StadiumGame.WIN),
+        app_commands.Choice(name='Win', value='Win'),
+        app_commands.Choice(name='Loss', value='Loss'),
     ])
     async def add_stadium_game(
             self,
