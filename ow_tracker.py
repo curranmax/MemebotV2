@@ -1099,7 +1099,7 @@ class OverwatchTrackerManager:
 
         # TMP While debugging
         for _, owt in self.overwatch_trackers.items():
-            owt.self.stadium_games = []
+            owt.stadium_games = []
             owt.selected_stadium_game = None
 
     # TODO make this async
