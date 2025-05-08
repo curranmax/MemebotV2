@@ -1098,6 +1098,7 @@ class OverwatchTrackerManager:
         self.overwatch_trackers = pickle.load(f)
 
         # TMP While debugging
+        print(self.overwatch_trackers)
         for _, owt in self.overwatch_trackers:
             owt.self.stadium_games = []
             owt.selected_stadium_game = None
