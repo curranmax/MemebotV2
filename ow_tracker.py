@@ -1097,6 +1097,11 @@ class OverwatchTrackerManager:
         f = open(self.ow_tracker_fname, 'rb')
         self.overwatch_trackers = pickle.load(f)
 
+        # TMP While debugging
+        for _, owt in self.overwatch_trackers:
+            owt.self.stadium_games = []
+            owt.selected_stadium_game = None
+
     # TODO make this async
     def saveTrackersToFile(self):
         f = open(self.ow_tracker_fname, 'wb')
@@ -1246,7 +1251,7 @@ class OverwatchTracker:
         return self.selected_game
 
     def getGamesFromPastDays(self, num_days=7):
-        return self._getRecentGames(self, self.games, num_days)
+        return self._getRecentGames(self.games, num_days)
 
     def getRecentGames(self, num_games=10):
         if len(self.games) == 0:
@@ -1391,7 +1396,7 @@ class OverwatchTracker:
 
     def getStadiumGamesFromPastDays(self, num_days=7):
         self._initStadium()
-        return self._getRecentGames(self, self.stadium_games, num_days)
+        return self._getRecentGames(self.stadium_games, num_days)
 
     def getRecentStadiumGames(self, num_games=10):
         self._initStadium()
