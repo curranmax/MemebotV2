@@ -741,7 +741,7 @@ class OverwatchTrackerManager:
     def getCurrentWeeklyGoalStatus(self, user_id):
         return self._getOrCreateOwTrackerForUser(user_id).getCurrentWeeklyGoalStatus()
 
-    def upateWeeklyChallenge(self):
+    async def upateWeeklyChallenge(self):
         for _, tracker in self.overwatch_trackers.items():
             # TODO Send a message to user's. They should be able to enable or disable this message and configure where its sent.
             tracker.advanceWeek()
