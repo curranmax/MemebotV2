@@ -990,7 +990,7 @@ class OwTrackerDiscordCommands(app_commands.Group):
 
             try:
                 date = date_cls(year, month, day)
-                dt = datetime.combine(date, dt.time())
+                dt = datetime.combine(date, dt.time(), pytz.timezone("US/Pacific"))
             except ValueError:
                 await interaction.response.send_message('Invalid date!', ephemeral=True)
                 return
@@ -1195,7 +1195,7 @@ class OverwatchTrackerManager:
         if pd < 0 or (pd == 0 and now.time() >= time(hour=7, minute=45, tzinfo=pytz.timezone('US/Pacific'))): # This is purposefully 15 minutes before pt.
             pd += 7
 
-        et = datetime.combine((now + timedelta(days=pd)).date(), pt)
+        et = datetime.combine((now + timedelta(days=pd)).date(), pt, pytz.timezone("US/Pacific"))
 
         logging.info('getNextWeeklyGoalEventTime(): now = %s, et = %s', now.isoformat(), et.isoformat())
         return et
