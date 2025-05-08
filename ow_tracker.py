@@ -1097,11 +1097,6 @@ class OverwatchTrackerManager:
         f = open(self.ow_tracker_fname, 'rb')
         self.overwatch_trackers = pickle.load(f)
 
-        # TMP While debugging
-        for _, owt in self.overwatch_trackers.items():
-            owt.stadium_games = []
-            owt.selected_stadium_game = None
-
     # TODO make this async
     def saveTrackersToFile(self):
         f = open(self.ow_tracker_fname, 'wb')
