@@ -152,7 +152,7 @@ STADIUM_HEROES = {
         'Spynstem Update',
         'Factory Reset',
         'Hooves of Steel',
-        'Restortify'
+        'Restortify',
         'Ride with Me',
         'Lassoed',
         'Centripetal Charge',
