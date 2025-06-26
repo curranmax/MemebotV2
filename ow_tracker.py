@@ -49,6 +49,7 @@ MAPS = [
     'Runasapi',
 
     # Flashpoint
+    'Aatlis',
     'New Junk City',
     'Suravasa',
 
@@ -172,6 +173,20 @@ STADIUM_HEROES = {
         'Feeling the Burn',
         'Smashing!',
     ],
+    'Sigma': [
+        'Zero Gravity',
+        'Hyperloop',
+        'Trinisphere',
+        'Event Horizon',
+        'Symphonic Syzygy',
+        'Orbital Barrier',
+        'Philharmonic Fortitude',
+        'Mass Driver',
+        'Singularity',
+        'Maestro',
+        'Apogee Alignment',
+        'Astrophysical',
+    ],
     'Zarya': [
         'No Limits',
         'Royal Bullets',
@@ -243,6 +258,20 @@ STADIUM_HEROES = {
         'Iaido Strike',
         'Spirit of Sojiro',
         'Dragon\'s Breath',
+    ],
+    'Junkrat': [
+        '2 Frag 2 Frurious',
+        'Bango!',
+        'Big Bang',
+        'Bingo!',
+        'Soot Shaker',
+        'It\'s a(nother) trap!',
+        'Trap II, Esquire',
+        'Hop Boom',
+        'Slapnel',
+        'Gachabomb',
+        'Rainin\' Lead',
+        'Rip Roll',
     ],
     'Mei': [
         'Extendothermics',
@@ -371,6 +400,20 @@ STADIUM_HEROES = {
         'Scientific Deathod',
         'Voidhoppers',
         'Descruction\'s Divide',
+    ],
+    'Zenyatta': [
+        'Flying Kick',
+        'It\'s Orbin\' Time',
+        'Seeking Salvation',
+        'Dual Harmony',
+        'Enlightenment',
+        'Gotta Have Faith',
+        'Inner Peace',
+        'Discord Fever',
+        'Discord Inferno',
+        'Instant Karma',
+        'Circle of Strife',
+        'Soul Control',
     ],
 }
 

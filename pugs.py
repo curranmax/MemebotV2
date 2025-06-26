@@ -14,6 +14,11 @@ SUPPORT = 'Support'
 DEFAULT_COMP = [TANK, DPS, DPS, SUPPORT, SUPPORT]
 
 MAPS_BY_MODE = {
+    # TODO Add a way to choose these maps.
+    'Clash': {
+        'Hanaoka': [],
+        'Throne of Anubis': [],
+    },
     'Control': {
         'Antarctic Peninsula': ['Night', 'Morning'],
         'Busan': ['Overcast', 'Night', 'Morning'],
@@ -34,6 +39,7 @@ MAPS_BY_MODE = {
         'Watchpoint: Gibraltar': ['Evening', 'Morning'],
     },
     'Flashpoint': {
+        'Aatlis': [],
         'New Junk City': [],
         'Suravasa': [],
     },
