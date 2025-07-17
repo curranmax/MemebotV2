@@ -189,7 +189,7 @@ STADIUM_HEROES = {
     ],
     'Zarya': [
         'No Limits',
-        'Royal Bullets',
+        'Particle Accelerator',
         'Piercing Beam',
         'Pre-workout',
         'Barrier Benefits',
