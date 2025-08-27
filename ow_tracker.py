@@ -360,7 +360,7 @@ STADIUM_HEROES = {
         'Our Turn',
         'Your Full Potential',
     ],
-    'Briggitte':[
+    'Brigitte':[
         'Burst Aid',
         'Pep Talk',
         'Whirlwhip',
