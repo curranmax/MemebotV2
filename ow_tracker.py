@@ -1224,10 +1224,6 @@ class OverwatchTrackerManager:
         f = open(self.ow_tracker_fname, 'rb')
         self.overwatch_trackers = pickle.load(f)
 
-        # TMP Clear the weekly tracker obj
-        for _, owt in self.overwatch_trackers.items():
-            owt.weekly_tracker = None
-
     # TODO make this async
     def saveTrackersToFile(self):
         f = open(self.ow_tracker_fname, 'wb')
