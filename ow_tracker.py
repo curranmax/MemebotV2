@@ -726,7 +726,8 @@ class OwTrackerDiscordCommands(app_commands.Group):
         #  DPS   -> X-X-X      |   DPS   -> X-X-X
         #  Supp  -> X-X-X      |   Supp  -> X-X-X
         #
-        # Weekly Goal: XX out of XX games played
+        # Weekly Goal:   XX out of XX games played
+        # Weekly Streak: XX week active streak
 
         session_header = 'Today\'s Results'
         session_lines = self._getSummaryMessageByLine(session_games)
@@ -747,9 +748,20 @@ class OwTrackerDiscordCommands(app_commands.Group):
 
         msg = '\n'.join(['```', header, '-' * (len(header) + 1)] + lines + ['```'])
 
-        goal, goal_games = self.ow_tracker_manager.getCurrentWeeklyGoalStatus(user_id)
-        if goal is not None:
-            msg += '\n\n```Weekly Goal: ' + str(len(goal_games)) + ' out of ' + str(goal) + ' games played```'
+        weekly_tracker = self.ow_tracker_manager.getWeeklyTracker(user_id)
+        if weekly_tracker is not None:
+            current_week = weekly_tracker.getCurrentWeek()
+            msg += '\n\n```Weekly Goal:   ' + str(len(current_week.games)) + ' out of ' + str(current_week.goal) + ' games played'
+
+            active_streak = weekly_tracker.getActiveStreak(include_current_week = False)
+            if active_streak <= 0:
+                msg += '\nWeekly Streak: No active streak```'
+            elif active_streak == 1:
+                msg += '\nWeekly Streak: 1 week active streak```'
+            else:
+                msg += '\nWeekly Streak: ' + str(active_streak) + ' weeks active streak```'
+        else:
+            msg += '\n\n```Weekly Goal NOT SET!!!```'
 
         return msg
 
@@ -1046,6 +1058,7 @@ class OwTrackerDiscordCommands(app_commands.Group):
         date='Optional way to record games that happened at a previous date. Use MM/DD(/YYYY)? format. If not set, game is recorded as today.')
     @app_commands.autocomplete(
         hero=stadium_hero_autocomplete,
+        # TODO Incorporate power usage rate into sorting of autocomplete
         round_1_power=power_autocomplete,
         round_3_power=power_autocomplete,
         round_5_power=power_autocomplete,
@@ -1057,10 +1070,12 @@ class OwTrackerDiscordCommands(app_commands.Group):
     async def add_stadium_game(
             self,
             interaction: discord.Interaction,
+            # TODO Move result to the last parameter
             result: str,
             hero: str,
             round_1_power: str,
             round_3_power: str,
+            # Make these required, but allow for a N/A option
             round_5_power: typing.Optional[str] = None,
             round_7_power: typing.Optional[str] = None,
             date: typing.Optional[str] = None):
@@ -1119,7 +1134,8 @@ class OwTrackerDiscordCommands(app_commands.Group):
         #  DPS   -> X-X    | DPS   -> X-X
         #  Supp  -> X-X    | Supp  -> X-X
         #
-        # Weekly Goal: XX out of XX games played
+        # Weekly Goal:   XX out of XX games played
+        # Weekly Streak: XX week active streak
 
         session_header = 'Today\'s Results'
         session_lines = self._getStadiumSummaryMessageByLine(session_games)
@@ -1140,10 +1156,20 @@ class OwTrackerDiscordCommands(app_commands.Group):
 
         msg = '\n'.join(['```', header, '-' * (len(header) + 1)] + lines + ['```'])
 
-        # TODO integrate stadium into the weekly goal
-        # goal, goal_games = self.ow_tracker_manager.getCurrentWeeklyGoalStatus(user_id)
-        # if goal is not None:
-        #     msg += '\n\n```Weekly Goal: ' + str(len(goal_games)) + ' out of ' + str(goal) + ' games played```'
+        weekly_tracker = self.ow_tracker_manager.getWeeklyTracker(user_id)
+        if weekly_tracker is not None:
+            current_week = weekly_tracker.getCurrentWeek()
+            msg += '\n\n```Weekly Goal:   ' + str(len(current_week.games)) + ' out of ' + str(current_week.goal) + ' games played'
+
+            active_streak = weekly_tracker.getActiveStreak(include_current_week = False)
+            if active_streak <= 0:
+                msg += '\nWeekly Streak: No active streak```'
+            elif active_streak == 1:
+                msg += '\nWeekly Streak: 1 week active streak```'
+            else:
+                msg += '\nWeekly Streak: ' + str(active_streak) + ' weeks active streak```'
+        else:
+            msg += '\n\n```Weekly Goal NOT SET!!!```'
 
         return msg
 
@@ -1174,7 +1200,8 @@ class OwTrackerDiscordCommands(app_commands.Group):
 
 class OverwatchTrackerManager:
 
-    def __init__(self, ow_tracker_fname=OW_TRACKER_FILENAME, event_calendar=None):
+    def __init__(self, ow_tracker_fname=OW_TRACKER_FILENAME, event_calendar=None, discord_client=None):
+        self.discord_client = discord_client
         self.ow_tracker_fname = ow_tracker_fname
         self.loadTrackersFromFile()
 
@@ -1196,6 +1223,10 @@ class OverwatchTrackerManager:
 
         f = open(self.ow_tracker_fname, 'rb')
         self.overwatch_trackers = pickle.load(f)
+
+        # TMP Clear the weekly tracker obj
+        for _, owt in self.overwatch_trackers.items():
+            owt.weekly_tracker = None
 
     # TODO make this async
     def saveTrackersToFile(self):
@@ -1271,11 +1302,43 @@ class OverwatchTrackerManager:
         return self._getOrCreateOwTrackerForUser(user_id).setWeeklyGoal(new_weekly_goal)
 
     def getCurrentWeeklyGoalStatus(self, user_id):
-        return self._getOrCreateOwTrackerForUser(user_id).getCurrentWeeklyGoalStatus()
+        return self._getOrCreateOwTrackerForUser(user_id).getCurrentWeeklyGoal()
 
     async def upateWeeklyChallenge(self):
-        for _, tracker in self.overwatch_trackers.items():
-            # TODO Send a message to user's. They should be able to enable or disable this message and configure where its sent.
+        for user_id, tracker in self.overwatch_trackers.items():
+            weekly_tracker = tracker.getWeeklyTracker() 
+
+            # Check the status of the weekly Goal
+            current_week = weekly_tracker.getCurrentWeeklyGoal()
+
+            # Check the Active Streak and Longest Streak
+            active_streak = weekly_tracker.getActiveStreak(include_current_week=True)
+            longest_streak = weekly_tracker.getLongestStreak()
+            
+            # Construct the message
+            # TODO Add a gif or emote based on what happened (met goal --> airhorns, etc.; didn't meet goal --> sad face, etc.)
+            msg = f'```WEEKLY GOAL SUMMARY```\n\nThis past week you played {len(current_week.games)} games out of your goal of {current_week.goal} games!'
+            if active_streak <= 0:
+                msg += f'\n\nYou do not have an active streak!'
+            elif active_streak == 1:
+                msg += f'\n\nYou have an active streak of 1 week!'
+            else:
+                msg += f'\n\nYou have an active streak of {active_streak} weeks!'
+
+            if longest_streak <= 0:
+                msg += f'\n\nYou haven\'t had any active streaks yet!'
+            elif longest_streak == 1:
+                msg += f'\n\nYour longest streak ever is 1 week!'
+            else:
+                msg += f'\n\nYour longest streak ever is {longest_streak} weeks!'
+
+            print(f'Trying to send the following msg:\n"{msg}"')
+
+            # Send message directly to the user
+            user = await self.discord_client.fetch_user(user_id)
+            await user.send(msg)
+
+            # Advance to to the next week
             tracker.advanceWeek()
 
         return EC.Event(self.getNextWeeklyGoalEventTime(), self.upateWeeklyChallenge)
@@ -1453,26 +1516,31 @@ class OverwatchTracker:
             self.hero_usage_by_result[h][game.result] += w / total_weight
 
     # Weekly Goal
+    def getWeeklyTracker(self):
+        if not hasattr(self, 'weekly_tracker') or self.weekly_tracker is None:
+            return None
+        return self.weekly_tracker
+
     def getWeeklyGoal(self):
-        if not hasattr(self, 'weekly_tracker'):
+        if not hasattr(self, 'weekly_tracker') or self.weekly_tracker is None:
             return None
         return self.weekly_tracker.getGoal()
 
     def setWeeklyGoal(self, new_weekly_goal):
-        if not hasattr(self, 'weekly_tracker'):
+        if not hasattr(self, 'weekly_tracker') or self.weekly_tracker is None:
             self.weekly_tracker = WeeklyTracker()
 
         self.weekly_tracker.setGoal(new_weekly_goal)
 
-    def getCurrentWeeklyGoalStatus(self):
-        if not hasattr(self, 'weekly_tracker'):
-            return None, None
-        return self.weekly_tracker.getCurrentStatus()
+    def getCurrentWeeklyGoal(self):
+        if not hasattr(self, 'weekly_tracker') or self.weekly_tracker is None:
+            return None
+        return self.weekly_tracker.getCurrentWeek()
 
     def advanceWeek(self):
-        if not hasattr(self, 'weekly_tracker'):
-            return None, None
-        return self.weekly_tracker.advanceWeek()
+        if not hasattr(self, 'weekly_tracker') or self.weekly_tracker is None:
+            return
+        self.weekly_tracker.advanceWeek()
 
     # Stadium
     def _initStadium(self):
@@ -1484,9 +1552,8 @@ class OverwatchTracker:
         self._initStadium()
         self.stadium_games.append(stadium_game)
         self.selected_stadium_game = self.stadium_games[-1]
-        # TODO Add stadium games to the weekly tracker
-        # if hasattr(self, 'weekly_tracker'):
-        #     self.weekly_tracker.addStadiumGame(stadium_game)
+        if hasattr(self, 'weekly_tracker'):
+            self.weekly_tracker.addGame(stadium_game)
         return self.selected_stadium_game
 
     def getStadiumGamesFromPastDays(self, num_days=7):
@@ -1627,37 +1694,92 @@ class StadiumGame:
 
 class WeeklyTracker:
     def __init__(self, goal = None):
-        self.current_goal = goal
-        self.current_games = []  # TODO Double check that if a game is uppdpated, it is doesn't need to be updated here and in self.previous_weeks
-        self.current_start = datetime.now(tz=pytz.timezone("US/Pacific"))
-
-        # 4-tuple of (goal: int, start: datetime, end: datetime, games: list of OverwatchGame)
+        self.current_week = SingleWeek(goal, datetime.now(tz=pytz.timezone("US/Pacific")))
         self.previous_weeks = []
 
     def getGoal(self):
-        return self.current_goal
+        return self.current_week.goal
 
     def setGoal(self, new_goal):
-        self.current_goal = new_goal
+        self.current_week.goal = new_goal
 
     def addGame(self, game):
-        self.current_games.append(game)
+        self.current_week.games.append(game)
 
-    def getCurrentStatus(self):
-        return self.current_goal, self.current_games
+    def getCurrentWeek(self):
+        return self.current_week
 
     def getPreviousWeeks(self):
         return self.previous_weeks
 
+    def getActiveStreak(self, include_current_week = False):
+        # Go through previous_weeks in reverse order (Should be reverse chronological order)
+        pw_streak = 0
+        for pw in reversed(self.previous_weeks):
+            if not pw.isGoalMet():
+                break
+            pw_streak += 1
+
+        if self.current_week.isGoalMet():
+            return pw_streak + 1
+        else:
+            if include_current_week:
+                # If include_current_week is True and the goal is not met for self.current_week, then it counts as breaking the streak.
+                return 0
+            else:
+                # If include_current_week is False (ex. the week is ongoing) and the goal is not met for self.current_week, then it doesn't count as breaking the streak.
+                return pw_streak
+
+    def getLongestStreak(self):
+        longest_streak = 0
+        current_streak = 0
+        for w in self.previous_weeks + [self.current_week]:
+            if w.isGoalMet():
+                current_streak += 1
+                if longest_streak is None or longest_streak < current_streak:
+                    longest_streak = current_streak
+            else:
+                current_streak = 0
+        return longest_streak
+
     def advanceWeek(self):
-        games = list(self.current_games)
+        t = datetime.now(tz=pytz.timezone("US/Pacific"))
 
-        end = datetime.now(tz=pytz.timezone("US/Pacific"))
-        self.previous_weeks.append((self.current_goal, self.current_start, end, games))
-        self.current_start = end
-        self.current_games.clear()
+        # Update current_week and add it to the previous_weeks list.
+        next_goal = self.current_week.goal
+        self.current_week.end = t
+        self.previous_weeks.append(self.current_week)
 
-        return self.current_goal, games
+        # Check that self.previous_weeks is sorted from oldest to newest
+        for i in range(len(self.previous_weeks) - 1):
+            first_week = self.previous_weeks[i]
+            second_week = self.previous_weeks[i+1]
+
+            if first_week.start >= second_week.start:
+                print('WARNING WEEKLY STATUS VALUES ARE NOT IN THE EXPECTED ORDER!!!!!!')
+
+        # Create the next current_week
+        self.current_week = SingleWeek(next_goal, t)
+
+class SingleWeek:
+    def __init__(self, goal, start, end = None, games = []):
+        # The goal number of games to play in a week.
+        self.goal = goal
+        # The start time of the week
+        self.start = start
+        # The end time of the week. If None, then the week is on-going
+        self.end = end
+        # The list of Comp and Stadium games.
+        self.games = games
+
+    def getCompGames(self):
+        return [g for g in self.games if isinstance(g, OverwatchGame)]
+
+    def getStadiumGames(self):
+        return [g for g in self.games if isinstance(g, StadiumGame)]
+
+    def isGoalMet(self):
+        return self.goal <= len(self.games)
 
 # Hero Challenge Sub-Feature:
 

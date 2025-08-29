@@ -83,7 +83,7 @@ class CustomDiscordClient(discord.Client):
         # Add commands for Overwatch Tracker + Hero Challenge Tracker
         if self.feature_tracker is not None and self.feature_tracker.isEnabled(
                 'ow_tracker'):
-            self.ow_tracker_manager = ow_tracker.OverwatchTrackerManager(event_calendar=self.getOrCreateEventCalendar())
+            self.ow_tracker_manager = ow_tracker.OverwatchTrackerManager(event_calendar=self.getOrCreateEventCalendar(), discord_client=self)
             for command_group in self.ow_tracker_manager.getDiscordCommands():
                 self.command_tree.add_command(command_group,
                                               guilds=[discord.Object(id=400805068934348800)])
