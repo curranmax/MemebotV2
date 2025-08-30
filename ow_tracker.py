@@ -1289,6 +1289,11 @@ class OverwatchTrackerManager:
             return None
         return self._getOrCreateOwTrackerForUser(user_id).getSelectedRole()
 
+    def getWeeklyTracker(self, user_id):
+        if user_id not in self.overwatch_trackers:
+            return None
+        return self._getOrCreateOwTrackerForUser(user_id).getWeeklyGoal()
+
     def getWeeklyGoal(self, user_id):
         if user_id not in self.overwatch_trackers:
             return None
