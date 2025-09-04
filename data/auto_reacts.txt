@@ -14,11 +14,11 @@
 \b(?i:(j+u+n+k+e+r+ q+u+ee+n+)|(j+q+))\b	🔪
 \b(?i:m+a+u+g+a+)\b	💕
 \b(?i:o+r+i+s+a+)\b	🐎
-\b(?i:r+a+m+a+tt+r+a+)\b	👿
+\b(?i:r+a+m+(a+tt+r+a+)?)\b	👿
 \b(?i:r+e+i+n+(h+a+r+d+t+)?)\b	🛡️
 \b(?i:(r+o+a+d+)?h+o+g+)\b	🐷
 \b(?i:s+i+g+m+a+)\b	☄️
-\b(?i:w+i+n+s+t+o+n+)\b	🐵
+\b(?i:w+i+n+s*t+o+n+)\b	🐵
 \b(?i:(h+a+mm+o+n+d+)|(w+r+e+c+k+i+n+g+ b+a+l+l+))\b	🐹
 \b(?i:z+a+r+y+a+)\b	🫧
 \b(?i:a+s+h+e+)\b	🧨
