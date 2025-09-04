@@ -1310,7 +1310,7 @@ class OverwatchTrackerManager:
             weekly_tracker = tracker.getWeeklyTracker() 
 
             # Check the status of the weekly Goal
-            current_week = weekly_tracker.getCurrentWeeklyGoal()
+            current_week = weekly_tracker.getGoal()
 
             # Check the Active Streak and Longest Streak
             active_streak = weekly_tracker.getActiveStreak(include_current_week=True)
