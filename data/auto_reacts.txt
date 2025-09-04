@@ -22,7 +22,7 @@
 \b(?i:(h+a+mm+o+n+d+)|(w+r+e+c+k+i+n+g+ b+a+l+l+))\b	🐹
 \b(?i:z+a+r+y+a+)\b	🫧
 \b(?i:a+s+h+e+)\b	🧨
-\b(?i:b+a+s+t+i+o+n+)\b 🤖
+\b(?i:b+a+s+t+i+o+n+)\b	🤖
 \b(?i:(c+a+ss+(i+d+y+)?)|(m+c+r+ee+))\b	🤠
 \b(?i:e+c+h+o+)\b	🔊
 \b(?i:f+r+e+j+a+)\b	🏹
