@@ -16,7 +16,6 @@ def getAutoReactsFromFile(auto_reacts_fname=DEFAULT_AUTO_REACTS_FNAME):
     f = open(auto_reacts_fname, 'r')
     auto_reacts = []
     for line in f:
-        print(line)
         regex_expr, emote = line.strip().split('\t')
         auto_reacts.append(AutoReact(regex_expr, emote))
     return auto_reacts

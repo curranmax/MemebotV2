@@ -11,7 +11,7 @@
 \b(?i:d+.*v+a+)\b	🐰
 \b(?i:d+oo+m+(f+i+s+t+)?)\b	✊
 \b(?i:h+a+z+a+r+d+)\b	☣️
-\b(?i:j+u+n+k+e+r+q+u+ee+n+)\b	🔪
+\b(?i:(j+u+n+k+e+r+ q+u+ee+n+)|(j+q+))\b	🔪
 \b(?i:m+a+u+g+a+)\b	💕
 \b(?i:o+r+i+s+a+)\b	🐎
 \b(?i:r+a+m+a+tt+r+a+)\b	👿
