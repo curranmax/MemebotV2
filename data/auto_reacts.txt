@@ -19,7 +19,7 @@
 \b(?i:(r+o+a+d+)?h+o+g+)\b	🐷
 \b(?i:s+i+g+m+a+)\b	☄️
 \b(?i:w+i+n+s+t+o+n+)\b	🐵
-\b(?i(h+a+mm+o+n+d+)|(w+r+e+c+k+i+n+g+ b+a+l+l+))\b	🐹
+\b(?i:(h+a+mm+o+n+d+)|(w+r+e+c+k+i+n+g+ b+a+l+l+))\b	🐹
 \b(?i:z+a+r+y+a+)\b	🫧
 \b(?i:a+s+h+e+)\b	🧨
 \b(?i:b+a+s+t+i+o+n+)\b 🤖
