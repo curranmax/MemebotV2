@@ -1208,6 +1208,7 @@ class OverwatchTrackerManager:
         self.event_calendar = event_calendar
 
         if self.event_calendar is not None:
+            print(f'Adding event for {self.getNextWeeklyGoalEventTime().isoformat()}')
             self.event_calendar.addEvent(EC.Event(self.getNextWeeklyGoalEventTime(), self.upateWeeklyChallenge))
 
     def getDiscordCommands(self):
@@ -1336,8 +1337,11 @@ class OverwatchTrackerManager:
             print(f'Trying to send the following msg:\n"{msg}"')
 
             # Send message directly to the user
-            user = await self.discord_client.fetch_user(user_id)
-            await user.send(msg)
+            try:
+                user = await self.discord_client.fetch_user(user_id)
+                await user.send(msg)
+            except Exception e:
+                print(f'Got exception when trying to send message:\n{str(e)}')
 
             # Advance to to the next week
             tracker.advanceWeek()
