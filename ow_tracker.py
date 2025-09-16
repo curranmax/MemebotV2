@@ -1340,7 +1340,7 @@ class OverwatchTrackerManager:
             try:
                 user = await self.discord_client.fetch_user(user_id)
                 await user.send(msg)
-            except Exception e:
+            except Exception as e:
                 print(f'Got exception when trying to send message:\n{str(e)}')
 
             # Advance to to the next week
