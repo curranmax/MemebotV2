@@ -1311,7 +1311,7 @@ class OverwatchTrackerManager:
             weekly_tracker = tracker.getWeeklyTracker() 
 
             # Check the status of the weekly Goal
-            current_week = weekly_tracker.getGoal()
+            current_week = weekly_tracker.getCurrentWeek()
 
             # Check the Active Streak and Longest Streak
             active_streak = weekly_tracker.getActiveStreak(include_current_week=True)
@@ -1343,20 +1343,28 @@ class OverwatchTrackerManager:
             except Exception as e:
                 print(f'Got exception when trying to send message:\n{str(e)}')
 
-            # Advance to to the next week
-            tracker.advanceWeek()
+            # Advance to to the next week if it is tuesday
+            now = datetime.now(pytz.timezone('US/Pacific'))
+            if now.weekday() == 1:
+                tracker.advanceWeek()
 
         return EC.Event(self.getNextWeeklyGoalEventTime(), self.upateWeeklyChallenge)
 
-    def getNextWeeklyGoalEventTime(self):
+    def getNextWeeklyGoalEventTime(self, everyday = True):
         now = datetime.now(pytz.timezone('US/Pacific'))
         pt = time(hour=8, tzinfo=pytz.timezone('US/Pacific'))
 
-        # Advance to the next tuesday
-        # weekday returns Monday to Sunday as 0 to 6.
-        pd = 1 - now.weekday()
-        if pd < 0 or (pd == 0 and now.time() >= time(hour=7, minute=45, tzinfo=pytz.timezone('US/Pacific'))): # This is purposefully 15 minutes before pt.
-            pd += 7
+        
+        if everyday:
+            # Run the event on the next day.
+            pd = 1
+        else:
+            # If everyday is False, then post on the next tuesday.
+            #  Advance to the next tuesday
+            # weekday returns Monday to Sunday as 0 to 6.
+            pd = 1 - now.weekday()
+            if pd < 0 or (pd == 0 and now.time() >= time(hour=7, minute=45, tzinfo=pytz.timezone('US/Pacific'))): # This is purposefully 15 minutes before pt.
+                pd += 7
 
         et = datetime.combine((now + timedelta(days=pd)).date(), pt, pytz.timezone("US/Pacific"))
 
