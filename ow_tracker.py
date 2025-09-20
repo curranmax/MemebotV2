@@ -1060,7 +1060,7 @@ class OwTrackerDiscordCommands(app_commands.Group):
     async def recompute_weekly_goals(self, interaction: discord.Interaction):
         self.ow_tracker_manager.recomputeWeeklyGoals(interaction.user.id)
 
-        weekly_tracker = self.ow_tracker_manager.getWeeklyTracker(interaction.user_id)
+        weekly_tracker = self.ow_tracker_manager.getWeeklyTracker(interaction.user.id)
         if weekly_tracker is not None:
             current_week = weekly_tracker.getCurrentWeek()
             msg = 'Current weekly progress: ' + str(len(current_week.games)) + ' out of ' + str(current_week.goal) + ' games played'
