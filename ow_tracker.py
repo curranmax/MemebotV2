@@ -1067,7 +1067,7 @@ class OwTrackerDiscordCommands(app_commands.Group):
             else:
                 msg += '\nLongest Streak: ' + str(longest_streak) + ' weeks longest streak'
         else:
-            msg = 'Weekly goal is not being tracked'.
+            msg = 'Weekly goal is not being tracked.'
 
         # Send a message on the impact of the update!
          await interaction.response.send_message(msg, ephemeral=True)
