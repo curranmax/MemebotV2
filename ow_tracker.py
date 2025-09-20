@@ -1834,11 +1834,15 @@ class WeeklyTracker:
         new_previous_weeks = []
         new_current_week = None
 
-        if all_games is None:
-            all_games = [g for w in all_weeks for g in w.games]
-
         # Start at the earliest week.
         start_datetime = min(w.start for w in all_weeks)
+
+        if all_games is None:
+            # If all_games is None, then use existing games in the weekly tracker.
+            all_games = [g for w in all_weeks for g in w.games]
+        else:
+            # Otherwise filter out games form before the initial start_datetime.
+            all_games = [g for g in all_games if start_datetime <= g.datetime]
         while True:
             # Calculate the next end time. Try adding some number of days (start at one, go up to 7) until end_datetime is a Tuesday
             for pd in range(1,8):
