@@ -1084,7 +1084,7 @@ class OwTrackerDiscordCommands(app_commands.Group):
             msg = 'Weekly goal is not being tracked.'
 
         # Send a message on the impact of the update!
-         await interaction.response.send_message(msg, ephemeral=True)
+        await interaction.response.send_message(msg, ephemeral=True)
 
     # TODO Add commands/support for
     #    Look at arbirtary range of dates
