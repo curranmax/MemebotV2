@@ -1828,11 +1828,14 @@ class WeeklyTracker:
         # Create the next current_week
         self.current_week = SingleWeek(next_goal, t)
     
-    def recomputeWeeklyGoals(self):
+    def recomputeWeeklyGoals(self, all_games = None):
         # Start the new state
         all_weeks = self.previous_weeks + [self.current_week]
         new_previous_weeks = []
         new_current_week = None
+
+        if all_games is None:
+            all_games = [g for w in all_weeks for g in w.games]
 
         # Start at the earliest week.
         start_datetime = min(w.start for w in all_weeks)
@@ -1845,7 +1848,7 @@ class WeeklyTracker:
             print(f'Constructing a week from {start_datetime.isoformat()} to {end_datetime.isoformat()}')
 
             # Find the set of games in that week, and put them into a group
-            this_games = [g for w in all_weeks for g in w.games if start_datetime <= g.datetime and g.datetime > end_datetime]
+            this_games = [g for g in all_games if start_datetime <= g.datetime and g.datetime < end_datetime]
             for g in this_games:
                 gt = 'Stadium' if isinstance(g, StadiumGame) else 'Comp'
                 print(f'Adding game to this week: datetime={g.datetime.isoformat()}, type={gt}, result={g.result}')
