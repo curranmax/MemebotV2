@@ -1040,9 +1040,39 @@ class OwTrackerDiscordCommands(app_commands.Group):
             self.ow_tracker_manager.setWeeklyGoal(interaction.user.id, new_weekly_goal)
             await interaction.response.send_message(f'Weekly goal updated to {new_weekly_goal} games.', ephemeral=True)
 
+    @app_commands.command(
+        name='recompute-weekly-goals',
+        description='Recompute what games are in what weeks in the weekly tracker.')
+    async def recompute_weekly_goals(self, interaction: discord.Interaction):
+        self.ow_tracker_manager.recomputeWeeklyGoals(interaction.user.id)
+
+        weekly_tracker = self.ow_tracker_manager.getWeeklyTracker(user_id)
+        if weekly_tracker is not None:
+            current_week = weekly_tracker.getCurrentWeek()
+            msg = 'Current weekly progress: ' + str(len(current_week.games)) + ' out of ' + str(current_week.goal) + ' games played'
+
+            active_streak = weekly_tracker.getActiveStreak(include_current_week = False)
+            if active_streak <= 0:
+                msg += '\nActive Streak: No active streak'
+            elif active_streak == 1:
+                msg += '\nActive Streak: 1 week active streak'
+            else:
+                msg += '\nActive Streak: ' + str(active_streak) + ' weeks active streak'
+
+            longest_streak = weekly_tracker.getLongestStreak()
+            if longest_streak <= 0:
+                msg += '\nLongest Streak: No longest streak'
+            elif active_streak == 1:
+                msg += '\nLongest Streak: 1 week longest streak'
+            else:
+                msg += '\nLongest Streak: ' + str(longest_streak) + ' weeks longest streak'
+        else:
+            msg = 'Weekly goal is not being tracked'.
+
+        # Send a message on the impact of the update!
+         await interaction.response.send_message(msg, ephemeral=True)
 
     # TODO Add commands/support for
-    #    Weekly goals
     #    Look at arbirtary range of dates
     #    Look at stats per hero/map/mode
     #    Look at stats per season
@@ -1226,6 +1256,7 @@ class OverwatchTrackerManager:
         self.overwatch_trackers = pickle.load(f)
 
     # TODO make this async
+    # TODO Add a lock for this
     def saveTrackersToFile(self):
         f = open(self.ow_tracker_fname, 'wb')
         pickle.dump(self.overwatch_trackers, f)
@@ -1348,13 +1379,13 @@ class OverwatchTrackerManager:
             if now.weekday() == 1:
                 tracker.advanceWeek()
 
+        self.saveTrackersToFile()
         return EC.Event(self.getNextWeeklyGoalEventTime(), self.upateWeeklyChallenge)
 
     def getNextWeeklyGoalEventTime(self, everyday = True):
         now = datetime.now(pytz.timezone('US/Pacific'))
         pt = time(hour=8, tzinfo=pytz.timezone('US/Pacific'))
 
-        
         if everyday:
             # Run the event on the next day.
             pd = 1
@@ -1370,6 +1401,11 @@ class OverwatchTrackerManager:
 
         logging.info('getNextWeeklyGoalEventTime(): now = %s, et = %s', now.isoformat(), et.isoformat())
         return et
+    
+    def recomputeWeeklyGoals(self, user_id):
+        if user_id not in self.overwatch_trackers:
+            return None
+        return self._getOrCreateOwTrackerForUser(user_id).recomputeWeeklyGoals()
 
     # Stadium
     def addStadiumGame(self, user_id, stadium_game):
@@ -1555,6 +1591,11 @@ class OverwatchTracker:
             return
         self.weekly_tracker.advanceWeek()
 
+    def recomputeWeeklyGoals(self):
+        if not hasattr(self, 'weekly_tracker') or self.weekly_tracker is None:
+            return
+        self.weekly_tracker.recomputeWeeklyGoals()
+
     # Stadium
     def _initStadium(self):
         if not hasattr(self, 'stadium_games'):
@@ -1703,7 +1744,6 @@ class StadiumGame:
 
         return f'```\nResult --> {self.result}\nHero --> {self.hero}\nPowers: {power_str}\nSeason: {self.season}\nDateTime: {dt_str}\n```'
 
-        
 
 class WeeklyTracker:
     def __init__(self, goal = None):
@@ -1773,6 +1813,47 @@ class WeeklyTracker:
 
         # Create the next current_week
         self.current_week = SingleWeek(next_goal, t)
+    
+    def recomputeWeeklyGoals(self):
+        # Start the new state
+        all_weeks = self.previous_weeks + [self.current_week]
+        new_previous_weeks = []
+        new_current_week = None
+
+        # Start at the earliest week.
+        start_datetime = min(w.start for w in all_weeks)
+        while True:
+            # Calculate the next end time. Try adding some number of days (start at one, go up to 7) until end_datetime is a Tuesday
+            for pd in range(1,8):
+                end_datetime = datetime.combine((start_datetime + timedelta(days=pd)).date(), time(hour=8, tzinfo=pytz.timezone('US/Pacific')), pytz.timezone("US/Pacific"))
+                if end_datetime.weekday() == 1:
+                    break
+            print(f'Constructing a week from {start_datetime.isoformat()} to {end_datetime.isoformat()}')
+
+            # Find the set of games in that week, and put them into a group
+            this_games = [g for w in all_weeks for g in w.games if start_datetime <= g.datetime and g.datetime > end_datetime]
+
+            # Figure out the goal for that week. Find the most recent week stored, and use that goal. This isn't perfect.
+            # TODO Add a way for a user to update the goal for an old week
+            latest_game_datetime = max(g.datetime for g in this_games)
+            most_recent_week = sorted([ for w in all_weeks if w.start < latest_game_datetime])
+            this_goal = most_recent_week.goal
+
+            # Construct the SingleWeek object.
+            this_week = SingleWeek(this_goal, start_datetime, end_datetime, this_games)
+
+            # Add to previous weeks, if the end of the week has passed, instead set it to current week
+            if end_datetime < datetime.now(tz=pytz.timezone('US/Pacific')):
+                new_previous_weeks.append(this_week)
+            else:
+                # Clear the end time for this week.
+                this_week.end = None
+                new_current_week = this_week
+                break
+
+        # Update state
+        self.previous_weeks = new_previous_weeks
+        self.current_week = new_current_week
 
 class SingleWeek:
     def __init__(self, goal, start, end = None, games = []):
