@@ -1060,7 +1060,7 @@ class OwTrackerDiscordCommands(app_commands.Group):
     async def recompute_weekly_goals(self, interaction: discord.Interaction):
         self.ow_tracker_manager.recomputeWeeklyGoals(interaction.user.id)
 
-        weekly_tracker = self.ow_tracker_manager.getWeeklyTracker(user_id)
+        weekly_tracker = self.ow_tracker_manager.getWeeklyTracker(interaction.user_id)
         if weekly_tracker is not None:
             current_week = weekly_tracker.getCurrentWeek()
             msg = 'Current weekly progress: ' + str(len(current_week.games)) + ' out of ' + str(current_week.goal) + ' games played'
@@ -1850,11 +1850,6 @@ class WeeklyTracker:
             # Figure out the goal for that week. Find the most recent week stored, and use that goal. This isn't perfect.
             # TODO Add a way for a user to update the goal for an old week
             midweek_datetime = start_datetime + (end_datetime - start_datetime) / 2.0
-            print(f'Midweek time: {midweek_datetime.isoformat()}')
-            for w in all_weeks:
-                print(f'Week start: {w.start.isoformat()}')
-            for w in sorted([w for w in all_weeks if w.start < midweek_datetime], key=lambda w: w.start):
-                print(f'Sorted Qualified weeks start: {w.start.isoformat()}')
             most_recent_week = sorted([w for w in all_weeks if w.start < midweek_datetime], key=lambda w: w.start)[-1]
             this_goal = most_recent_week.goal
 
