@@ -1849,7 +1849,7 @@ class WeeklyTracker:
 
             # Figure out the goal for that week. Find the most recent week stored, and use that goal. This isn't perfect.
             # TODO Add a way for a user to update the goal for an old week
-            midweek_datetime = start_datetime + (start_datetime - end_datetime) / 2.0
+            midweek_datetime = start_datetime + (end_datetime - start_datetime) / 2.0
             print(f'Midweek time: {midweek_datetime.isoformat()}')
             for w in all_weeks:
                 print(f'Week start: {w.start.isoformat()}')
