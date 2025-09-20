@@ -1849,8 +1849,8 @@ class WeeklyTracker:
 
             # Figure out the goal for that week. Find the most recent week stored, and use that goal. This isn't perfect.
             # TODO Add a way for a user to update the goal for an old week
-            latest_game_datetime = max(g.datetime for g in this_games)
-            most_recent_week = sorted([w for w in all_weeks if w.start < latest_game_datetime], key=lambda w: w.start)[-1]
+            midweek_datetime = start_datetime + (start_datetime - end_datetime) / 2.0
+            most_recent_week = sorted([w for w in all_weeks if w.start < midweek_datetime], key=lambda w: w.start)[-1]
             this_goal = most_recent_week.goal
 
             # Construct the SingleWeek object.
