@@ -1859,6 +1859,7 @@ class WeeklyTracker:
             # Add to previous weeks, if the end of the week has passed, instead set it to current week
             if end_datetime < datetime.now(tz=pytz.timezone('US/Pacific')):
                 new_previous_weeks.append(this_week)
+                start_datetime = end_datetime
             else:
                 # Clear the end time for this week.
                 this_week.end = None
