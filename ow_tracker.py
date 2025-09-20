@@ -1858,11 +1858,13 @@ class WeeklyTracker:
 
             # Add to previous weeks, if the end of the week has passed, instead set it to current week
             if end_datetime < datetime.now(tz=pytz.timezone('US/Pacific')):
+                print(f'Adding week to previous weeks: start={this_week.start.isoformat()}, end={this_week.end.isoformat()}, goal={this_week.goal}, num_games={len(this_week.games)}')
                 new_previous_weeks.append(this_week)
                 start_datetime = end_datetime
             else:
                 # Clear the end time for this week.
                 this_week.end = None
+                print(f'Adding week to previous weeks: start={this_week.start.isoformat()}, end={this_week.end.isoformat() if this_week.end is not None else this_week.end}, goal={this_week.goal}, num_games={len(this_week.games)}')
                 new_current_week = this_week
                 break
 
