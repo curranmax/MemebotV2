@@ -1864,7 +1864,7 @@ class WeeklyTracker:
             else:
                 # Clear the end time for this week.
                 this_week.end = None
-                print(f'Adding week to previous weeks: start={this_week.start.isoformat()}, end={this_week.end.isoformat() if this_week.end is not None else this_week.end}, goal={this_week.goal}, num_games={len(this_week.games)}')
+                print(f'Setting current week: start={this_week.start.isoformat()}, end={this_week.end.isoformat() if this_week.end is not None else this_week.end}, goal={this_week.goal}, num_games={len(this_week.games)}')
                 new_current_week = this_week
                 break
 
