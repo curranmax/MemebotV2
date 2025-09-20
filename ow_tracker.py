@@ -1846,6 +1846,9 @@ class WeeklyTracker:
 
             # Find the set of games in that week, and put them into a group
             this_games = [g for w in all_weeks for g in w.games if start_datetime <= g.datetime and g.datetime > end_datetime]
+            for g in this_games:
+                gt = 'Stadium' if isinstance(g, StadiumGame) else 'Comp'
+                print(f'Adding game to this week: datetime={g.datetime.isoformat()}, type={gt}, result={g.result}')
 
             # Figure out the goal for that week. Find the most recent week stored, and use that goal. This isn't perfect.
             # TODO Add a way for a user to update the goal for an old week
@@ -1858,7 +1861,7 @@ class WeeklyTracker:
 
             # Add to previous weeks, if the end of the week has passed, instead set it to current week
             if end_datetime < datetime.now(tz=pytz.timezone('US/Pacific')):
-                print(f'Adding week to previous weeks: start={this_week.start.isoformat()}, end={this_week.end.isoformat()}, goal={this_week.goal}, num_games={len(this_week.games)}')
+                print(f'Adding week to previous weeks: start={this_week.start.isoformat()}, end={this_week.end.isoformat()}, goal={this_week.goal}, num_games={len(this_week.games)}\n\n')
                 new_previous_weeks.append(this_week)
                 start_datetime = end_datetime
             else:
