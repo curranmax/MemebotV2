@@ -344,6 +344,20 @@ STADIUM_HEROES = {
         'On Me!',
         'Track and Field',
     ],
+    'Tracer': [
+        'Flash Fist',
+        'Get Stuffed!',
+        'Blink Of An Eye',
+        'Quantum Clip',
+        'Alternate Ending',
+        'Auto Recall',
+        'Bullet Time',
+        'T.Racer',
+        'Temportal',
+        'Foresight',
+        'Timelapse',
+        'Pocket Bomb',
+    ],
 
     # Support
     'Ana': [
