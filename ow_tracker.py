@@ -1353,6 +1353,15 @@ class OverwatchTrackerManager:
 
     async def upateWeeklyChallenge(self):
         for user_id, tracker in self.overwatch_trackers.items():
+            # Advance to to the next week if it is tuesday
+            now = datetime.now(pytz.timezone('US/Pacific'))
+            e = None
+            if now.weekday() == 1:
+                try:
+                    tracker.advanceWeek()
+                except Exception as e:
+                    print(f'Got exception when trying to send message:\n{str(e)}')
+            
             weekly_tracker = tracker.getWeeklyTracker() 
 
             # Check the status of the weekly Goal
@@ -1362,22 +1371,36 @@ class OverwatchTrackerManager:
             active_streak = weekly_tracker.getActiveStreak(include_current_week=True)
             longest_streak = weekly_tracker.getLongestStreak()
             
-            # Construct the message
-            # TODO Add a gif or emote based on what happened (met goal --> airhorns, etc.; didn't meet goal --> sad face, etc.)
-            msg = f'```WEEKLY GOAL SUMMARY```\n\nThis past week you played {len(current_week.games)} games out of your goal of {current_week.goal} games!'
-            if active_streak <= 0:
-                msg += f'\n\nYou do not have an active streak!'
-            elif active_streak == 1:
-                msg += f'\n\nYou have an active streak of 1 week!'
-            else:
-                msg += f'\n\nYou have an active streak of {active_streak} weeks!'
+            # Message template
+            # -----------------------
+            # | Weekly Goal Summary |
+            # |---------------------|
+            # | Games          | XX |
+            # | Goal           | XX |
+            # | Current Streak | XX |
+            # | Longest Streak | XX |
+            # -----------------------
+            #
+            # TODO Add more stats --> Record this week, # of comp and staidum games, weird map and hero stats (most frequent map, most chosen hero, highest wr hero this week, ...)
+            # TODO More stats on the streaks (avg number of games, highest number of games in one week, ...)
 
-            if longest_streak <= 0:
-                msg += f'\n\nYou haven\'t had any active streaks yet!'
-            elif longest_streak == 1:
-                msg += f'\n\nYour longest streak ever is 1 week!'
-            else:
-                msg += f'\n\nYour longest streak ever is {longest_streak} weeks!'
+            # TODO Add support for 3 digt+ numbers. I can assume for a good while that I just need two digits.
+            format_num = lambda v: ('' if len(str(v)) >= 2 else ' ') + str(v)
+
+            # TODO Add a gif or emote based on what happened (met goal --> airhorns, etc.; didn't meet goal --> sad face, etc.)
+            msg = '```\n' + \
+                  f'-----------------------\n' + \
+                  f'| Weekly Goal Summary |\n' + \
+                  f'|---------------------|\n' + \
+                  f'| Num Games      | {format_num(len(current_week.games))} |\n' + \
+                  f'| Current Goal   | {format_num(current_week.goal)} |\n' + \
+                  f'| Active Streak  | {format_num(active_streak)} |\n' + \
+                  f'| Longest Streak | {format_num(longest_streak)} |\n' + \
+                  f'-----------------------\n' + \
+                  '```'
+
+            if e is not None:
+                msg += f'\n\nGot the following exception when trying to advance week: {str(e)}'
 
             print(f'Trying to send the following msg:\n"{msg}"')
 
@@ -1387,11 +1410,6 @@ class OverwatchTrackerManager:
                 await user.send(msg)
             except Exception as e:
                 print(f'Got exception when trying to send message:\n{str(e)}')
-
-            # Advance to to the next week if it is tuesday
-            now = datetime.now(pytz.timezone('US/Pacific'))
-            if now.weekday() == 1:
-                tracker.advanceWeek()
 
         self.saveTrackersToFile()
         return EC.Event(self.getNextWeeklyGoalEventTime(), self.upateWeeklyChallenge)
@@ -1829,6 +1847,8 @@ class WeeklyTracker:
         self.current_week = SingleWeek(next_goal, t)
     
     def recomputeWeeklyGoals(self, all_games = None):
+        # TODO Remove debuging printing. This function shouldn't be used often, so I think its fairly okay to leave it.
+
         # Start the new state
         all_weeks = self.previous_weeks + [self.current_week]
         new_previous_weeks = []
