@@ -1353,15 +1353,6 @@ class OverwatchTrackerManager:
 
     async def upateWeeklyChallenge(self):
         for user_id, tracker in self.overwatch_trackers.items():
-            # Advance to to the next week if it is tuesday
-            now = datetime.now(pytz.timezone('US/Pacific'))
-            e = None
-            if now.weekday() == 1:
-                try:
-                    tracker.advanceWeek()
-                except Exception as e:
-                    print(f'Got exception when trying to send message:\n{str(e)}')
-            
             weekly_tracker = tracker.getWeeklyTracker() 
 
             # Check the status of the weekly Goal
@@ -1381,6 +1372,7 @@ class OverwatchTrackerManager:
             # | Longest Streak | XX |
             # -----------------------
             #
+            # There are XX days left in the week / This week is now over, good luck next week!
             # TODO Add more stats --> Record this week, # of comp and staidum games, weird map and hero stats (most frequent map, most chosen hero, highest wr hero this week, ...)
             # TODO More stats on the streaks (avg number of games, highest number of games in one week, ...)
 
@@ -1398,6 +1390,21 @@ class OverwatchTrackerManager:
                   f'| Longest Streak | {format_num(longest_streak)} |\n' + \
                   f'-----------------------\n' + \
                   '```'
+
+            # Advance to to the next week if it is tuesday
+            now = datetime.now(pytz.timezone('US/Pacific'))
+            e = None
+            if now.weekday() == 1:
+                msg += '\n\nThe week is now over, good luck for the next week!'
+                try:
+                    tracker.advanceWeek()
+                except Exception as e:
+                    print(f'Got exception when trying to send message:\n{str(e)}')
+            else:
+                days_left = 1 - now.weekday()
+                if days_left <= 0:
+                    days_left += 7
+                msg += f'\n\nThere are {days_left} day{"s" if days_left > 1 else ""} left in this week.'
 
             if e is not None:
                 msg += f'\n\nGot the following exception when trying to advance week: {str(e)}'
