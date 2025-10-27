@@ -755,7 +755,7 @@ class OwTrackerDiscordCommands(app_commands.Group):
             current_week = weekly_tracker.getCurrentWeek()
             msg += '\n\n```Weekly Goal:   ' + str(len(current_week.games)) + ' out of ' + str(current_week.goal) + ' games played'
 
-            active_streak = weekly_tracker.getActiveStreak(include_current_week = False)
+            active_streak = weekly_tracker.getActiveStreak()
             if active_streak <= 0:
                 msg += '\nWeekly Streak: No active streak```'
             elif active_streak == 1:
@@ -1053,7 +1053,7 @@ class OwTrackerDiscordCommands(app_commands.Group):
             current_week = weekly_tracker.getCurrentWeek()
             msg = 'Current weekly progress: ' + str(len(current_week.games)) + ' out of ' + str(current_week.goal) + ' games played'
 
-            active_streak = weekly_tracker.getActiveStreak(include_current_week = False)
+            active_streak = weekly_tracker.getActiveStreak()
             if active_streak <= 0:
                 msg += '\nActive Streak: No active streak'
             elif active_streak == 1:
@@ -1193,7 +1193,7 @@ class OwTrackerDiscordCommands(app_commands.Group):
             current_week = weekly_tracker.getCurrentWeek()
             msg += '\n\n```Weekly Goal:   ' + str(len(current_week.games)) + ' out of ' + str(current_week.goal) + ' games played'
 
-            active_streak = weekly_tracker.getActiveStreak(include_current_week = False)
+            active_streak = weekly_tracker.getActiveStreak()
             if active_streak <= 0:
                 msg += '\nWeekly Streak: No active streak```'
             elif active_streak == 1:
@@ -1347,7 +1347,7 @@ class OverwatchTrackerManager:
             current_week = weekly_tracker.getCurrentWeek()
 
             # Check the Active Streak and Longest Streak
-            active_streak = weekly_tracker.getActiveStreak(include_current_week=True)
+            active_streak = weekly_tracker.getActiveStreak()
             longest_streak = weekly_tracker.getLongestStreak()
             
             # Message template
@@ -1381,21 +1381,18 @@ class OverwatchTrackerManager:
 
             # Advance to to the next week if it is tuesday
             now = datetime.now(pytz.timezone('US/Pacific'))
-            e = None
             if now.weekday() == 1:
                 msg += '\n\nThe week is now over, good luck for the next week!'
                 try:
                     tracker.advanceWeek()
                 except Exception as e:
                     print(f'Got exception when trying to send message:\n{str(e)}')
+                    msg += f'\n\nGot the following exception when trying to advance week: {str(e)}'
             else:
                 days_left = 1 - now.weekday()
                 if days_left <= 0:
                     days_left += 7
                 msg += f'\n\nThere are {days_left} day{"s" if days_left > 1 else ""} left in this week.'
-
-            if e is not None:
-                msg += f'\n\nGot the following exception when trying to advance week: {str(e)}'
 
             print(f'Trying to send the following msg:\n"{msg}"')
 
@@ -1792,7 +1789,7 @@ class WeeklyTracker:
     def getPreviousWeeks(self):
         return self.previous_weeks
 
-    def getActiveStreak(self, include_current_week = False):
+    def getActiveStreak(self):
         # Go through previous_weeks in reverse order (Should be reverse chronological order)
         pw_streak = 0
         for pw in reversed(self.previous_weeks):
@@ -1800,15 +1797,11 @@ class WeeklyTracker:
                 break
             pw_streak += 1
 
+        # If we have met the streak in the current week, then add it to the streak.
         if self.current_week.isGoalMet():
             return pw_streak + 1
-        else:
-            if include_current_week:
-                # If include_current_week is True and the goal is not met for self.current_week, then it counts as breaking the streak.
-                return 0
-            else:
-                # If include_current_week is False (ex. the week is ongoing) and the goal is not met for self.current_week, then it doesn't count as breaking the streak.
-                return pw_streak
+        # If we haven't me the streak in the current week, then it won't break the streak, but it doesn't count.
+        return pw_streak
 
     def getLongestStreak(self):
         longest_streak = 0
@@ -1823,6 +1816,7 @@ class WeeklyTracker:
         return longest_streak
 
     def advanceWeek(self):
+        logging.info('Starting advanceWeek')
         t = datetime.now(tz=pytz.timezone("US/Pacific"))
 
         # Update current_week and add it to the previous_weeks list.
@@ -1840,6 +1834,7 @@ class WeeklyTracker:
 
         # Create the next current_week
         self.current_week = SingleWeek(next_goal, t)
+        logging.info('Ending advanceWeek')
     
     def recomputeWeeklyGoals(self, all_games = None):
         # TODO Remove debuging printing. This function shouldn't be used often, so I think its fairly okay to leave it.
