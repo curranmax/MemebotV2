@@ -50,7 +50,7 @@ class Options:
     CHAR_EQUALITY = '_char_equality'
     CHAR_KEYBORAD_DISTANCE = '_char_keyboard_distance'
 
-    def __init__(self, edit_distance_type: str = Options.SIMPLE, char_distance_type: str = Options.CHAR_EQUALITY, ignore_case: bool = True):
+    def __init__(self, edit_distance_type: str = SIMPLE, char_distance_type: str = CHAR_EQUALITY, ignore_case: bool = True):
         self.edit_distance_type = edit_distance_type
         self.char_distance_type = char_distance_type
 
