@@ -11,6 +11,7 @@ import logging
 import pytz
 import random
 import re
+import edit_distance
 
 # Move this data to firebase
 MAPS = [
@@ -477,26 +478,13 @@ STADIUM_HEROES = {
 
 # Move this to a central util file.
 def customEditDistance(v1, v2):
-    # Convert to lower case
-    v1 = v1.lower()
-    v2 = v2.lower()
-
-    # Swap the strings if v1 is longer.
-    if len(v1) > len(v2):
-        v1, v2 = v2, v1
-
-    best_score = None
-    for ind in range(0, len(v2) - len(v1) + 1):
-        this_score = 0
-        for c1, c2 in zip(v1, v2[ind:ind + len(v1)]):
-            # TODO handle special characters
-            if c1 != c2:
-                this_score += 1
-        if best_score is None or this_score < best_score:
-            best_score = this_score
-        if best_score == 0:
-            return best_score
-    return best_score
+    # TODO Update each call location to use different options.
+    options = edit_distance.Options(
+        edit_distance_type = edit_distance.Options.WORD,
+        char_distance_type = edit_distance.Options.CHAR_KEYBORAD_DISTANCE,
+        ignore_case = True,
+    )
+    edit_distance.compute(v1, v2, options)
 
 
 def getMap(map):
