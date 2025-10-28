@@ -54,6 +54,12 @@ _CHAR_KEYBOARD_POSITION = {
     ')': (10.0, 4.0),
 }
 
+_CHAR_KEYBOARD_DISTANCE = {
+    (c1, c2): ((pos1[0]-pos2[0])**2 + (pos1[1]-pos2[1])**2)**0.5
+    for c1, pos1 in _CHAR_KEYBOARD_POSITION.items()
+    for c2, pos2 in _CHAR_KEYBOARD_POSITION.items()
+}
+
 # This is the value to use if the character isn't in the above map. This will always be needed since we will compare to "None".
 _CHAR_KEYBOARD_UNKNOWN_DIST = 10.0
 
@@ -94,10 +100,9 @@ class Options:
                 if c2 is not None:
                     logging.warning(f'Unknown character: {c2}')
                 return _CHAR_KEYBOARD_UNKNOWN_DIST
-            x1, y1 = _CHAR_KEYBOARD_POSITION[c1]
-            x2, y2 = _CHAR_KEYBOARD_POSITION[c2]
-            # TODO Cache these values? Return dist squared for efficiency?
-            return ((x1-x2)**2 + (y1-y2)**2)**0.5
+            if (c1, c2) not in _CHAR_KEYBOARD_DISTANCE:
+                raise Exception('Both characters are in _CHAR_KEYBOARD_POSITION, but combo is not in _CHAR_KEYBOARD_DISTANCE')
+            return _CHAR_KEYBOARD_DISTANCE[(c1, c2)]
 
 
 def compute(v1: str, v2: str, options: Options|None = None) -> float:
