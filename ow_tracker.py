@@ -532,7 +532,7 @@ def customEditDistance(v1, v2):
         char_distance_type = edit_distance.Options.CHAR_EQUALITY,
         ignore_case = True,
     )
-    edit_distance.compute(v1, v2, options)
+    return edit_distance.compute(v1, v2, options)
 
 
 def getMap(map):
