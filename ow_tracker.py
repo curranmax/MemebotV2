@@ -532,7 +532,11 @@ def customEditDistance(v1, v2):
         char_distance_type = edit_distance.Options.CHAR_KEYBORAD_DISTANCE,
         ignore_case = True,
     )
-    return edit_distance.compute(v1, v2, options)
+    try:
+        return edit_distance.compute(v1, v2, options)
+    except Exception as e:
+        print(e)
+        return 0.0
 
 
 def getMap(map):

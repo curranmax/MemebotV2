@@ -145,7 +145,6 @@ def _getWordIndexes(v: str) -> list[int]:
 
 
 def _word(v1: str, v2: str, options: Options) -> float:
-    print('AA')
     best_score = None
     v1_inds = _getWordIndexes(v1)
     v2_inds = _getWordIndexes(v2)
