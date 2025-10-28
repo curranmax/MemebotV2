@@ -126,6 +126,7 @@ def _simple(v1: str, v2: str, options: Options) -> float:
             c1 = _getChar(v1, i+j)
             c2 = _getChar(v2, j)
             this_score += options.characterDistance(c1, c2)
+        print(f'    The score for i={i} is {this_score}')
         if best_score is None or this_score < best_score:
             best_score = this_score
         if best_score == 0:
