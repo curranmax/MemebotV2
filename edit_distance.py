@@ -157,7 +157,7 @@ def _word(v1: str, v2: str, options: Options) -> float:
             # Compare with aligning v1[i] with v2[v2_align]
             for j in range(len(v2)):
                 print(f'j: {j}')
-                c1 = _getChar(v1, i+j-align)
+                c1 = _getChar(v1, i+j-v2_align)
                 print(f'c1: {c1}')
                 c2 = _getChar(v2, j)
                 print(f'c2: {c2}')
