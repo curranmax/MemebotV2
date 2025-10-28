@@ -99,7 +99,7 @@ class Options:
                 return _CHAR_KEYBOARD_UNKNOWN_DIST
             print(f'  _CHAR_KEYBOARD_POSITION[c1]: {_CHAR_KEYBOARD_POSITION[c1]}')
             print(f'  _CHAR_KEYBOARD_POSITION[c2]: {_CHAR_KEYBOARD_POSITION[c2]}')
-            x1, y2 = _CHAR_KEYBOARD_POSITION[c1]
+            x1, y1 = _CHAR_KEYBOARD_POSITION[c1]
             x2, y2 = _CHAR_KEYBOARD_POSITION[c2]
             print(f'  x1: {x1}, y1: {y1}, x2: {x2}, y2: {y2}')
             # TODO Cache these values? Return dist squared for efficiency?
