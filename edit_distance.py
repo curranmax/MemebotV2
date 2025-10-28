@@ -88,14 +88,20 @@ class Options:
         elif self.char_distance_type == Options.CHAR_KEYBORAD_DISTANCE:
             c1 = c1.lower()
             c2 = c2.lower()
+            print(f'  comparing {c1} and {c2}')
+            print(f'  c1 in _char_keyboard_position: {c1 in _CHAR_KEYBOARD_POSITION}')
+            print(f'  c2 in _char_keyboard_position: {c2 in _CHAR_KEYBOARD_POSITION}')
             if c1 not in _CHAR_KEYBOARD_POSITION or c2 not in _CHAR_KEYBOARD_POSITION:
                 if c1 is not None:
                     logging.warning(f'Unknown character: {c1}')
                 if c2 is not None:
                     logging.warning(f'Unknown character: {c2}')
                 return _CHAR_KEYBOARD_UNKNOWN_DIST
+            print(f'  _CHAR_KEYBOARD_POSITION[c1]: {_CHAR_KEYBOARD_POSITION[c1]}')
+            print(f'  _CHAR_KEYBOARD_POSITION[c2]: {_CHAR_KEYBOARD_POSITION[c2]}')
             x1, y2 = _CHAR_KEYBOARD_POSITION[c1]
             x2, y2 = _CHAR_KEYBOARD_POSITION[c2]
+            print(f'  x1: {x1}, y1: {y1}, x2: {x2}, y2: {y2}')
             # TODO Cache these values? Return dist squared for efficiency?
             return ((x1-x2)**2 + (y1-y2)**2)**0.5
 
