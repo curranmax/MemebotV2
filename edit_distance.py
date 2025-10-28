@@ -145,14 +145,18 @@ def _getWordIndexes(v: str) -> list[int]:
 
 
 def _word(v1: str, v2: str, options: Options) -> float:
+    print('AA')
     best_score = None
     v1_inds = _getWordIndexes(v1)
     v2_inds = _getWordIndexes(v2)
     for i in v1_inds:
+        print(f'i: {i}')
         this_score = 0
         for v2_align in v2_inds:
+            print(f'v2_align: {v2_align}')
             # Compare with aligning v1[i] with v2[v2_align]
             for j in range(len(v2)):
+                print(f'j: {j}')
                 c1 = _getChar(v1, i+j-align)
                 c2 = _getChar(v2, j)
                 this_score += options.characterDistance(c1, c2)
@@ -160,4 +164,5 @@ def _word(v1: str, v2: str, options: Options) -> float:
             best_score = this_score
         if best_score == 0:
             return best_score
+    print('BB')
     return best_score
