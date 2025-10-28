@@ -532,11 +532,7 @@ def customEditDistance(v1, v2):
         char_distance_type = edit_distance.Options.CHAR_KEYBORAD_DISTANCE,
         ignore_case = True,
     )
-    try:
-        return edit_distance.compute(v1, v2, options)
-    except Exception as e:
-        print(e)
-        return 0.0
+    return edit_distance.compute(v1, v2, options)
 
 
 def getMap(map):
@@ -600,10 +596,6 @@ class OwTrackerDiscordCommands(app_commands.Group):
             map: customEditDistance(map, current)
             for map in MAPS
         }
-
-        print(f'Comparing all maps to "{current}"')
-        for m, v in map_edit_distance.items():
-            print(f'  Map "{m}" had a value of {v}')
 
         # Sort maps by edit distance
         map_choices.sort(
