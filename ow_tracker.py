@@ -529,13 +529,10 @@ def customEditDistance(v1, v2):
     # TODO Update each call location to use different options.
     options = edit_distance.Options(
         edit_distance_type = edit_distance.Options.WORD,
-        char_distance_type = edit_distance.Options.CHAR_EQUALITY,
+        char_distance_type = edit_distance.Options.CHAR_KEYBORAD_DISTANCE,
         ignore_case = True,
     )
-    print('A')
-    v = edit_distance.compute(v1, v2, options)
-    print('B')
-    return v
+    return edit_distance.compute(v1, v2, options)
 
 
 def getMap(map):
