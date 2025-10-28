@@ -88,20 +88,14 @@ class Options:
         elif self.char_distance_type == Options.CHAR_KEYBORAD_DISTANCE:
             c1 = c1.lower()
             c2 = c2.lower()
-            print(f'  comparing {c1} and {c2}')
-            print(f'  c1 in _char_keyboard_position: {c1 in _CHAR_KEYBOARD_POSITION}')
-            print(f'  c2 in _char_keyboard_position: {c2 in _CHAR_KEYBOARD_POSITION}')
             if c1 not in _CHAR_KEYBOARD_POSITION or c2 not in _CHAR_KEYBOARD_POSITION:
                 if c1 is not None:
                     logging.warning(f'Unknown character: {c1}')
                 if c2 is not None:
                     logging.warning(f'Unknown character: {c2}')
                 return _CHAR_KEYBOARD_UNKNOWN_DIST
-            print(f'  _CHAR_KEYBOARD_POSITION[c1]: {_CHAR_KEYBOARD_POSITION[c1]}')
-            print(f'  _CHAR_KEYBOARD_POSITION[c2]: {_CHAR_KEYBOARD_POSITION[c2]}')
             x1, y1 = _CHAR_KEYBOARD_POSITION[c1]
             x2, y2 = _CHAR_KEYBOARD_POSITION[c2]
-            print(f'  x1: {x1}, y1: {y1}, x2: {x2}, y2: {y2}')
             # TODO Cache these values? Return dist squared for efficiency?
             return ((x1-x2)**2 + (y1-y2)**2)**0.5
 
@@ -156,22 +150,15 @@ def _word(v1: str, v2: str, options: Options) -> float:
     v1_inds = _getWordIndexes(v1)
     v2_inds = _getWordIndexes(v2)
     for i in v1_inds:
-        print(f'i: {i}')
         this_score = 0
         for v2_align in v2_inds:
-            print(f'v2_align: {v2_align}')
             # Compare with aligning v1[i] with v2[v2_align]
             for j in range(len(v2)):
-                print(f'j: {j}')
                 c1 = _getChar(v1, i+j-v2_align)
-                print(f'c1: {c1}')
                 c2 = _getChar(v2, j)
-                print(f'c2: {c2}')
                 this_score += options.characterDistance(c1, c2)
-                print(f'this_score: {this_score}')
         if best_score is None or this_score < best_score:
             best_score = this_score
         if best_score == 0:
             return best_score
-    print('BB')
     return best_score
