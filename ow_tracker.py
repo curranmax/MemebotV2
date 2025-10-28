@@ -528,7 +528,7 @@ STADIUM_HEROES = {
 def customEditDistance(v1, v2):
     # TODO Update each call location to use different options.
     options = edit_distance.Options(
-        edit_distance_type = edit_distance.Options.SIMPLE,
+        edit_distance_type = edit_distance.Options.WORD,
         char_distance_type = edit_distance.Options.CHAR_EQUALITY,
         ignore_case = True,
     )
