@@ -92,8 +92,10 @@ class Options:
                 return 0
             return 1
         elif self.char_distance_type == Options.CHAR_KEYBORAD_DISTANCE:
-            c1 = c1.lower()
-            c2 = c2.lower()
+            if c1 is not None:
+                c1 = c1.lower()
+            if c2 is not None:
+                c2 = c2.lower()
             if c1 not in _CHAR_KEYBOARD_POSITION or c2 not in _CHAR_KEYBOARD_POSITION:
                 if c1 is not None:
                     logging.warning(f'Unknown character: {c1}')
