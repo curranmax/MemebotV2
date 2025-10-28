@@ -158,8 +158,11 @@ def _word(v1: str, v2: str, options: Options) -> float:
             for j in range(len(v2)):
                 print(f'j: {j}')
                 c1 = _getChar(v1, i+j-align)
+                print(f'c1: {c1}')
                 c2 = _getChar(v2, j)
+                print(f'c2: {c2}')
                 this_score += options.characterDistance(c1, c2)
+                print(f'this_score: {this_score}')
         if best_score is None or this_score < best_score:
             best_score = this_score
         if best_score == 0:
