@@ -597,6 +597,10 @@ class OwTrackerDiscordCommands(app_commands.Group):
             for map in MAPS
         }
 
+        print(f'Comparing all maps to "{current}"')
+        for m, v in map_edit_distance.items():
+            print(f'  Map "{m}" had a value of {v}')
+
         # Sort maps by edit distance
         map_choices.sort(
             key=lambda map: (map_edit_distance[map.value], map.value))
@@ -1278,7 +1282,7 @@ class OwTrackerDiscordCommands(app_commands.Group):
         ]
 
 
-class OverwatchTrackerManager:
+class OverwatchTrackerManager: 
 
     def __init__(self, ow_tracker_fname=OW_TRACKER_FILENAME, event_calendar=None, discord_client=None):
         self.discord_client = discord_client
