@@ -1440,7 +1440,7 @@ class OverwatchTrackerManager:
                 days_left = 1 - now.weekday()
                 if days_left <= 0:
                     days_left += 7
-                msg += f'\n\nThere are {days_left} day{"s" if days_left > 1 else ""} left in this week.'
+                msg += f'\n\nThere {"are" if days_left != 1 else "is"} {days_left} day{"s" if days_left != 1 else ""} left in this week.'
 
             print(f'Trying to send the following msg:\n"{msg}"')
 
