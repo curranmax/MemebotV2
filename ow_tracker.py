@@ -1864,13 +1864,25 @@ class WeeklyTracker:
         return longest_streak
 
     def advanceWeek(self):
+        # Log current state before advancing week
         logging.info('Starting advanceWeek')
+        self.logState("pre-advanceWeek")
+
+        # Get the current time, use this for the end fo the old week, and the start of the new week.
         t = datetime.now(tz=pytz.timezone("US/Pacific"))
 
-        # Update current_week and add it to the previous_weeks list.
-        next_goal = self.current_week.goal
-        self.current_week.end = t
-        self.previous_weeks.append(self.current_week)
+        # Move the old current_week to a separate variable
+        last_week = self.current_week
+        self.current_week = None
+
+        # Update last_week.end
+        last_week.end = t
+
+        # Add last_week to self.previous_weekks
+        self.previous_weeks.append(last_week)
+
+        # Construct the new current_week. It inherits the goal from last_week.
+        self.current_week = SingleWeek(last_week.goal, t, end = None, games = [])
 
         # Check that self.previous_weeks is sorted from oldest to newest
         for i in range(len(self.previous_weeks) - 1):
@@ -1880,10 +1892,22 @@ class WeeklyTracker:
             if first_week.start >= second_week.start:
                 print('WARNING WEEKLY STATUS VALUES ARE NOT IN THE EXPECTED ORDER!!!!!!')
 
-        # Create the next current_week
-        self.current_week = SingleWeek(next_goal, t)
+        # Log current state before advancing week
+        self.logState("post-advanceWeek")
         logging.info('Ending advanceWeek')
     
+    def logState(self, prefix):
+        # TODO Log details about the games.
+
+        # Log state of self.current_week
+        end_str = 'None' if self.current_week.end is None else self.current_week.end.isoformat()
+        logging.info(f"{prefix} - self.current_week = [goal: {self.current_week.goal}, start: {self.current_week.start.isoformat()}, end: {end_str}, len(games): {len(self.current_week.games)}]")
+
+        # Log state of all previous weeks
+        for i, pw in enumerate(self.previous_weeks):
+            end_str = 'None' if self.pw.end is None else self.pw.end.isoformat()
+            logging.info(f"{prefix} - self.previous_weeks[{i}] = [goal: {pw.goal}, start: {pw.start.isoformat()}, end: {end_str}, len(games): {len(pw.games)}]")
+
     def recomputeWeeklyGoals(self, all_games = None):
         # TODO Remove debuging printing. This function shouldn't be used often, so I think its fairly okay to leave it.
 
