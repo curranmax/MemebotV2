@@ -1905,7 +1905,7 @@ class WeeklyTracker:
 
         # Log state of all previous weeks
         for i, pw in enumerate(self.previous_weeks):
-            end_str = 'None' if self.pw.end is None else self.pw.end.isoformat()
+            end_str = 'None' if pw.end is None else pw.end.isoformat()
             logging.info(f"{prefix} - self.previous_weeks[{i}] = [goal: {pw.goal}, start: {pw.start.isoformat()}, end: {end_str}, len(games): {len(pw.games)}]")
 
     def recomputeWeeklyGoals(self, all_games = None):
