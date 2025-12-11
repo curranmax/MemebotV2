@@ -97,6 +97,7 @@ HEROES = {
     'Symmetra': DPS,
     'Torbjörn': DPS,
     'Tracer': DPS,
+    'Vendetta': DPS,
     'Venture': DPS,
     'Widowmaker': DPS,
 
