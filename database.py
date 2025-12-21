@@ -6,6 +6,8 @@ import typing
 
 from discord import app_commands
 
+AUTOCOMPLETE_LIMIT = 25
+
 # Helper function for parsing comma separated lists to lists of strings.
 def parseDiscordList(discord_list: str, separator: str = ",") -> list[str]:
     return list(map(lambda v: v.strip(), discord_list.split(separator)))
@@ -149,11 +151,28 @@ class DatabaseImpl:
         raise Exception("Failed to find a valid record ID")
 
 
-    def addRecord(self, **kwargs):
+    def addRecord(self, **kwargs) -> Record:
         record_id = self._getNextRecordId()
         record = Record(record_id, kwargs)
         self.records[record_id] = record
         self.validateRecord(record_id, record)
+        return record
+
+    def getEnumValuesFromFieldName(self, field_name: str) -> list[EnumValue]:
+        if field_name not in self.record_struct:
+            raise Exception(f'DB "{self.name}": Unknown field name "{field_name}"')
+        field_type = self.record_struct[field_name]
+
+        if field_type.base_type != FieldType.ENUM:
+            raise Exception(f'DB "{self.name}": Field "{field_name}" is not an enum')
+
+        enum_name = field_type.enum_name
+        
+        if enum_name is None or enum_name not in self.enums:
+            raise Exception(f'DB "{self.name}": Unknown enum "{enum_name}"')
+
+        return self.enums[enum_name]
+
 
 
 # Helpers for loading and saving a DatabaseImpl
@@ -178,10 +197,16 @@ class AsyncDatabaseWrapper:
         self.filename = filename
         self.lock = asyncio.Lock()
 
-    async def addRecord(self, **kwargs):
+    async def addRecord(self, **kwargs) -> Record:
         async with self.lock:
-            self.database_impl.addRecord(**kwargs)
+            record = self.database_impl.addRecord(**kwargs)
             saveDatabase(self.filename, self.database_impl)
+            return record
+    
+
+    async def getEnumValuesFromFieldName(self, field_name: str) -> list[EnumValue]:
+        async with self.lock:
+            return self.database_impl.getEnumValuesFromFieldName(field_name)
 
 
 # ----------------------------------------
@@ -196,7 +221,24 @@ class RestaurantDiscordCommands(app_commands.Group):
         self.restaurant_database = restaurant_database
 
     async def locationListAutoComplete(self, interaction: discord.Interaction, current: str) -> typing.List[app_commands.Choice[str]]:
-        pass
+        # TODO Move this to a helper function so the code can be resued
+        
+        # Get the enum values for this type
+        enum_values = self.restaurant_database.getEnumValuesFromFieldName("locations")
+
+        # Parse current into list of values
+
+        # If an entry is already an enum value, then we are good.
+
+        # If an entry isn't already an enum value, then find the edit distance between it and all enum values
+
+        # Combine the different combinations and come up with a sorted list by overall lowest edit distance
+
+        # Return the first AUTOCOMPLETE_LIMIT entries
+
+        return []
+
+
 
     async def cuisineListAutoComplete(self, interaction: discord.Interaction, current: str) -> typing.List[app_commands.Choice[str]]:
         pass
@@ -205,37 +247,46 @@ class RestaurantDiscordCommands(app_commands.Group):
         pass
 
     @app_commands.command(name='add-restaurant', description='Record lose')
-    @app_commands.describe()
+    @app_commands.describe(
+        name='Name of the restaurant',
+        locations='Comma separated list of locations associated with the restaurant',
+        cuisines='Comma separated list of cuisines that the restaurant serves',
+        eating_options='Comma separated list of eating options that the restaurant offers',
+        hours='Free form string with the general hours of the restaurant',
+        url='URL of the restaurant',
+    )
     @app_commands.autocomplete(
-        location=locationListAutoComplete,
-        cuisine=cuisineListAutoComplete,
+        locations=locationListAutoComplete,
+        cuisines=cuisineListAutoComplete,
         eating_options=eatingOptionsListAutoComplete,
     )
     async def add_restaurant(
             self,
             interaction: discord.Interaction,
             name: str,
-            location: str,
-            cuisine: str,
+            locations: str,
+            cuisines: str,
             eating_options: str,
             hours: typing.Optional[str] = None,
             url: typing.Optional[str] = None,
     ):
-        await self.restaurant_database.addRestaurant(
+        new_record = await self.restaurant_database.addRestaurant(
             name = name,
-            location = parseDiscordList(location),
-            cuisine = parseDiscordList(cuisine),
+            locations = parseDiscordList(locations),
+            cuisines = parseDiscordList(cuisines),
             eating_options = parseDiscordList(eating_options),
             hours = hours,
             url = url,
         )
+        new_record_str = self.restaurant_database.restaurantRecordToStr(new_record)
+        await interaction.response.send_message(f'Successfully added new restaurant!\n\n{new_record_str}')
 
 class RestaurantDatabase:
     def __init__(self, filenname = "data/restaurant_database.pickle"):
         record_struct = {
             "name": FieldType(FieldType.STR, FieldType.REQUIRED),
-            "location": FieldType(FieldType.ENUM, FieldType.REPEATED, "locations"),
-            "cuisine": FieldType(FieldType.ENUM, FieldType.REPEATED, "cuisines"),
+            "locations": FieldType(FieldType.ENUM, FieldType.REPEATED, "locations"),
+            "cuisines": FieldType(FieldType.ENUM, FieldType.REPEATED, "cuisines"),
             "eating_options": FieldType(FieldType.ENUM, FieldType.REPEATED, "eating_options"),
             "hours": FieldType(FieldType.STR, FieldType.OPTIONAL),
             "url": FieldType(FieldType.STR, FieldType.OPTIONAL),
@@ -268,8 +319,42 @@ class RestaurantDatabase:
         return [RestaurantDiscordCommands(self)]
 
     # kwargs should match record_struct
-    async def addRestaurant(self, **kwargs):
+    async def addRestaurant(self, **kwargs) -> Record:
         await self.async_database.addRecord(**kwargs)
+
+    async def getEnumValuesFromFieldName(self, field_name: str) -> list[EnumValue]:
+        return await self.async_database.getEnumValuesFromFieldName(field_name)
+
+    def restaurantRecordToStr(self, record: Record) -> str:
+        name = record.field["name"]
+        locations = record.field["locations"]
+        cuisines = record.field["cuisines"]
+        eating_options = record.field["eating_options"]
+        hours = record.field["hours"]
+        url = record.field["url"]
+
+        rv = ""
+        if url is None:
+            rv += f"**{name}**: "
+        else:
+            rv += f"**[{name}]({url})**: "
+
+        location_str = ", ".join(map(lambda v: f'"{v.enum_value}"', locations)) if len(locations) > 0 else "None"
+        rv += f"*Location Tags* = {location_str}"
+
+        cuisine_str = ", ".join(map(lambda v: f'"{v.enum_value}"', cuisines)) if len(cuisines) > 0 else "None"
+        rv += f"; *Cuisine Tags* = {cuisine_str}"
+
+        eating_option_str = ", ".join(map(lambda v: f'"{v.enum_value}"', eating_options)) if len(eating_options) > 0 else "None"
+        rv += f"; *Eating Option Tags* = {eating_option_str}"
+
+        if hours is not None:
+            rv += f"; *Hours*: \"{hours}\""
+
+        return rv
+
+
+
 
 
 # Next Steps 12/20:
