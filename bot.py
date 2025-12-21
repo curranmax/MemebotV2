@@ -112,14 +112,10 @@ class CustomDiscordClient(discord.Client):
                 self.command_tree.add_command(command_group,
                                               guilds=self.command_guilds)
 
-        # Add commands for the Database feature.
+        # Add commands for the Database features.
         if self.feature_tracker is not None and self.feature_tracker.isEnabled(
                 'database'):
-            self.database_manager = database.DatabaseManager(
-                firebase_key_fname='/home/curranmax/keys/firebase.json')
-            for command_group in self.database_manager.getDiscordCommands():
-                self.command_tree.add_command(command_group,
-                                              guilds=self.command_guilds)
+            pass
 
     def getOrCreateEventCalendar(self):
         if self.event_calendar is None:

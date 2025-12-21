@@ -120,6 +120,19 @@ HEROES = {
 # TODO Have a way to keep old powers that removed documented somewhere.
 STADIUM_HEROES = {
     # Tank
+    'Doomfist': [
+        'Jab Cross',
+        'Rising Uppercut',
+        'The Best Defense',
+        'Aftershock',
+        'Seismic Rally',
+        'Slam Wham',
+        'Boomfist',
+        'Jetforce Jab',
+        'Overpowered',
+        'Asteriod Smash',
+        'Helping Hand',
+    ],
     'D.Va': [
         'Focused Fusion',
         'Legendary Loadout',
@@ -249,16 +262,22 @@ STADIUM_HEROES = {
         'Partners in Crime',
     ],
     'Cassidy': [
+        'Bang Bang',
+        'Buck Wild',
         'Bullseye',
-        'Dead Man Walking',
+        'Dead Man Walkin\'',
         'Full House',
         'Quick Draw',
         'Think Flasht',
         'Barrel Roll',
         'Just Roll with It',
-        'Flash in the Pan',
-        'Hot Potato',
         'Easy Rider',
+        'It\'s Twelve O\'clock Somewhere',
+        'Hot Potato',
+
+        # Old Powers
+        'Dead Man Walking',  # Renamed to "Dead Man Walkin'"
+        'Flash in the Pan',
         'Sunrise',
         'Sunset',
     ],
@@ -507,6 +526,20 @@ STADIUM_HEROES = {
         'Scientific Deathod',
         'Voidhoppers',
         'Descruction\'s Divide',
+    ],
+    'Wuyang': [
+        'Paindrops',
+        'Undertow',
+        'Wave Lance',
+        'Flow State',
+        'Shore Up',
+        'Tidekeeper',
+        'Puddle Stomp',
+        'Splish Splash',
+        'Streamline',
+        'Ebb and Flow',
+        'Storm Surge',
+        'Tidal Save',
     ],
     'Zenyatta': [
         'Flying Kick',
