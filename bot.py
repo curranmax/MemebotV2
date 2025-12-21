@@ -115,7 +115,9 @@ class CustomDiscordClient(discord.Client):
         # Add commands for the Database features.
         if self.feature_tracker is not None and self.feature_tracker.isEnabled(
                 'database'):
-            pass
+            self.restaraunt_database = database.RestaurantDatabase()
+            for command_group in self.restaraunt_database.getDiscordCommands():
+                self.command_tree.add_command(command_group, guilds=self.command_guilds)
 
     def getOrCreateEventCalendar(self):
         if self.event_calendar is None:
