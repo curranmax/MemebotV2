@@ -3,8 +3,12 @@ import asyncio
 from collections.abc import Callable
 import os.path
 import typing
+import random
 
+import discord
 from discord import app_commands
+
+import edit_distance
 
 AUTOCOMPLETE_LIMIT = 25
 
@@ -77,6 +81,21 @@ class FieldType:
                 return isinstance(value, list) and all(map(lambda v: v in enum_values, value))
             return v in enum_values
 
+    def query(self, value: typing.Any, pos_values: list[typing.Any] | None) -> bool:
+        if pos_values is None:
+            return True
+
+        if self.mode == FieldType.OPTIONAL and value is None and pos_values is not None:
+            return False
+
+        if self.mode == FieldType.REPEATED:
+            for v in values:
+                if v in pos_values:
+                    return True
+            return True
+        else:
+            return value in pos_values
+
 
 class EnumValue:
     def __init__(self, enum_type: str, enum_value: str):
@@ -106,17 +125,17 @@ class DatabaseImpl:
 
         # TODO Move this to a validateAllRecords function
         for record_id, record in self.records.items():
-            self.validateRecord(record_id, record)
+            self.validateRecord(record, record_id=record_id)
 
 
-    def validateRecord(self, record_id: str, record: Record):
-        if record.record_id != record_id:
+    def validateRecord(self, record: Record, record_id: str = None):
+        if record_id is not None and record.record_id != record_id:
             raise Exception(f'DB "{self.name}": Record ID "{record_id}" doesn\'t match record "{record.record_id}"')
 
         for field_name, field_type in self.record_struct.items():
             if field_name not in record.fields:
                 # Record is missing a field (Note that optional fields need to be specified but can be None).
-                raise Exception(f'DB "{self.name}": Record "{record_id}" is missing required field "{field_name}"')
+                raise Exception(f'DB "{self.name}": Record is missing required field "{field_name}"')
 
             field_value = record.fields[field_name]
             enum_values = None
@@ -127,12 +146,12 @@ class DatabaseImpl:
                 enum_values = self.enums[field_type.enum_name]
             if not field_type.validate(field_value, enum_values):
                 # Field value doesn't match field type
-                raise Exception(f'DB "{self.name}": Record "{record_id}" has invalid value for field "{field_name}": {field_value}')
+                raise Exception(f'DB "{self.name}": Record has invalid value for field "{field_name}": {field_value}')
 
         # Record has a field that it isn't supposed to
         for field_name, _ in fields.items():
             if field_name not in self.record_struct:
-                raise Exception(f'DB "{self.name}": Record "{record_id}" has extra field "{field_name}"')
+                raise Exception(f'DB "{self.name}": Record has extra field "{field_name}"')
 
         # Everntyhing has been validated
 
@@ -154,9 +173,29 @@ class DatabaseImpl:
     def addRecord(self, **kwargs) -> Record:
         record_id = self._getNextRecordId()
         record = Record(record_id, kwargs)
+        self.validateRecord(record)
         self.records[record_id] = record
-        self.validateRecord(record_id, record)
         return record
+
+    def query(self, **kwargs) -> list[Record]:
+        rv = []
+
+        query_args = {}
+        for field_name, pos_values in kwargs.items():
+            if field_name not in self.record_struct:
+                raise Exception(f'DB "{self.name}": Unknown field name "{field_name}"')
+            query_args[field_name] = (pos_values, self.record_struct[field_name])
+
+        for _, record in self.records.items():
+            match = True
+            for field_name, (pos_values, field_type) in query_args.items():
+                if not field_type.query(record.field[field_name], pos_values):
+                    match = False
+                    break
+            if match:
+                rv.append(record)
+
+        return rv
 
     def getEnumValuesFromFieldName(self, field_name: str) -> list[EnumValue]:
         if field_name not in self.record_struct:
@@ -173,6 +212,51 @@ class DatabaseImpl:
 
         return self.enums[enum_name]
 
+    
+    def autocompleteList(field_name: str, current: str, limit: int = AUTOCOMPLETE_LIMIT) -> list[str]:
+        # Get the enum values that could be used for this autocomplete
+        enum_values = self.getEnumValuesFromFieldName(field_name)
+
+        # Split the current string by commas
+        current_values = parseDiscordList(current)
+
+        # If an entry is already an enum_value, then there is nothing to do for that entry
+        # If an entry isn't an enum_value, then find the edit distance between the entry and all of the differnet enum_values
+        options = edit_distance.Options(
+            edit_distance_type = edit_distance.Options.WORD,
+            char_distance_type = edit_distance.Options.CHAR_KEYBORAD_DISTANCE,
+            ignore_case = True,
+        )
+        pos_values = []
+        for current_value in current_values:
+            if current_value in enum_values:
+                pos_values.append([(0.0, current_values)])
+            else:
+                this_pos_values = []
+                for enum_value in enum_values:
+                    this_pos_values.append((edit_distance.compute(current_value, enum_value, options), enum_value))
+                this_pos_values.sort()
+                pos_values.append(this_pos_values)
+
+        # TODO use a min heap here instead of checking everything
+        current_indexes = [0] * len(pos_values)
+        sorted_combinations = []
+        while len(sorted_combinations) <= limit:
+            sorted_combinations.append(", ".join(map(lambda v: v[1], [vs[i] for i, vs in zip(current_indexes, pos_values)])))
+            increment_index = None
+            increment_value = None
+            for i, vs in zip(current_indexes, pos_values):
+                if i >= len(vs) - 1:
+                    continue
+                if increment_value is None or vs[i+1][0] < increment_value:
+                    increment_index = i
+                    increment_value = vs[i+1][0]
+
+            if increment_index is None:
+                break
+            current_indexes[increment_index] += 1
+
+        return sorted_combinations
 
 
 # Helpers for loading and saving a DatabaseImpl
@@ -202,11 +286,20 @@ class AsyncDatabaseWrapper:
             record = self.database_impl.addRecord(**kwargs)
             saveDatabase(self.filename, self.database_impl)
             return record
+
+    async def query(self, **kwargs) -> list[Record]:
+        async with self.lock:
+            return self.database_impl.query(**kwargs)
     
 
     async def getEnumValuesFromFieldName(self, field_name: str) -> list[EnumValue]:
         async with self.lock:
             return self.database_impl.getEnumValuesFromFieldName(field_name)
+
+
+    async def autocompleteList(field_name: str, current: str, limit: int = AUTOCOMPLETE_LIMIT) -> list[str]:
+        async with self.lock:
+            return self.database_impl.autocompleteList(field_name, current, limit = limit)
 
 
 # ----------------------------------------
@@ -221,32 +314,25 @@ class RestaurantDiscordCommands(app_commands.Group):
         self.restaurant_database = restaurant_database
 
     async def locationListAutoComplete(self, interaction: discord.Interaction, current: str) -> typing.List[app_commands.Choice[str]]:
-        # TODO Move this to a helper function so the code can be resued
+        sorted_autocomplete_values = await self.restaurant_database.autocompleteList("locations", current)
         
-        # Get the enum values for this type
-        enum_values = self.restaurant_database.getEnumValuesFromFieldName("locations")
-
-        # Parse current into list of values
-
-        # If an entry is already an enum value, then we are good.
-
-        # If an entry isn't already an enum value, then find the edit distance between it and all enum values
-
-        # Combine the different combinations and come up with a sorted list by overall lowest edit distance
-
-        # Return the first AUTOCOMPLETE_LIMIT entries
-
-        return []
-
-
+        # wrap in app_commands.Choice
+        return [app_commands.Choice(name=v, value=v) for v in sorted_autocomplete_values]
 
     async def cuisineListAutoComplete(self, interaction: discord.Interaction, current: str) -> typing.List[app_commands.Choice[str]]:
-        pass
+        sorted_autocomplete_values = await self.restaurant_database.autocompleteList("cuisines", current)
+        
+        # wrap in app_commands.Choice
+        return [app_commands.Choice(name=v, value=v) for v in sorted_autocomplete_values]
 
     async def eatingOptionsListAutoComplete(self, interaction: discord.Interaction, current: str) -> typing.List[app_commands.Choice[str]]:
-        pass
+        sorted_autocomplete_values = await self.restaurant_database.autocompleteList("eating_options", current)
+        
+        # wrap in app_commands.Choice
+        return [app_commands.Choice(name=v, value=v) for v in sorted_autocomplete_values]
 
-    @app_commands.command(name='add-restaurant', description='Record lose')
+
+    @app_commands.command(name='add-restaurant', description='Add a restaurant to the database')
     @app_commands.describe(
         name='Name of the restaurant',
         locations='Comma separated list of locations associated with the restaurant',
@@ -280,6 +366,49 @@ class RestaurantDiscordCommands(app_commands.Group):
         )
         new_record_str = self.restaurant_database.restaurantRecordToStr(new_record)
         await interaction.response.send_message(f'Successfully added new restaurant!\n\n{new_record_str}')
+
+    # TODO Add more powerful querying syntax
+    @app_commands.command(name='query', description='Query the database. Returned restaurants must match the locations, cuisines, and eating_options filter.')
+    @app_commands.describe(
+        locations='Comma separated list of locations. The returned restaurants will have at least one of these locations. If this option not set, then the locations field won\'t be checked.',
+        cuisines='Comma separated list of cuisines. The returned restaurants will have at least one of these locations. If this option not set, then the cuisines field won\'t be checked.',
+        eating_options='Comma separated list of eating options. The returned restaurants will have at least one of these locations. If this option not set, then the eating_options field won\'t be checked.',
+        num_restaurants='The number of restaurants to include in the response (If less than zero, then all matching restaurants will be returned). The order of the restaurants will be random.',
+        ephemeral='Whether or not to send the response as an ephemeral message (visible only to you).',
+    )
+    @app_commands.autocomplete(
+        locations=locationListAutoComplete,
+        cuisines=cuisineListAutoComplete,
+        eating_options=eatingOptionsListAutoComplete,
+    )
+    async def query(
+        self,
+        interaction: discord.Interaction,
+        locations: typing.Optional[str] = None,
+        cuisines: typing.Optional[str] = None,
+        eating_options: typing.Optional[str] = None,
+        num_restaurants: typing.Optional[int] = 5,
+        ephemeral: typing.Optional[bool] = False,
+    ):
+        args = {}
+        if locations is not None:
+            args["locations"] = parseDiscordList(locations)
+        if cuisines is not None:
+            args["cuisines"] = parseDiscordList(cuisines)
+        if eating_options is not None:
+            args["eating_options"] = parseDiscordList(eating_options)
+        matching_records = await self.restaurant_database.query(**args)
+
+        total_matches = len(matching_records)
+
+        if num_restaurants >= 0 and num_restaurants < len(matching_records):
+            matching_records = random.sample(matching_records, num_restaurants)
+
+        msg = f'Found {total_matches} restaurants that matched this query:\n'
+        for record in matching_records:
+            msg += '* ' + self.restaurant_database.restaurantRecordToStr(record) + '\n'
+        await interaction.response.send_message(msg, ephemeral = ephemeral)
+
 
 class RestaurantDatabase:
     def __init__(self, filenname = "data/restaurant_database.pickle"):
@@ -322,6 +451,12 @@ class RestaurantDatabase:
     async def addRestaurant(self, **kwargs) -> Record:
         await self.async_database.addRecord(**kwargs)
 
+    async def query(self, **kwargs) -> list[Record]:
+        return await self.async_database.query(**kwargs)
+
+    async def autocompleteList(self, field_name: str, current: str, limit: int = AUTOCOMPLETE_LIMIT) -> list[str]:
+        return await self.async_database.autocompleteList(field_name, current, limit = limit)
+
     async def getEnumValuesFromFieldName(self, field_name: str) -> list[EnumValue]:
         return await self.async_database.getEnumValuesFromFieldName(field_name)
 
@@ -358,8 +493,8 @@ class RestaurantDatabase:
 
 
 # Next Steps 12/20:
-#  * Implemented autocomplete functions
-#  * Implement the query command
+#  * (DONE) Implemented autocomplete functions
+#  * (DONE) Implement the query command
 #    * All records or random k records
 #    * Selection criteria
 #  * Implement command to add enum value
