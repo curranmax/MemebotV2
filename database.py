@@ -177,6 +177,31 @@ class DatabaseImpl:
         self.records[record_id] = record
         return record
 
+    def removeRecord(self, field_name: str, field_value: typing.Any) -> str | None:
+        if field_name not in self.record_struct:
+            return f'Unknown field name "{field_name}"'
+
+        record_ids_to_remove = [
+            record_id
+            for record_id, record in self.records.items()
+            if record.field[field_name] == field_value
+        ]
+
+        if len(record_ids_to_remove) == 0:
+            return f'No records found with field "{field_name}" = "{field_value}"'
+
+        for record_id in record_ids_to_remove:
+            del self.recordds[record_id]
+        return None
+
+    def addEnumValue(self, enum_name: str, enum_value: str) -> str | None:
+        if enum_name not in self.enums:
+            return f'Unknown enum "{enum_name}"'
+        if enum_value in self.enums[enum_name]:
+            return f'Enum value "{enum_value}" already exists in enum "{enum_name}"'
+        self.enums[enum_name].append(enum_value)
+        return None
+
     def query(self, **kwargs) -> list[Record]:
         rv = []
 
@@ -258,6 +283,29 @@ class DatabaseImpl:
 
         return sorted_combinations
 
+    def autocompleteSingle(self, field_name: str, current: str, limit: int = AUTOCOMPLETE_LIMIT) -> list[str]:
+        if field_name not in self.record_struct:
+            raise Exception(f'DB "{self.name}": Unknown field name "{field_name}"')
+        pos_values = [record.field[field_name] for _, record in self.records.items()]
+        options = edit_distance.Options(
+            edit_distance_type = edit_distance.Options.WORD,
+            char_distance_type = edit_distance.Options.CHAR_KEYBORAD_DISTANCE,
+            ignore_case = True,
+        )
+        weighted_values = [(edit_distance.compute(current, value, options), value) for value in pos_values]
+        # TODO Use a min heap instead of sorting the whole list.
+        return [value for _, value in sorted(weighted_values)[:limit]]
+
+    def autocompleteEnumNames(self, current: str, limit: int = AUTOCOMPLETE_LIMIT) -> list[str]:
+        pos_values = [enum_name for enum_name, _ in self.enums.items()]
+        options = edit_distance.Options(
+            edit_distance_type = edit_distance.Options.WORD,
+            char_distance_type = edit_distance.Options.CHAR_KEYBORAD_DISTANCE,
+            ignore_case = True,
+        )
+        weighted_values = [(edit_distance.compute(current, value, options), value) for value in pos_values]
+        return [value for _, value in sorted(weighted_values)[:limit]]
+
 
 # Helpers for loading and saving a DatabaseImpl
 def loadDatabase(filenname) -> DatabaseImpl | None:
@@ -287,6 +335,18 @@ class AsyncDatabaseWrapper:
             saveDatabase(self.filename, self.database_impl)
             return record
 
+    async def removeRecord(self, field_name: str, field_value: typing.Any) -> str | None:
+        async with self.lock:
+            err = self.database_impl.removeRecord(field_name, field_value)
+            saveDatabase(self.filename, self.database_impl)
+            return err
+
+    async def addEnumValue(self, enum_name: str, enum_value: str) -> str | None:
+        async with self.lock:
+            err = self.database_impl.addEnumValue(enum_name, enum_value)
+            saveDatabase(self.filename, self.database_impl)
+            return err
+
     async def query(self, **kwargs) -> list[Record]:
         async with self.lock:
             return self.database_impl.query(**kwargs)
@@ -301,6 +361,14 @@ class AsyncDatabaseWrapper:
         async with self.lock:
             return self.database_impl.autocompleteList(field_name, current, limit = limit)
 
+    async def autocompleteSingle(self, field_name: str, current: str, limit: int = AUTOCOMPLETE_LIMIT) -> list[str]:
+        async with self.lock:
+            return self.database_impl.autocompleteSingle(field_name, current, limit = limit)
+
+    async def autocompleteEnumNames(current: str, limit: int = AUTOCOMPLETE_LIMIT) -> list[str]:
+        async with self.lock:
+            return self.database_impl.autocompleteEnumNames(current, limit = limit)
+
 
 # ----------------------------------------
 # |                                      |
@@ -313,23 +381,31 @@ class RestaurantDiscordCommands(app_commands.Group):
         super(OwTrackerDiscordCommands, self).__init__(name='restaurant-db', *args, **kwargs)
         self.restaurant_database = restaurant_database
 
-    async def locationListAutoComplete(self, interaction: discord.Interaction, current: str) -> typing.List[app_commands.Choice[str]]:
+    async def locationListAutocomplete(self, interaction: discord.Interaction, current: str) -> typing.List[app_commands.Choice[str]]:
         sorted_autocomplete_values = await self.restaurant_database.autocompleteList("locations", current)
         
         # wrap in app_commands.Choice
         return [app_commands.Choice(name=v, value=v) for v in sorted_autocomplete_values]
 
-    async def cuisineListAutoComplete(self, interaction: discord.Interaction, current: str) -> typing.List[app_commands.Choice[str]]:
+    async def cuisineListAutocomplete(self, interaction: discord.Interaction, current: str) -> typing.List[app_commands.Choice[str]]:
         sorted_autocomplete_values = await self.restaurant_database.autocompleteList("cuisines", current)
         
         # wrap in app_commands.Choice
         return [app_commands.Choice(name=v, value=v) for v in sorted_autocomplete_values]
 
-    async def eatingOptionsListAutoComplete(self, interaction: discord.Interaction, current: str) -> typing.List[app_commands.Choice[str]]:
+    async def eatingOptionsListAutocomplete(self, interaction: discord.Interaction, current: str) -> typing.List[app_commands.Choice[str]]:
         sorted_autocomplete_values = await self.restaurant_database.autocompleteList("eating_options", current)
         
         # wrap in app_commands.Choice
         return [app_commands.Choice(name=v, value=v) for v in sorted_autocomplete_values]
+
+    async def enumNameAutocomplete(self, interaction: discord.Interaction, current: str) -> typing.List[app_commands.Choice[str]]:
+        sorted_enum_names = await self.restaurant_database.autocompleteEnumNames(current)
+        return [app_commands.Choice(name=v, value=v) for v in sorted_enum_names]
+
+    async def restaurantNameAutocomplete(self, interaction: discord.Interaction, current: str) -> typing.List[app_commands.Choice[str]]:
+        sorted_restaurant_names = await self.restaurant_database.autocompleteSingle("name", current)
+        return [app_commands.Choice(name=v, value=v) for v in sorted_restaurant_names]
 
 
     @app_commands.command(name='add-restaurant', description='Add a restaurant to the database')
@@ -342,9 +418,9 @@ class RestaurantDiscordCommands(app_commands.Group):
         url='URL of the restaurant',
     )
     @app_commands.autocomplete(
-        locations=locationListAutoComplete,
-        cuisines=cuisineListAutoComplete,
-        eating_options=eatingOptionsListAutoComplete,
+        locations=locationListAutocomplete,
+        cuisines=cuisineListAutocomplete,
+        eating_options=eatingOptionsListAutocomplete,
     )
     async def add_restaurant(
             self,
@@ -377,9 +453,9 @@ class RestaurantDiscordCommands(app_commands.Group):
         ephemeral='Whether or not to send the response as an ephemeral message (visible only to you).',
     )
     @app_commands.autocomplete(
-        locations=locationListAutoComplete,
-        cuisines=cuisineListAutoComplete,
-        eating_options=eatingOptionsListAutoComplete,
+        locations=locationListAutocomplete,
+        cuisines=cuisineListAutocomplete,
+        eating_options=eatingOptionsListAutocomplete,
     )
     async def query(
         self,
@@ -408,6 +484,48 @@ class RestaurantDiscordCommands(app_commands.Group):
         for record in matching_records:
             msg += '* ' + self.restaurant_database.restaurantRecordToStr(record) + '\n'
         await interaction.response.send_message(msg, ephemeral = ephemeral)
+
+    @app_commands.command(name='add-enum-value', description='Adds a new enum value to the database.')
+    @app_commands.describe(
+        enum_name='The name of the enum to add the value to.',
+        new_enum_value='The value to add to the enum.',
+    )
+    @app_commands.autocomplete(
+        enum_name=self.enumNameAutocomplete,
+    )
+    async def add_enum_value(
+        self,
+        interaction: discord.Interaction,
+        enum_name: str,
+        new_enum_value: str,
+    ):
+        err = await self.restaurant_database.addEnumValue(enum_name, new_enum_value)
+
+        if err is None:
+            msg = f'Successfully added new enum value "{new_enum_value}" to enum "{enum_name}"'
+        else:
+            msg = err
+        
+        await interaction.response.send_message(msg)
+
+    @app_commands.command(name='remove-restaurant', description='Removes a restaurant from the database.')
+    @app_commands.describe(
+        name='The name of the restaurant to remove.',
+    )
+    @app_commands.autocomplete(
+        name=self.restaurantNameAutocomplete,
+    )
+    async def remove_restaurant(
+        self,
+        interaction: discord.Interaction,
+        name: str,
+    ):
+        err = await self.restaurant_database.removeRestaurant(name)
+        if err is None:
+            msg = f'Successfully removed restaurant "{name}"'
+        else:
+            msg = err
+        await interaction.response.send_message(msg)
 
 
 class RestaurantDatabase:
@@ -451,11 +569,23 @@ class RestaurantDatabase:
     async def addRestaurant(self, **kwargs) -> Record:
         await self.async_database.addRecord(**kwargs)
 
+    async def removeRestaurant(self, name: str) -> str | None:
+        return await self.async_database.removeRestaurant("name", name)
+
+    async def addEnumValue(self, enum_name: str, enum_value: str) -> str | None:
+        return await self.async_database.addEnumValue(enum_name, enum_value)
+
     async def query(self, **kwargs) -> list[Record]:
         return await self.async_database.query(**kwargs)
 
     async def autocompleteList(self, field_name: str, current: str, limit: int = AUTOCOMPLETE_LIMIT) -> list[str]:
         return await self.async_database.autocompleteList(field_name, current, limit = limit)
+
+    async def autocompleteSingle(self, field_name: str, current: str, limit: int = AUTOCOMPLETE_LIMIT) -> list[str]:
+        return await self.async_database.autocompleteSingle(field_name, current, limit = limit)
+
+    async def autocompleteEnumNames(self, current: str, limit: int = AUTOCOMPLETE_LIMIT) -> list[str]:
+        return await self.async_database.autocompleteEnumNames(current, limit = limit)
 
     async def getEnumValuesFromFieldName(self, field_name: str) -> list[EnumValue]:
         return await self.async_database.getEnumValuesFromFieldName(field_name)
@@ -497,7 +627,8 @@ class RestaurantDatabase:
 #  * (DONE) Implement the query command
 #    * All records or random k records
 #    * Selection criteria
-#  * Implement command to add enum value
-#  * Delete record (by name? by id?)
+#  * (Done) Implement command to add enum value
+#  * (Done) Delete record (by name? by id?)
 #  * Delete enum value (by name)
+#     * Need to go and delete the enum value from any records
 #  * Update commands? (not really needed if we have delete+add)
