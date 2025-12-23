@@ -383,30 +383,28 @@ class RestaurantDiscordCommands(app_commands.Group):
 
     async def locationListAutocomplete(self, interaction: discord.Interaction, current: str) -> typing.List[app_commands.Choice[str]]:
         sorted_autocomplete_values = await self.restaurant_database.autocompleteList("locations", current)
-        
-        # wrap in app_commands.Choice
         return [app_commands.Choice(name=v, value=v) for v in sorted_autocomplete_values]
 
     async def cuisineListAutocomplete(self, interaction: discord.Interaction, current: str) -> typing.List[app_commands.Choice[str]]:
         sorted_autocomplete_values = await self.restaurant_database.autocompleteList("cuisines", current)
-        
-        # wrap in app_commands.Choice
         return [app_commands.Choice(name=v, value=v) for v in sorted_autocomplete_values]
 
     async def eatingOptionsListAutocomplete(self, interaction: discord.Interaction, current: str) -> typing.List[app_commands.Choice[str]]:
         sorted_autocomplete_values = await self.restaurant_database.autocompleteList("eating_options", current)
-        
-        # wrap in app_commands.Choice
         return [app_commands.Choice(name=v, value=v) for v in sorted_autocomplete_values]
 
     async def enumNameAutocomplete(self, interaction: discord.Interaction, current: str) -> typing.List[app_commands.Choice[str]]:
         sorted_enum_names = await self.restaurant_database.autocompleteEnumNames(current)
         return [app_commands.Choice(name=v, value=v) for v in sorted_enum_names]
 
+    async def enumValueAutocomplete(self, interaction: discord.Interaction, current: str) -> typing.List[app_commands.Choice[str]]:
+        enum_name = interaction.namespace["enum_name"]
+        sorted_enum_values = await self.restaurant_database.autocompleteEnumValues(current, enum_name=enum_name)
+        return [app_commands.Choice(name=v, value=v) for v in sorted_enum_values]
+
     async def restaurantNameAutocomplete(self, interaction: discord.Interaction, current: str) -> typing.List[app_commands.Choice[str]]:
         sorted_restaurant_names = await self.restaurant_database.autocompleteSingle("name", current)
         return [app_commands.Choice(name=v, value=v) for v in sorted_restaurant_names]
-
 
     @app_commands.command(name='add-restaurant', description='Add a restaurant to the database')
     @app_commands.describe(
@@ -527,6 +525,28 @@ class RestaurantDiscordCommands(app_commands.Group):
             msg = err
         await interaction.response.send_message(msg)
 
+    @app_commands.command(name='remove-enum-value', description='Removes a enum value from the given enum. Also removes the enum value from any restaurants in the db.')
+    @app_commands.describe(
+        enum_name='The name of enum to remove the value from.',
+        enum_value='The value to remove from the enum.',
+    )
+    @app_commands.autocomplete(
+        enum_name=self.enumNameAutocomplete,
+        enum_value=self.enumValueAutocomplete,
+    )
+    async def remove_restaurant(
+        self,
+        interaction: discord.Interaction,
+        enum_name: str,
+        enum_value: str,
+    ):
+        err = await self.restaurant_database.removeEnumValue(enum_name, enum_value)
+        if err is None:
+            msg = f'Successfully removed enum_value "{enum_value}" from enum "{enum_name}"'
+        else:
+            msg = err
+        await interaction.response.send_message(msg)
+
 
 class RestaurantDatabase:
     def __init__(self, filenname = "data/restaurant_database.pickle"):
@@ -586,6 +606,9 @@ class RestaurantDatabase:
 
     async def autocompleteEnumNames(self, current: str, limit: int = AUTOCOMPLETE_LIMIT) -> list[str]:
         return await self.async_database.autocompleteEnumNames(current, limit = limit)
+
+    async def autocompleteEnumValues(self, current: str, enum_name: str | None = None, limit: int = AUTOCOMPLETE_LIMIT) -> list[str]:
+        raise Exception('Enum value autocomplete is not implemented yet.')
 
     async def getEnumValuesFromFieldName(self, field_name: str) -> list[EnumValue]:
         return await self.async_database.getEnumValuesFromFieldName(field_name)
