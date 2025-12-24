@@ -113,6 +113,7 @@ class DatabaseImpl:
             # Map of field name to FieldType
             record_struct: dict[str, FieldType],
             # Map of enum name to EnumValues
+            # TODO Some of the existing code treates the values of this dict as plain strings and not an obj.
             enums: dict[str, list[EnumValue]],
     ):
         self.name = name
@@ -202,6 +203,33 @@ class DatabaseImpl:
         self.enums[enum_name].append(enum_value)
         return None
 
+    def removeEnumValue(self, enum_name: str, enum_value: str) -> str | None:
+        if enum_name not in self.enums:
+            return f'Unknown enum "{enum_name}"'
+        if enum_value not in self.enums[enum_name]:
+            return f'Enum value "{enum_value}" is not in enum "{enum_name}"'
+        
+        # Remove the enum value from the enum.
+        self.enums[enum_name].remove(enum_value)
+
+        # Remove the enum_value from all records
+        for _, record in self.records.items():
+            if enum_value in record.fields[enum_name]:
+                record.fields[enum_name].remove(enum_value)
+
+        return None
+
+    def updateEnumValue(self, enum_name: str, old_enum_value: str, new_enum_value: str) -> str | None:
+        if enum_name not in self.enums:
+            return f'Unknown enum "{enum_name}"'
+        if old_enum_value not in self.enums[enum_name]:
+            return f'Old enum value "{old_enum_value}" is not in enum "{enum_name}"'
+        if new_enum_value not in self.enums[enum_name]:
+            return f'New enum value "{new_enum_value}" already exists in enum "{enum_name}"'
+
+        # Update enum value in self.enums[enum_name]
+        self.enums[enum_name]
+
     def query(self, **kwargs) -> list[Record]:
         rv = []
 
@@ -239,8 +267,12 @@ class DatabaseImpl:
 
     
     def autocompleteList(field_name: str, current: str, limit: int = AUTOCOMPLETE_LIMIT) -> list[str]:
-        # Get the enum values that could be used for this autocomplete
-        enum_values = self.getEnumValuesFromFieldName(field_name)
+        if field_name not in self.record_struct:
+            raise Exception(f'DB "{self.name}": Unknown field name "{field_name}"')
+        if self.record_struct[field_name].base_type == FieldType.ENUM:
+            pos_field_values = self.getEnumValuesFromFieldName(field_name)
+        else:
+            pos_field_values = [record.field[field_name] for _, record in self.records.items() if record.field[field_name] is not None]
 
         # Split the current string by commas
         current_values = parseDiscordList(current)
@@ -254,12 +286,12 @@ class DatabaseImpl:
         )
         pos_values = []
         for current_value in current_values:
-            if current_value in enum_values:
+            if current_value in pos_field_values:
                 pos_values.append([(0.0, current_values)])
             else:
                 this_pos_values = []
-                for enum_value in enum_values:
-                    this_pos_values.append((edit_distance.compute(current_value, enum_value, options), enum_value))
+                for pos_field_value in pos_field_values:
+                    this_pos_values.append((edit_distance.compute(current_value, pos_field_value, options), pos_field_value))
                 this_pos_values.sort()
                 pos_values.append(this_pos_values)
 
@@ -332,30 +364,45 @@ class AsyncDatabaseWrapper:
     async def addRecord(self, **kwargs) -> Record:
         async with self.lock:
             record = self.database_impl.addRecord(**kwargs)
-            saveDatabase(self.filename, self.database_impl)
+            if record is not None:
+                saveDatabase(self.filename, self.database_impl)
             return record
 
     async def removeRecord(self, field_name: str, field_value: typing.Any) -> str | None:
         async with self.lock:
             err = self.database_impl.removeRecord(field_name, field_value)
-            saveDatabase(self.filename, self.database_impl)
+            if err is None:
+                saveDatabase(self.filename, self.database_impl)
             return err
 
     async def addEnumValue(self, enum_name: str, enum_value: str) -> str | None:
         async with self.lock:
             err = self.database_impl.addEnumValue(enum_name, enum_value)
-            saveDatabase(self.filename, self.database_impl)
+            if err is None:
+                saveDatabase(self.filename, self.database_impl)
+            return err
+    
+    async def removeEnumValue(self, enum_name: str, enum_value: str) -> str | None:
+        async with self.lock:
+            err = self.database_impl.removeEnumValue(enum_name, enum_value)
+            if err is None:
+                saveDatabase(self.filename, self.database_impl)
+            return err
+
+    async def updateEnumValue(self, enum_name: str, old_enum_value: str, new_enum_value: str) -> str | None:
+        async with self.lock:
+            err = self.database_impl.updateEnumValue(enum_name, old_enum_value, new_enum_value)
+            if err is None:
+                saveDatabase(self.filename, self.database_impl)
             return err
 
     async def query(self, **kwargs) -> list[Record]:
         async with self.lock:
             return self.database_impl.query(**kwargs)
     
-
     async def getEnumValuesFromFieldName(self, field_name: str) -> list[EnumValue]:
         async with self.lock:
             return self.database_impl.getEnumValuesFromFieldName(field_name)
-
 
     async def autocompleteList(field_name: str, current: str, limit: int = AUTOCOMPLETE_LIMIT) -> list[str]:
         async with self.lock:
@@ -406,6 +453,10 @@ class RestaurantDiscordCommands(app_commands.Group):
         sorted_restaurant_names = await self.restaurant_database.autocompleteSingle("name", current)
         return [app_commands.Choice(name=v, value=v) for v in sorted_restaurant_names]
 
+    async def restaurantNameListAutocomplete(self, interaction: discord.Interaction, current: str) -> typing.List[app_commands.Choice[str]]:
+        sorted_autocomplete_values = await self.restaurant_database.autocompleteList("name", current)
+        return [app_commands.Choice(name=v, value=v) for v in sorted_autocomplete_values]
+
     @app_commands.command(name='add-restaurant', description='Add a restaurant to the database')
     @app_commands.describe(
         name='Name of the restaurant',
@@ -444,6 +495,7 @@ class RestaurantDiscordCommands(app_commands.Group):
     # TODO Add more powerful querying syntax
     @app_commands.command(name='query', description='Query the database. Returned restaurants must match the locations, cuisines, and eating_options filter.')
     @app_commands.describe(
+        names='Comma separated list of restaurant names. The returned restaurants must have one of the given names. If this option not set, then the name field won\'t be checked.',
         locations='Comma separated list of locations. The returned restaurants will have at least one of these locations. If this option not set, then the locations field won\'t be checked.',
         cuisines='Comma separated list of cuisines. The returned restaurants will have at least one of these locations. If this option not set, then the cuisines field won\'t be checked.',
         eating_options='Comma separated list of eating options. The returned restaurants will have at least one of these locations. If this option not set, then the eating_options field won\'t be checked.',
@@ -451,6 +503,7 @@ class RestaurantDiscordCommands(app_commands.Group):
         ephemeral='Whether or not to send the response as an ephemeral message (visible only to you).',
     )
     @app_commands.autocomplete(
+        names=restaurantNameListAutocomplete,
         locations=locationListAutocomplete,
         cuisines=cuisineListAutocomplete,
         eating_options=eatingOptionsListAutocomplete,
@@ -458,6 +511,7 @@ class RestaurantDiscordCommands(app_commands.Group):
     async def query(
         self,
         interaction: discord.Interaction,
+        names: typing.Optional[str] = None,
         locations: typing.Optional[str] = None,
         cuisines: typing.Optional[str] = None,
         eating_options: typing.Optional[str] = None,
@@ -465,6 +519,8 @@ class RestaurantDiscordCommands(app_commands.Group):
         ephemeral: typing.Optional[bool] = False,
     ):
         args = {}
+        if names is not None:
+            args["name"] = parseDiscordList(name)
         if locations is not None:
             args["locations"] = parseDiscordList(locations)
         if cuisines is not None:
@@ -534,7 +590,7 @@ class RestaurantDiscordCommands(app_commands.Group):
         enum_name=self.enumNameAutocomplete,
         enum_value=self.enumValueAutocomplete,
     )
-    async def remove_restaurant(
+    async def remove_enum_value(
         self,
         interaction: discord.Interaction,
         enum_name: str,
@@ -542,7 +598,21 @@ class RestaurantDiscordCommands(app_commands.Group):
     ):
         err = await self.restaurant_database.removeEnumValue(enum_name, enum_value)
         if err is None:
-            msg = f'Successfully removed enum_value "{enum_value}" from enum "{enum_name}"'
+            msg = f'Successfully removed enum_value "{enum_value}" from enum "{enum_name}" and all existing records'
+        else:
+            msg = err
+        await interaction.response.send_message(msg)
+
+    async def update_enum_value(
+        self,
+        interaction: discord.Interaction,
+        enum_name: str,
+        old_enum_value: str,
+        new_enum_value: str,
+    ):
+        err = await self.restaurant_database.updateEnumValue(enum_name, old_enum_value, new_enum_value)
+        if err is None:
+            msg = f'Successfully updated enum_value from "{old_enum_value}" to "{new_enum_value}" in enum "{enum_name}" and all existing records'
         else:
             msg = err
         await interaction.response.send_message(msg)
@@ -594,6 +664,12 @@ class RestaurantDatabase:
 
     async def addEnumValue(self, enum_name: str, enum_value: str) -> str | None:
         return await self.async_database.addEnumValue(enum_name, enum_value)
+
+    async def removeEnumValue(self, enum_name: str, enum_value: str) -> str | None:
+        return await self.async_database.removeEnumValue(enum_name, enum_value)
+
+    async def updateEnumValue(self, enum_name: str, old_enum_value: str, new_enum_value: str) -> str | None:
+        return await self.async_database.updateEnumValue(enum_name, old_enum_value, new_enum_value)
 
     async def query(self, **kwargs) -> list[Record]:
         return await self.async_database.query(**kwargs)
@@ -652,6 +728,7 @@ class RestaurantDatabase:
 #    * Selection criteria
 #  * (Done) Implement command to add enum value
 #  * (Done) Delete record (by name? by id?)
-#  * Delete enum value (by name)
+#  * (Done) Delete enum value (by name)
 #     * Need to go and delete the enum value from any records
-#  * Update commands? (not really needed if we have delete+add)
+#  * Update enum value (update the name of a enum value, and update it in all of the records)
+#  * Update record 
