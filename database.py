@@ -59,7 +59,7 @@ class FieldType:
             raise Exception(f'Only need to specify enum_name when base_type is "{FieldType.ENUM}"; given base_type was "{self.base_type}"')
 
     # The enum field_type should directly know what its possible enum values are
-    def validate(self, value: typing.Any, enum_values: list[EnumValue] | None = None) -> bool:
+    def validate(self, value: typing.Any, enum_values: list[str] | None = None) -> bool:
         if value is None:
             return self.mode == FieldType.OPTIONAL
 
@@ -96,13 +96,6 @@ class FieldType:
         else:
             return value in pos_values
 
-
-class EnumValue:
-    def __init__(self, enum_type: str, enum_value: str):
-        self.enum_type = enum_type
-        self.enum_value = enum_value
-
-
 # Main Database class
 class DatabaseImpl:
     def __init__(
@@ -112,9 +105,8 @@ class DatabaseImpl:
             records: dict[str, Record],
             # Map of field name to FieldType
             record_struct: dict[str, FieldType],
-            # Map of enum name to EnumValues
-            # TODO Some of the existing code treates the values of this dict as plain strings and not an obj.
-            enums: dict[str, list[EnumValue]],
+            # Map of enum name to enum values
+            enums: dict[str, list[str]],
     ):
         self.name = name
 
@@ -127,7 +119,6 @@ class DatabaseImpl:
         # TODO Move this to a validateAllRecords function
         for record_id, record in self.records.items():
             self.validateRecord(record, record_id=record_id)
-
 
     def validateRecord(self, record: Record, record_id: str = None):
         if record_id is not None and record.record_id != record_id:
@@ -156,7 +147,6 @@ class DatabaseImpl:
 
         # Everntyhing has been validated
 
-
     def _getNextRecordId(self) -> str:
         # If the first million records are used then something went wrong.
         for i in range(1000000):
@@ -169,7 +159,6 @@ class DatabaseImpl:
             self.next_record_id += 1
 
         raise Exception("Failed to find a valid record ID")
-
 
     def addRecord(self, **kwargs) -> Record:
         record_id = self._getNextRecordId()
@@ -228,7 +217,18 @@ class DatabaseImpl:
             return f'New enum value "{new_enum_value}" already exists in enum "{enum_name}"'
 
         # Update enum value in self.enums[enum_name]
-        self.enums[enum_name]
+        for i in range(len(self.enums[enum_name])):
+            if self.enums[enum_name][i] == old_enum_value:
+                self.enums[enum_name][i] = new_enum_value
+
+        # Update all records that have the old_enum_value
+        for _, record in self.records.items():
+            if old_enum_value in record.fields[enum_name]:
+                for i in range(len(self.record.fields[enum_name])):
+                    if self.record.fields[enum_name][i] == old_enum_value:
+                        self.record.fields[enum_name][i] = new_enum_value
+
+        return None
 
     def query(self, **kwargs) -> list[Record]:
         rv = []
@@ -539,6 +539,57 @@ class RestaurantDiscordCommands(app_commands.Group):
             msg += '* ' + self.restaurant_database.restaurantRecordToStr(record) + '\n'
         await interaction.response.send_message(msg, ephemeral = ephemeral)
 
+    @app_commands.command(name='remove-restaurant', description='Removes a restaurant from the database.')
+    @app_commands.describe(
+        name='The name of the restaurant to remove.',
+    )
+    @app_commands.autocomplete(
+        name=self.restaurantNameAutocomplete,
+    )
+    async def remove_restaurant(
+        self,
+        interaction: discord.Interaction,
+        name: str,
+    ):
+        err = await self.restaurant_database.removeRestaurant(name)
+        if err is None:
+            msg = f'Successfully removed restaurant "{name}"'
+        else:
+            msg = err
+        await interaction.response.send_message(msg)
+
+    @app_commands.command(name='update-restaurant', description='Updates a restaurant from the database.')
+    @app_commands.describe(
+        name='The name of the restaurant to update.',
+        locations='The new values for the location of the restaurant. If not set, this field is not updated.',
+        cuisines='The new values for the cuisines of the restaurant. If not set, this field is not updated.',
+        eating_options='The new values for the eating options of the restaurant. If not set, this field is not updated.',
+        hours='The new value for the hours of this restaurant. If not set, this field is not updated.',
+        url='The new value for the url of this restaurant. If not set, this field is not updated.',
+    )
+    @app_commands.autocomplete(
+        name=self.restaurantNameAutocomplete,
+        locations=self.locationListAutocomplete,
+        cuisines=self.cuisineListAutocomplete,
+        eating_options=self.eatingOptionsListAutocomplete,
+    )
+    async def update_restaurant(
+        self,
+        interaction: discord.Interaction,
+        name: str,
+        locations: typing.Optional[str] = None,
+        cuisines: typing.Optional[str] = None,
+        eating_options: typing.Optional[str] = None,
+        hours: typing.Optional[str] = None,
+        url: typing.Optional[str] = None,
+    ):
+        err = await self.restaurant_database.removeRestaurant(name)
+        if err is None:
+            msg = f'Successfully removed restaurant "{name}"'
+        else:
+            msg = err
+        await interaction.response.send_message(msg)
+
     @app_commands.command(name='add-enum-value', description='Adds a new enum value to the database.')
     @app_commands.describe(
         enum_name='The name of the enum to add the value to.',
@@ -560,25 +611,6 @@ class RestaurantDiscordCommands(app_commands.Group):
         else:
             msg = err
         
-        await interaction.response.send_message(msg)
-
-    @app_commands.command(name='remove-restaurant', description='Removes a restaurant from the database.')
-    @app_commands.describe(
-        name='The name of the restaurant to remove.',
-    )
-    @app_commands.autocomplete(
-        name=self.restaurantNameAutocomplete,
-    )
-    async def remove_restaurant(
-        self,
-        interaction: discord.Interaction,
-        name: str,
-    ):
-        err = await self.restaurant_database.removeRestaurant(name)
-        if err is None:
-            msg = f'Successfully removed restaurant "{name}"'
-        else:
-            msg = err
         await interaction.response.send_message(msg)
 
     @app_commands.command(name='remove-enum-value', description='Removes a enum value from the given enum. Also removes the enum value from any restaurants in the db.')
@@ -603,6 +635,16 @@ class RestaurantDiscordCommands(app_commands.Group):
             msg = err
         await interaction.response.send_message(msg)
 
+    @app_commands.command(name='update-enum-value', description='Updates the given enum value in the given enum. Also updates the enum value in any restaurants in the db.')
+    @app_commands.describe(
+        enum_name='The name of enum to remove the value from.',
+        old_enum_value='The existing value in the enum to update.',
+        new_enum_value='The new value to update to in the enum.',
+    )
+    @app_commands.autocomplete(
+        enum_name=self.enumNameAutocomplete,
+        old_enum_value=self.enumValueAutocomplete,
+    )
     async def update_enum_value(
         self,
         interaction: discord.Interaction,
@@ -634,9 +676,7 @@ class RestaurantDatabase:
             "locations": [],
             "cuisines": [],
             "eating_options": [
-                EnumValue("eating_options", "delivery"),
-                EnumValue("eating_options", "pick-up"),
-                EnumValue("eating_options", "dine-in"),
+               "delivery", "pick-up", "dine-in",
             ],
         }
 
@@ -730,5 +770,5 @@ class RestaurantDatabase:
 #  * (Done) Delete record (by name? by id?)
 #  * (Done) Delete enum value (by name)
 #     * Need to go and delete the enum value from any records
-#  * Update enum value (update the name of a enum value, and update it in all of the records)
+#  * (Done) Update enum value (update the name of a enum value, and update it in all of the records)
 #  * Update record 
