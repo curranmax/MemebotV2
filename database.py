@@ -482,7 +482,7 @@ class AsyncDatabaseWrapper:
             print('async-getEnumValuesFromFieldName end')
             return rv
 
-    async def autocompleteList(field_name: str, current: str, limit: int = AUTOCOMPLETE_LIMIT) -> list[str]:
+    async def autocompleteList(self, field_name: str, current: str, limit: int = AUTOCOMPLETE_LIMIT) -> list[str]:
         print('async-autocompleteList start')
         print(f'async-autocompleteList lock-status {self.lock.locked()}')
         async with self.lock:
@@ -500,13 +500,13 @@ class AsyncDatabaseWrapper:
             print('async-autocompleteSingle end')
             return rv
 
-    def autocompleteEnumNames(current: str, limit: int = AUTOCOMPLETE_LIMIT) -> list[str]:
+    def autocompleteEnumNames(self, current: str, limit: int = AUTOCOMPLETE_LIMIT) -> list[str]:
         print('async-autocompleteEnumNames start')
-        rv = self.database_impl.autocompleteEnumNames(current, limit)
+        rv = self.database_impl.autocompleteEnumNames(current, limit = limit)
         print('async-autocompleteEnumNames end')
         return rv
 
-    async def autocompleteEnumValues(current: str, enum_name: str, limit: int = AUTOCOMPLETE_LIMIT) -> list[str]:
+    async def autocompleteEnumValues(self, current: str, enum_name: str, limit: int = AUTOCOMPLETE_LIMIT) -> list[str]:
         print('async-autocompleteEnumValues start')
         print(self.lock.locked())
         async with self.lock:
@@ -862,7 +862,7 @@ class RestaurantDatabase:
 
     def autocompleteEnumNames(self, current: str, limit: int = AUTOCOMPLETE_LIMIT) -> list[str]:
         print('RestaurantDatabase-autocompleteEnumNames start ASDFASDFASDF')
-        rv = self.async_database.autocompleteEnumNames(current, limit)
+        rv = self.async_database.autocompleteEnumNames(current, limit = limit)
         print('RestaurantDatabase-autocompleteEnumNames end')
         return rv
 
