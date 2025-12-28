@@ -536,7 +536,7 @@ class RestaurantDiscordCommands(app_commands.Group):
         await interaction.response.send_message(f'Successfully added new restaurant!\n\n{new_record_str}')
 
     # TODO Add more powerful querying syntax
-    @app_commands.command(name='query', description='Query the database. Returned restaurants must match the locations, cuisines, and eating_options filter.')
+    @app_commands.command(name='query', description='Finds the set of restaurants that match the query.')
     @app_commands.describe(
         names='Comma separated list of restaurant names. The returned restaurants must have one of the given names. If this option not set, then the name field won\'t be checked.',
         locations='Comma separated list of locations. The returned restaurants will have at least one of these locations. If this option not set, then the locations field won\'t be checked.',
@@ -672,7 +672,7 @@ class RestaurantDiscordCommands(app_commands.Group):
         
         await interaction.response.send_message(msg)
 
-    @app_commands.command(name='remove-enum-value', description='Removes a enum value from the given enum. Also removes the enum value from any restaurants in the db.')
+    @app_commands.command(name='remove-enum-value', description='Removes a enum value from the given enum.')
     @app_commands.describe(
         enum_name='The name of enum to remove the value from.',
         enum_value='The value to remove from the enum.',
@@ -694,7 +694,7 @@ class RestaurantDiscordCommands(app_commands.Group):
             msg = err
         await interaction.response.send_message(msg)
 
-    @app_commands.command(name='update-enum-value', description='Updates the given enum value in the given enum. Also updates the enum value in any restaurants in the db.')
+    @app_commands.command(name='update-enum-value', description='Updates the given enum value in the given enum.')
     @app_commands.describe(
         enum_name='The name of enum to remove the value from.',
         old_enum_value='The existing value in the enum to update.',
