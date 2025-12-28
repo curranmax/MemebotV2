@@ -539,8 +539,11 @@ class RestaurantDiscordCommands(app_commands.Group):
         return [app_commands.Choice(name=v, value=v) for v in sorted_autocomplete_values]
 
     async def eatingOptionsListAutocomplete(self, interaction: discord.Interaction, current: str) -> typing.List[app_commands.Choice[str]]:
-        sorted_autocomplete_values = await self.restaurant_database.autocompleteList("eating_options", current)
-        return [app_commands.Choice(name=v, value=v) for v in sorted_autocomplete_values]
+        try:
+            sorted_autocomplete_values = await self.restaurant_database.autocompleteList("eating_options", current)
+            return [app_commands.Choice(name=v, value=v) for v in sorted_autocomplete_values]
+        except Exception as e:
+            print(e)
 
     async def enumNameAutocomplete(self, interaction: discord.Interaction, current: str) -> typing.List[app_commands.Choice[str]]:
         try:
