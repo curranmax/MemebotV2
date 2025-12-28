@@ -502,7 +502,7 @@ class AsyncDatabaseWrapper:
 
     def autocompleteEnumNames(current: str, limit: int = AUTOCOMPLETE_LIMIT) -> list[str]:
         print('async-autocompleteEnumNames start')
-        rv = self.database_impl.autocompleteEnumNames(current, limit = limit)
+        rv = self.database_impl.autocompleteEnumNames(current, limit)
         print('async-autocompleteEnumNames end')
         return rv
 
@@ -862,7 +862,7 @@ class RestaurantDatabase:
 
     def autocompleteEnumNames(self, current: str, limit: int = AUTOCOMPLETE_LIMIT) -> list[str]:
         print('RestaurantDatabase-autocompleteEnumNames start ASDFASDFASDF')
-        rv = self.async_database.autocompleteEnumNames(current, limit = limit)
+        rv = self.async_database.autocompleteEnumNames(current, limit)
         print('RestaurantDatabase-autocompleteEnumNames end')
         return rv
 
