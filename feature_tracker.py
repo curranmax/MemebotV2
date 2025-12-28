@@ -30,7 +30,7 @@ class FeatureTracker:
         # Switches for for feature groups
         self.parser.add_argument('-mb', '--memebot', action='store_true')
         self.parser.add_argument('-cb', '--chorebot', action='store_true')
-        self.parser.add_argument('-db', '--databasebot', action='store_true')
+        self.parser.add_argument('-hk', '--hokbot', action='store_true')
         self.parser.add_argument('-all', '--all_features', action='store_true')
 
         self.feature_groups = {
@@ -41,7 +41,7 @@ class FeatureTracker:
             'chorebot': [
                 'chore_calendar',
             ],
-            'databasebot': [
+            'hokbot': [
                 'database',
             ],
             'all_features': [
@@ -66,8 +66,8 @@ class FeatureTracker:
     def isChorebot(self):
         return self.args.chorebot
 
-    def isDatabasebot(self):
-        return self.args.databasebot
+    def isHoKbot(self):
+        return self.args.hokbot
 
     def isEnabled(self, feature):
         vs = vars(self.args)

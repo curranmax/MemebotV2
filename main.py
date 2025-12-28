@@ -17,9 +17,9 @@ if feature_tracker.isTestingMode():
 elif feature_tracker.isChorebot():
     token = os.getenv('CHOREBOT_TOKEN')
     command_guilds = bot.CHOREBOT_GUILDS
-elif feature_tracker.isDatabasebot():
+elif feature_tracker.isHoKbot():
     token = os.getenv('DATABASEBOT_TOKEN')
-    command_guilds = bot.DATABASEBOT_GUILDS
+    command_guilds = bot.HOKBOT_GUILDS
 else:
     token = os.getenv('DISCORD_TOKEN')
     command_guilds = bot.DEFAULT_GUILDS
