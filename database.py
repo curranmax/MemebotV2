@@ -4,6 +4,7 @@ from collections.abc import Callable
 import copy
 import os.path
 import pickle
+import traceback
 import typing
 import random
 
@@ -295,6 +296,7 @@ class DatabaseImpl:
 
         # Split the current string by commas
         current_values = parseDiscordList(current)
+        print(f'current_values={current_values}')
 
         # If an entry is already an enum_value, then there is nothing to do for that entry
         # If an entry isn't an enum_value, then find the edit distance between the entry and all of the differnet enum_values
@@ -313,6 +315,8 @@ class DatabaseImpl:
                     this_pos_values.append((edit_distance.compute(current_value, pos_field_value, options), pos_field_value))
                 this_pos_values.sort()
                 pos_values.append(this_pos_values)
+
+        print(f'pos_values={pos_values}')
 
         # TODO use a min heap here instead of checking everything
         current_indexes = [0] * len(pos_values)
@@ -531,19 +535,22 @@ class RestaurantDiscordCommands(app_commands.Group):
         try:
             sorted_autocomplete_values = await self.restaurant_database.autocompleteList("locations", current)
             return [app_commands.Choice(name=v, value=v) for v in sorted_autocomplete_values]
-        except Exception as e:
-            print(e)
+        except Exception:
+            traceback.print_exc()
 
     async def cuisineListAutocomplete(self, interaction: discord.Interaction, current: str) -> typing.List[app_commands.Choice[str]]:
-        sorted_autocomplete_values = await self.restaurant_database.autocompleteList("cuisines", current)
-        return [app_commands.Choice(name=v, value=v) for v in sorted_autocomplete_values]
+        try:
+            sorted_autocomplete_values = await self.restaurant_database.autocompleteList("cuisines", current)
+            return [app_commands.Choice(name=v, value=v) for v in sorted_autocomplete_values]
+        except Exception:
+            traceback.print_exc()
 
     async def eatingOptionsListAutocomplete(self, interaction: discord.Interaction, current: str) -> typing.List[app_commands.Choice[str]]:
         try:
             sorted_autocomplete_values = await self.restaurant_database.autocompleteList("eating_options", current)
             return [app_commands.Choice(name=v, value=v) for v in sorted_autocomplete_values]
-        except Exception as e:
-            print(e)
+        except Exception:
+            traceback.print_exc()
 
     async def enumNameAutocomplete(self, interaction: discord.Interaction, current: str) -> typing.List[app_commands.Choice[str]]:
         try:
