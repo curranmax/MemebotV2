@@ -491,7 +491,7 @@ class RestaurantDiscordCommands(app_commands.Group):
 
     async def enumNameAutocomplete(self, interaction: discord.Interaction, current: str) -> typing.List[app_commands.Choice[str]]:
         print('RestaurantDiscordCommands-enumNameAutocomplete start')
-        sorted_enum_names = await self.restaurant_database.autocompleteEnumNames(current)
+        sorted_enum_names = self.restaurant_database.autocompleteEnumNames(current)
         print(', '.join(sorted_enum_names))
         print('RestaurantDiscordCommands-enumNameAutocomplete end')
         return [app_commands.Choice(name=v, value=v) for v in sorted_enum_names]
