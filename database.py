@@ -491,7 +491,7 @@ class RestaurantDiscordCommands(app_commands.Group):
 
     async def enumNameAutocomplete(self, interaction: discord.Interaction, current: str) -> typing.List[app_commands.Choice[str]]:
         print('RestaurantDiscordCommands-enumNameAutocomplete start')
-        sorted_enum_names = self.restaurant_database.autocompleteEnumNames(current)
+        sorted_enum_names = await self.restaurant_database.autocompleteEnumNames(current)
         print(', '.join(sorted_enum_names))
         print('RestaurantDiscordCommands-enumNameAutocomplete end')
         return [app_commands.Choice(name=v, value=v) for v in sorted_enum_names]
@@ -808,7 +808,10 @@ class RestaurantDatabase:
         return await self.async_database.autocompleteSingle(field_name, current, limit = limit)
 
     async def autocompleteEnumNames(self, current: str, limit: int = AUTOCOMPLETE_LIMIT) -> list[str]:
-        return await self.async_database.autocompleteEnumNames(current, limit = limit)
+        print('RestaurantDatabase-autocompleteEnumNames start')
+        rv = await self.async_database.autocompleteEnumNames(current, limit = limit)
+        print('RestaurantDatabase-autocompleteEnumNames end')
+        return rv
 
     async def autocompleteEnumValues(self, current: str, enum_name: str | None = None, limit: int = AUTOCOMPLETE_LIMIT) -> list[str]:
         return await self.asnyc_database.autocompleteEnumValues(current, enum_name, limit = limit)
