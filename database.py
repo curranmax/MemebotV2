@@ -458,8 +458,13 @@ class AsyncDatabaseWrapper:
             return self.database_impl.autocompleteSingle(field_name, current, limit = limit)
 
     async def autocompleteEnumNames(current: str, limit: int = AUTOCOMPLETE_LIMIT) -> list[str]:
+        print('async-autocompleteEnumNames start')
+        print(self.lock.locked())
         async with self.lock:
-            return self.database_impl.autocompleteEnumNames(current, limit = limit)
+            print('async-autocompleteEnumNames got-lock')
+            rv = self.database_impl.autocompleteEnumNames(current, limit = limit)
+            print('async-autocompleteEnumNames end')
+            return rv
 
     async def autocompleteEnumValues(current: str, enum_name: str, limit: int = AUTOCOMPLETE_LIMIT) -> list[str]:
         async with self.lock:
