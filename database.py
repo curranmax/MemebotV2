@@ -733,7 +733,7 @@ class RestaurantDatabase:
     EATING_OPTIONS_ENUM = "eating_options"
 
 
-    def __init__(self, filenname = "data/restaurant_database.pickle"):
+    def __init__(self, filename = "data/restaurant_database.pickle"):
         keys = (RestaurantDatabase.NAME_FIELD,)
         record_struct = {
             RestaurantDatabase.NAME_FIELD: FieldType(FieldType.STR, FieldType.REQUIRED),
