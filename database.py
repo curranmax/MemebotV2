@@ -392,35 +392,50 @@ def saveDatabase(filename, database_impl):
 # Wraps DatabaseImpl with a lock and async accessors.
 class AsyncDatabaseWrapper:
     def __init__(self, database_impl: DatabaseImpl, filename: str):
+        print('async-__init__ start')
         self.database_impl = database_impl
         self.filename = filename
         self.lock = asyncio.Lock()
+        print('async-__init__ end')
 
     async def addRecord(self, **kwargs) -> Record:
+        print('async-addRecord start')
+        print(f'async-addRecord lock-status {self.lock.locked()}')
         async with self.lock:
+            print('async-addRecord got-lock')
             record = self.database_impl.addRecord(**kwargs)
             if record is not None:
                 saveDatabase(self.filename, self.database_impl)
+            print('async-addRecord end')
             return record
 
     async def removeRecordByKey(self, key: tuple[typing.Any]) -> str | None:
+        print('async-removeRecordByKey start')
+        print(f'async-removeRecordByKey lock-status {self.lock.locked()}')
         async with self.lock:
+            print('async-removeRecordByKey got-lock')
             err = self.database_impl.removeRecordByKey(key)
             if err is None:
                 saveDatabase(self.filename, self.database_impl)
+            print('async-removeRecordByKey end')
             return err
 
     async def updateRecordByKey(self, key: tuple[typing.Any], **kwargs) -> (Record | None, str | None):
+        print('async-updateRecordByKey start')
+        print(f'async-updateRecordByKey lock-status {self.lock.locked()}')
         async with self.lock:
+            print('async-updateRecordByKey got-lock')
             record, err = self.database_impl.updateRecordByKey(key, **kwargs)
             if err is None:
                 saveDatabase(self.filename, self.database_impl)
+            print('async-updateRecordByKey end')
             return recorrd, err
 
     async def addEnumValue(self, enum_name: str, enum_value: str) -> str | None:
         print('async-addEnumValue start')
-        print(self.lock.locked())
+        print(f'async-addEnumValue lock-status {self.lock.locked()}')
         async with self.lock:
+            print('async-addEnumValue got-lock')
             err = self.database_impl.addEnumValue(enum_name, enum_value)
             if err is None:
                 saveDatabase(self.filename, self.database_impl)
@@ -428,34 +443,62 @@ class AsyncDatabaseWrapper:
             return err
     
     async def removeEnumValue(self, enum_name: str, enum_value: str) -> str | None:
+        print('async-removeEnumValue start')
+        print(f'async-removeEnumValue lock-status {self.lock.locked()}')
         async with self.lock:
+            print('async-removeEnumValue got-lock')
             err = self.database_impl.removeEnumValue(enum_name, enum_value)
             if err is None:
                 saveDatabase(self.filename, self.database_impl)
+            print('async-removeEnumValue end')
             return err
 
     async def updateEnumValue(self, enum_name: str, old_enum_value: str, new_enum_value: str) -> str | None:
+        print('async-updateEnumValue start')
+        print(f'async-updateEnumValue lock-status {self.lock.locked()}')
         async with self.lock:
+            print('async-updateEnumValue got-lock')
             err = self.database_impl.updateEnumValue(enum_name, old_enum_value, new_enum_value)
             if err is None:
                 saveDatabase(self.filename, self.database_impl)
+            print('async-updateEnumValue end')
             return err
 
     async def query(self, **kwargs) -> list[Record]:
+        print('async-query start')
+        print(f'async-query lock-status {self.lock.locked()}')
         async with self.lock:
-            return self.database_impl.query(**kwargs)
+            print('async-query got-lock')
+            rv = self.database_impl.query(**kwargs)
+            print('async-query end')
+            return rv
     
     async def getEnumValuesFromFieldName(self, field_name: str) -> list[str]:
+        print('async-getEnumValuesFromFieldName start')
+        print(f'async-getEnumValuesFromFieldName lock-status {self.lock.locked()}')
         async with self.lock:
-            return self.database_impl.getEnumValuesFromFieldName(field_name)
+            print('async-getEnumValuesFromFieldName got-lock')
+            rv = self.database_impl.getEnumValuesFromFieldName(field_name)
+            print('async-getEnumValuesFromFieldName end')
+            return rv
 
     async def autocompleteList(field_name: str, current: str, limit: int = AUTOCOMPLETE_LIMIT) -> list[str]:
+        print('async-autocompleteList start')
+        print(f'async-autocompleteList lock-status {self.lock.locked()}')
         async with self.lock:
-            return self.database_impl.autocompleteList(field_name, current, limit = limit)
+            print('async-autocompleteList got-lock')
+            rv = self.database_impl.autocompleteList(field_name, current, limit = limit)
+            print('async-autocompleteList end')
+            return rv
 
     async def autocompleteSingle(self, field_name: str, current: str, limit: int = AUTOCOMPLETE_LIMIT) -> list[str]:
+        print('async-autocompleteSingle start')
+        print(f'async-autocompleteSingle lock-status {self.lock.locked()}')
         async with self.lock:
-            return self.database_impl.autocompleteSingle(field_name, current, limit = limit)
+            print('async-autocompleteSingle got-lock')
+            rv = self.database_impl.autocompleteSingle(field_name, current, limit = limit)
+            print('async-autocompleteSingle end')
+            return rv
 
     async def autocompleteEnumNames(current: str, limit: int = AUTOCOMPLETE_LIMIT) -> list[str]:
         print('async-autocompleteEnumNames start')
@@ -467,8 +510,13 @@ class AsyncDatabaseWrapper:
             return rv
 
     async def autocompleteEnumValues(current: str, enum_name: str, limit: int = AUTOCOMPLETE_LIMIT) -> list[str]:
+        print('async-autocompleteEnumValues start')
+        print(self.lock.locked())
         async with self.lock:
-            return self.database_impl.autocompleteEnum
+            print('async-autocompleteEnumValues got-lock')
+            rv = self.database_impl.autocompleteEnum
+            print('async-autocompleteEnumValues end')
+            return rv
 
 
 # ----------------------------------------
