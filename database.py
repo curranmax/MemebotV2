@@ -285,7 +285,7 @@ class DatabaseImpl:
 
         return self.enums[enum_name]
 
-    def autocompleteList(field_name: str, current: str, limit: int = AUTOCOMPLETE_LIMIT) -> list[str]:
+    def autocompleteList(self, field_name: str, current: str, limit: int = AUTOCOMPLETE_LIMIT) -> list[str]:
         if field_name not in self.record_struct:
             raise Exception(f'DB "{self.name}": Unknown field name "{field_name}"')
         if self.record_struct[field_name].base_type == FieldType.ENUM:
