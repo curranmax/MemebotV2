@@ -357,7 +357,7 @@ class DatabaseImpl:
             ignore_case = True,
         )
         weighted_values = [(edit_distance.compute(current, value, options), value) for value in pos_values]
-        print(','.join(map v: str(v), weighted_values))
+        print(','.join(map(lambda v: str(v), weighted_values)))
         print('xb')
         return [value for _, value in sorted(weighted_values)[:limit]]
 
