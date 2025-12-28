@@ -123,7 +123,7 @@ class DatabaseImpl:
             raise Exception('Invalid set of keys.')
 
         self.keys = keys
-        self.record_struct = record_structs
+        self.record_struct = record_struct
         self.enums = enums
 
         # Map the records to their key
