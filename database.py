@@ -467,7 +467,7 @@ class AsyncDatabaseWrapper:
 
 class RestaurantDiscordCommands(app_commands.Group):
     def __init__(self, restaurant_database, *args, **kwargs):
-        super(OwTrackerDiscordCommands, self).__init__(name='restaurant-db', *args, **kwargs)
+        super(RestaurantDiscordCommands, self).__init__(name='restaurant-db', *args, **kwargs)
         self.restaurant_database = restaurant_database
 
     async def locationListAutocomplete(self, interaction: discord.Interaction, current: str) -> typing.List[app_commands.Choice[str]]:
