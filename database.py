@@ -528,8 +528,11 @@ class RestaurantDiscordCommands(app_commands.Group):
         self.restaurant_database = restaurant_database
 
     async def locationListAutocomplete(self, interaction: discord.Interaction, current: str) -> typing.List[app_commands.Choice[str]]:
-        sorted_autocomplete_values = await self.restaurant_database.autocompleteList("locations", current)
-        return [app_commands.Choice(name=v, value=v) for v in sorted_autocomplete_values]
+        try:
+            sorted_autocomplete_values = await self.restaurant_database.autocompleteList("locations", current)
+            return [app_commands.Choice(name=v, value=v) for v in sorted_autocomplete_values]
+        except Exception as e:
+            print(e)
 
     async def cuisineListAutocomplete(self, interaction: discord.Interaction, current: str) -> typing.List[app_commands.Choice[str]]:
         sorted_autocomplete_values = await self.restaurant_database.autocompleteList("cuisines", current)
