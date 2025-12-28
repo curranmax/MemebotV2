@@ -586,7 +586,7 @@ class RestaurantDiscordCommands(app_commands.Group):
         name='The name of the restaurant to remove.',
     )
     @app_commands.autocomplete(
-        name=self.restaurantNameAutocomplete,
+        name=restaurantNameAutocomplete,
     )
     async def remove_restaurant(
         self,
@@ -611,10 +611,10 @@ class RestaurantDiscordCommands(app_commands.Group):
         url='The new value for the url of this restaurant. If not set, this field is not updated.',
     )
     @app_commands.autocomplete(
-        name=self.restaurantNameAutocomplete,
-        locations=self.locationListAutocomplete,
-        cuisines=self.cuisineListAutocomplete,
-        eating_options=self.eatingOptionsListAutocomplete,
+        name=restaurantNameAutocomplete,
+        locations=locationListAutocomplete,
+        cuisines=cuisineListAutocomplete,
+        eating_options=eatingOptionsListAutocomplete,
     )
     async def update_restaurant(
         self,
@@ -654,7 +654,7 @@ class RestaurantDiscordCommands(app_commands.Group):
         new_enum_value='The value to add to the enum.',
     )
     @app_commands.autocomplete(
-        enum_name=self.enumNameAutocomplete,
+        enum_name=enumNameAutocomplete,
     )
     async def add_enum_value(
         self,
@@ -677,8 +677,8 @@ class RestaurantDiscordCommands(app_commands.Group):
         enum_value='The value to remove from the enum.',
     )
     @app_commands.autocomplete(
-        enum_name=self.enumNameAutocomplete,
-        enum_value=self.enumValueAutocomplete,
+        enum_name=enumNameAutocomplete,
+        enum_value=enumValueAutocomplete,
     )
     async def remove_enum_value(
         self,
@@ -700,8 +700,8 @@ class RestaurantDiscordCommands(app_commands.Group):
         new_enum_value='The new value to update to in the enum.',
     )
     @app_commands.autocomplete(
-        enum_name=self.enumNameAutocomplete,
-        old_enum_value=self.enumValueAutocomplete,
+        enum_name=enumNameAutocomplete,
+        old_enum_value=enumValueAutocomplete,
     )
     async def update_enum_value(
         self,
