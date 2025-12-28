@@ -1,6 +1,7 @@
 
 import asyncio
 from collections.abc import Callable
+import copy
 import os.path
 import typing
 import random
@@ -25,9 +26,11 @@ def parseDiscordList(discord_list: str, separator: str = ",") -> list[str]:
 
 # Helper classes for the database
 class Record:
-    def __init__(self, record_id: str, fields: dict[str, typing.Any]):
-        self.record_id = record_id
+    def __init__(self, fields: dict[str, typing.Any]):
         self.fields = fields
+
+    def getKey(self, keys: tuple[str]) -> tuple[typing.Any]:
+        return tuple(map(lambda k: self.fields[k], keys))
 
 
 class FieldType:
@@ -57,6 +60,8 @@ class FieldType:
         # Validate enum_name
         if self.enum_name is not None and self.base_type != FieldType.ENUM:
             raise Exception(f'Only need to specify enum_name when base_type is "{FieldType.ENUM}"; given base_type was "{self.base_type}"')
+
+        # TODO Add a is_key field.
 
     # The enum field_type should directly know what its possible enum values are
     def validate(self, value: typing.Any, enum_values: list[str] | None = None) -> bool:
@@ -96,13 +101,16 @@ class FieldType:
         else:
             return value in pos_values
 
+
 # Main Database class
 class DatabaseImpl:
     def __init__(
             self,
             name: str,
-            # Map of unique ID to record
-            records: dict[str, Record],
+            # List of Records. Internally this will be changed to a dict of key to Record
+            records: list[Record],
+            # Tuple of the field names that are used as the key
+            keys: tuple[str],
             # Map of field name to FieldType
             record_struct: dict[str, FieldType],
             # Map of enum name to enum values
@@ -110,19 +118,26 @@ class DatabaseImpl:
     ):
         self.name = name
 
-        self.records = records
+        # Validate that the keys appear in record_struct
+        if not all(key in record_struct for key in keys):
+            raise Exception('Invalid set of keys.')
+
+        self.keys = keys
         self.record_struct = record_structs
         self.enums = enums
 
-        self.next_record_id = 0
+        # Map the records to their key
+        self.records: dict[tuple[typing.Any], Record] = {record.getKey(self.keys): record for record in records}
 
-        # TODO Move this to a validateAllRecords function
-        for record_id, record in self.records.items():
-            self.validateRecord(record, record_id=record_id)
+        for _, record in self.records.items():
+            self.validateRecord(record)
 
-    def validateRecord(self, record: Record, record_id: str = None):
-        if record_id is not None and record.record_id != record_id:
-            raise Exception(f'DB "{self.name}": Record ID "{record_id}" doesn\'t match record "{record.record_id}"')
+    # TODO have this return a str error which can either be raised or sent to the user.
+    def validateRecord(self, record: Record):
+        for key in self.keys:
+            if key not in record.fields:
+                # Record is missing a field that is required for the key.
+                raise Exception(f'DB "{self.name}": Record is missing key field "{key}"')
 
         for field_name, field_type in self.record_struct.items():
             if field_name not in record.fields:
@@ -147,42 +162,46 @@ class DatabaseImpl:
 
         # Everntyhing has been validated
 
-    def _getNextRecordId(self) -> str:
-        # If the first million records are used then something went wrong.
-        for i in range(1000000):
-            # Found an unused record ID
-            if str(self.next_record_id) not in self.records:
-                rv = self.next_record_id
-                self.next_record_id += 1
-                return rv
-                
-            self.next_record_id += 1
-
-        raise Exception("Failed to find a valid record ID")
-
-    def addRecord(self, **kwargs) -> Record:
-        record_id = self._getNextRecordId()
-        record = Record(record_id, kwargs)
+    def addRecord(self, **kwargs) -> (Record | None):
+        record = Record(kwargs)
+        if record.getKey(self.keys) in self.records:
+            key_str = ', '.join(record.getKey(self.keys))
+            return None, f'Record with key "{key_str}" already exists'
         self.validateRecord(record)
-        self.records[record_id] = record
-        return record
+        self.records[record.getKey(self.keys)] = record
+        return record, None
 
-    def removeRecord(self, field_name: str, field_value: typing.Any) -> str | None:
-        if field_name not in self.record_struct:
-            return f'Unknown field name "{field_name}"'
-
-        record_ids_to_remove = [
-            record_id
-            for record_id, record in self.records.items()
-            if record.field[field_name] == field_value
-        ]
-
-        if len(record_ids_to_remove) == 0:
-            return f'No records found with field "{field_name}" = "{field_value}"'
-
-        for record_id in record_ids_to_remove:
-            del self.recordds[record_id]
+    def removeRecordByKey(self, key: tuple[typing.Any]) -> str | None:
+        if key not in self.records:
+            return f'Record with key "{key}" does not exist'
+        del self.records[key]
         return None
+
+    def updateRecordByKey(self, key: tuple[typing.Any], **kwargs) -> (Record | None, str | None):
+        if key not in self.records:
+            return None, f'Record with key "{key}" does not exist'
+
+        # Copy the record
+        new_record = copy.deepcopy(self.records[key])
+
+        # Update the copy
+        for field_name, field_value in kwargs.items():
+            new_record.fields[field_name] = field_value
+
+        # Validate the record
+        self.validateRecord(new_record)
+
+        
+        new_key = new_record.getKey(self.keys)
+        if new_key != key:
+            # If the key changed, check that the new key doesn't exist then remove the old version.
+            if new_key in self.records:
+                return None, f'Record with key "{new_key}" already exists'
+            del self.records[key]
+        # Update the entry for the new record.
+        self.records[new_key] = new_record
+        return new_record, None
+        
 
     def addEnumValue(self, enum_name: str, enum_value: str) -> str | None:
         if enum_name not in self.enums:
@@ -265,7 +284,6 @@ class DatabaseImpl:
 
         return self.enums[enum_name]
 
-    
     def autocompleteList(field_name: str, current: str, limit: int = AUTOCOMPLETE_LIMIT) -> list[str]:
         if field_name not in self.record_struct:
             raise Exception(f'DB "{self.name}": Unknown field name "{field_name}"')
@@ -338,6 +356,18 @@ class DatabaseImpl:
         weighted_values = [(edit_distance.compute(current, value, options), value) for value in pos_values]
         return [value for _, value in sorted(weighted_values)[:limit]]
 
+    def autocompleteEnumValues(self, current: str, enum_name: str, limit: int = AUTOCOMPLETE_LIMIT) -> list[str]:
+        if enum_name not in self.enums:
+            raise Exception(f'DB "{self.name}": Unknown enum name "{enum_name}"')
+        pos_values = self.enums[enum_name]
+        options = edit_distance.Options(
+            edit_distance_type = edit_distance.Options.WORD,
+            char_distance_type = edit_distance.Options.CHAR_KEYBORAD_DISTANCE,
+            ignore_case = True,
+        )
+        weighted_values = [(edit_distance.compute(current, value, options), value) for value in pos_values]
+        # TODO Use a min heap instead of sorting the whole list.
+        return [value for _, value in sorted(weighted_values)[:limit]]
 
 # Helpers for loading and saving a DatabaseImpl
 def loadDatabase(filenname) -> DatabaseImpl | None:
@@ -368,12 +398,19 @@ class AsyncDatabaseWrapper:
                 saveDatabase(self.filename, self.database_impl)
             return record
 
-    async def removeRecord(self, field_name: str, field_value: typing.Any) -> str | None:
+    async def removeRecordByKey(self, key: tuple[typing.Any]) -> str | None:
         async with self.lock:
-            err = self.database_impl.removeRecord(field_name, field_value)
+            err = self.database_impl.removeRecordByKey(key)
             if err is None:
                 saveDatabase(self.filename, self.database_impl)
             return err
+
+    async def updateRecordByKey(self, key: tuple[typing.Any], **kwargs) -> (Record | None, str | None):
+        async with self.lock:
+            record, err = self.database_impl.updateRecordByKey(key, **kwargs)
+            if err is None:
+                saveDatabase(self.filename, self.database_impl)
+            return recorrd, err
 
     async def addEnumValue(self, enum_name: str, enum_value: str) -> str | None:
         async with self.lock:
@@ -415,6 +452,10 @@ class AsyncDatabaseWrapper:
     async def autocompleteEnumNames(current: str, limit: int = AUTOCOMPLETE_LIMIT) -> list[str]:
         async with self.lock:
             return self.database_impl.autocompleteEnumNames(current, limit = limit)
+
+    async def autocompleteEnumValues(current: str, enum_name: str, limit: int = AUTOCOMPLETE_LIMIT) -> list[str]:
+        async with self.lock:
+            return self.database_impl.autocompleteEnum
 
 
 # ----------------------------------------
@@ -481,14 +522,15 @@ class RestaurantDiscordCommands(app_commands.Group):
             hours: typing.Optional[str] = None,
             url: typing.Optional[str] = None,
     ):
-        new_record = await self.restaurant_database.addRestaurant(
-            name = name,
-            locations = parseDiscordList(locations),
-            cuisines = parseDiscordList(cuisines),
-            eating_options = parseDiscordList(eating_options),
-            hours = hours,
-            url = url,
-        )
+        kwargs = {
+            RestaurantDatabase.NAME_FIELD: name,
+            RestaurantDatabase.LOCATIONS_FIELD: parseDiscordList(locations),
+            RestaurantDatabase.CUISINES_FIELD: parseDiscordList(cuisines),
+            RestaurantDatabase.EATING_OPTIONS_FIELD: parseDiscordList(eating_options),
+            RestaurantDatabase.HOURS_FIELD: hours,
+            RestaurantDatabase.URL_FIELD: url,
+        }
+        new_record = await self.restaurant_database.addRestaurant(**kwargs)
         new_record_str = self.restaurant_database.restaurantRecordToStr(new_record)
         await interaction.response.send_message(f'Successfully added new restaurant!\n\n{new_record_str}')
 
@@ -518,16 +560,16 @@ class RestaurantDiscordCommands(app_commands.Group):
         num_restaurants: typing.Optional[int] = 5,
         ephemeral: typing.Optional[bool] = False,
     ):
-        args = {}
+        kwargs = {}
         if names is not None:
-            args["name"] = parseDiscordList(name)
+            kwargs["name"] = parseDiscordList(name)
         if locations is not None:
-            args["locations"] = parseDiscordList(locations)
+            kwargs["locations"] = parseDiscordList(locations)
         if cuisines is not None:
-            args["cuisines"] = parseDiscordList(cuisines)
+            kwargs["cuisines"] = parseDiscordList(cuisines)
         if eating_options is not None:
-            args["eating_options"] = parseDiscordList(eating_options)
-        matching_records = await self.restaurant_database.query(**args)
+            kwargs["eating_options"] = parseDiscordList(eating_options)
+        matching_records = await self.restaurant_database.query(**kwargs)
 
         total_matches = len(matching_records)
 
@@ -561,6 +603,7 @@ class RestaurantDiscordCommands(app_commands.Group):
     @app_commands.command(name='update-restaurant', description='Updates a restaurant from the database.')
     @app_commands.describe(
         name='The name of the restaurant to update.',
+        new_name='The new name of the restaurant. If not set, this field is not updated.',
         locations='The new values for the location of the restaurant. If not set, this field is not updated.',
         cuisines='The new values for the cuisines of the restaurant. If not set, this field is not updated.',
         eating_options='The new values for the eating options of the restaurant. If not set, this field is not updated.',
@@ -577,15 +620,30 @@ class RestaurantDiscordCommands(app_commands.Group):
         self,
         interaction: discord.Interaction,
         name: str,
+        new_name: typing.Optional[str] = None,
         locations: typing.Optional[str] = None,
         cuisines: typing.Optional[str] = None,
         eating_options: typing.Optional[str] = None,
         hours: typing.Optional[str] = None,
         url: typing.Optional[str] = None,
     ):
-        err = await self.restaurant_database.removeRestaurant(name)
+        kwargs = {}
+        if new_name is not None:
+            kwargs[RestaurantDatabase.NAME_FIELD] = new_name
+        if locations is not None:
+            kwargs[RestaurantDatabase.LOCATIONS_FIELD] = parseDiscordList(locations)
+        if cuisines is not None:
+            kwargs[RestaurantDatabase.CUISINES_FIELD] = parseDiscordList(cuisines)
+        if eating_options is not None:
+            kwargs[RestaurantDatabase.EATING_OPTIONS_FIELD] = parseDiscordList(eating_options)
+        if hours is not None:
+            kwargs[RestaurantDatabase.HOURS_FIELD] = hours
+        if url is not None:
+            kwargs[RestaurantDatabase.URL_FIELD] = field
+        updated_record, err = self.restaurant_database.updateRestaurant(name, **kwargs)
         if err is None:
-            msg = f'Successfully removed restaurant "{name}"'
+            updated_record_str = self.restaurant_database.restaurantRecordToStr(updated_record)
+            msg = f'Successfully updated restaurant "{name}" to:\n\n{updated_record_str}'
         else:
             msg = err
         await interaction.response.send_message(msg)
@@ -661,21 +719,36 @@ class RestaurantDiscordCommands(app_commands.Group):
 
 
 class RestaurantDatabase:
+    # Field Names
+    NAME_FIELD = "name"
+    LOCATIONS_FIELD = "locations"
+    CUISINES_FIELD = "cuisines"
+    EATING_OPTIONS_FIELD = "eating_options"
+    HOURS_FIELD = "hours"
+    URL_FIELD = "url"
+
+    # Enum Names
+    LOCATIONS_ENUM = "locations"
+    CUISINES_ENUM = "cuisines"
+    EATING_OPTIONS_ENUM = "eating_options"
+
+
     def __init__(self, filenname = "data/restaurant_database.pickle"):
+        keys = (NAME_FIELD,)
         record_struct = {
-            "name": FieldType(FieldType.STR, FieldType.REQUIRED),
-            "locations": FieldType(FieldType.ENUM, FieldType.REPEATED, "locations"),
-            "cuisines": FieldType(FieldType.ENUM, FieldType.REPEATED, "cuisines"),
-            "eating_options": FieldType(FieldType.ENUM, FieldType.REPEATED, "eating_options"),
-            "hours": FieldType(FieldType.STR, FieldType.OPTIONAL),
-            "url": FieldType(FieldType.STR, FieldType.OPTIONAL),
+            NAME_FIELD: FieldType(FieldType.STR, FieldType.REQUIRED),
+            LOCATIONS_FIELD: FieldType(FieldType.ENUM, FieldType.REPEATED, LOCATIONS_ENUM),
+            CUISINES_FIELD: FieldType(FieldType.ENUM, FieldType.REPEATED, CUISINES_ENUM),
+            EATING_OPTIONS_FIELD: FieldType(FieldType.ENUM, FieldType.REPEATED, EATING_OPTIONS_ENUM),
+            HOURS_FIELD: FieldType(FieldType.STR, FieldType.OPTIONAL),
+            URL_FIELD: FieldType(FieldType.STR, FieldType.OPTIONAL),
 
             # TODO maybe add other fields: google maps URL, description, ...
         }
         base_enums = {
-            "locations": [],
-            "cuisines": [],
-            "eating_options": [
+            LOCATIONS_ENUM: [],
+            CUISINES_ENUM: [],
+            EATING_OPTIONS_ENUM: [
                "delivery", "pick-up", "dine-in",
             ],
         }
@@ -684,10 +757,10 @@ class RestaurantDatabase:
         database_impl = loadDatabase(filename)
         if database_impl is None:
             # Init the database if there isn't a saved version.
-            database_impl = DatabaseImpl("restaurants", dict(), record_struct, base_enums)
+            database_impl = DatabaseImpl("restaurants", [], keys, record_struct, base_enums)
             saveDatabase(filename, database_impl)
 
-        # TODO Make sure that database_impl matches with record_struct and base_enums. It's okay if the loaded version has extra enum_values.
+        # TODO Make sure that database_impl matches with keys, record_struct, and base_enums. It's okay if the loaded version has extra enum_values.
 
         # Wrap the database_impl in an AsyncDatabaseWrapper.
         self.async_database = AsyncDatabaseWrapper(database_impl, filename)
@@ -700,7 +773,10 @@ class RestaurantDatabase:
         await self.async_database.addRecord(**kwargs)
 
     async def removeRestaurant(self, name: str) -> str | None:
-        return await self.async_database.removeRestaurant("name", name)
+        return await self.async_database.removeRecordByKey((name,))
+
+    async def updateRestaurant(self, old_name: str, **kwargs) -> (Record | None, str | None):
+        return await self.async_database.removeRecordByKey((old_name,), **kwargs)
 
     async def addEnumValue(self, enum_name: str, enum_value: str) -> str | None:
         return await self.async_database.addEnumValue(enum_name, enum_value)
@@ -724,7 +800,7 @@ class RestaurantDatabase:
         return await self.async_database.autocompleteEnumNames(current, limit = limit)
 
     async def autocompleteEnumValues(self, current: str, enum_name: str | None = None, limit: int = AUTOCOMPLETE_LIMIT) -> list[str]:
-        raise Exception('Enum value autocomplete is not implemented yet.')
+        return await self.asnyc_database.autocompleteEnumValues(current, enum_name, limit = limit)
 
     async def getEnumValuesFromFieldName(self, field_name: str) -> list[EnumValue]:
         return await self.async_database.getEnumValuesFromFieldName(field_name)
@@ -756,19 +832,3 @@ class RestaurantDatabase:
             rv += f"; *Hours*: \"{hours}\""
 
         return rv
-
-
-
-
-
-# Next Steps 12/20:
-#  * (DONE) Implemented autocomplete functions
-#  * (DONE) Implement the query command
-#    * All records or random k records
-#    * Selection criteria
-#  * (Done) Implement command to add enum value
-#  * (Done) Delete record (by name? by id?)
-#  * (Done) Delete enum value (by name)
-#     * Need to go and delete the enum value from any records
-#  * (Done) Update enum value (update the name of a enum value, and update it in all of the records)
-#  * Update record 
