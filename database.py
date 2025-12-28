@@ -814,8 +814,6 @@ class RestaurantDatabase:
 
     async def autocompleteEnumNames(self, current: str, limit: int = AUTOCOMPLETE_LIMIT) -> list[str]:
         print('RestaurantDatabase-autocompleteEnumNames start')
-        print(self.async_database)
-        print(self.async_database.autocompleteEnumNames)
         rv = await self.async_database.autocompleteEnumNames(current, limit = limit)
         print('RestaurantDatabase-autocompleteEnumNames end')
         return rv
