@@ -269,7 +269,7 @@ class DatabaseImpl:
 
         return rv
 
-    def getEnumValuesFromFieldName(self, field_name: str) -> list[EnumValue]:
+    def getEnumValuesFromFieldName(self, field_name: str) -> list[str]:
         if field_name not in self.record_struct:
             raise Exception(f'DB "{self.name}": Unknown field name "{field_name}"')
         field_type = self.record_struct[field_name]
@@ -437,7 +437,7 @@ class AsyncDatabaseWrapper:
         async with self.lock:
             return self.database_impl.query(**kwargs)
     
-    async def getEnumValuesFromFieldName(self, field_name: str) -> list[EnumValue]:
+    async def getEnumValuesFromFieldName(self, field_name: str) -> list[str]:
         async with self.lock:
             return self.database_impl.getEnumValuesFromFieldName(field_name)
 
@@ -802,7 +802,7 @@ class RestaurantDatabase:
     async def autocompleteEnumValues(self, current: str, enum_name: str | None = None, limit: int = AUTOCOMPLETE_LIMIT) -> list[str]:
         return await self.asnyc_database.autocompleteEnumValues(current, enum_name, limit = limit)
 
-    async def getEnumValuesFromFieldName(self, field_name: str) -> list[EnumValue]:
+    async def getEnumValuesFromFieldName(self, field_name: str) -> list[str]:
         return await self.async_database.getEnumValuesFromFieldName(field_name)
 
     def restaurantRecordToStr(self, record: Record) -> str:
