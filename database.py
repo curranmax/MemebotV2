@@ -500,14 +500,11 @@ class AsyncDatabaseWrapper:
             print('async-autocompleteSingle end')
             return rv
 
-    async def autocompleteEnumNames(current: str, limit: int = AUTOCOMPLETE_LIMIT) -> list[str]:
+    def autocompleteEnumNames(current: str, limit: int = AUTOCOMPLETE_LIMIT) -> list[str]:
         print('async-autocompleteEnumNames start')
-        print(self.lock.locked())
-        async with self.lock:
-            print('async-autocompleteEnumNames got-lock')
-            rv = self.database_impl.autocompleteEnumNames(current, limit = limit)
-            print('async-autocompleteEnumNames end')
-            return rv
+        rv = self.database_impl.autocompleteEnumNames(current, limit = limit)
+        print('async-autocompleteEnumNames end')
+        return rv
 
     async def autocompleteEnumValues(current: str, enum_name: str, limit: int = AUTOCOMPLETE_LIMIT) -> list[str]:
         print('async-autocompleteEnumValues start')
@@ -544,8 +541,7 @@ class RestaurantDiscordCommands(app_commands.Group):
 
     async def enumNameAutocomplete(self, interaction: discord.Interaction, current: str) -> typing.List[app_commands.Choice[str]]:
         print('RestaurantDiscordCommands-enumNameAutocomplete start')
-        sorted_enum_names = await self.restaurant_database.async_database.autocompleteEnumNames(current)
-        # sorted_enum_names = await self.restaurant_database.autocompleteEnumNames(current)
+        sorted_enum_names = self.restaurant_database.autocompleteEnumNames(current)
         print(', '.join(sorted_enum_names))
         print('RestaurantDiscordCommands-enumNameAutocomplete end')
         return [app_commands.Choice(name=v, value=v) for v in sorted_enum_names]
@@ -861,7 +857,7 @@ class RestaurantDatabase:
     async def autocompleteSingle(self, field_name: str, current: str, limit: int = AUTOCOMPLETE_LIMIT) -> list[str]:
         return await self.async_database.autocompleteSingle(field_name, current, limit = limit)
 
-    async def autocompleteEnumNames(self, current: str, limit: int = AUTOCOMPLETE_LIMIT) -> list[str]:
+    def autocompleteEnumNames(self, current: str, limit: int = AUTOCOMPLETE_LIMIT) -> list[str]:
         print('RestaurantDatabase-autocompleteEnumNames start ASDFASDFASDF')
         rv = self.async_database.autocompleteEnumNames(current, limit = limit)
         print('RestaurantDatabase-autocompleteEnumNames end')
