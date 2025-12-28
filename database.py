@@ -734,21 +734,21 @@ class RestaurantDatabase:
 
 
     def __init__(self, filenname = "data/restaurant_database.pickle"):
-        keys = (NAME_FIELD,)
+        keys = (RestaurantDatabase.NAME_FIELD,)
         record_struct = {
-            NAME_FIELD: FieldType(FieldType.STR, FieldType.REQUIRED),
-            LOCATIONS_FIELD: FieldType(FieldType.ENUM, FieldType.REPEATED, LOCATIONS_ENUM),
-            CUISINES_FIELD: FieldType(FieldType.ENUM, FieldType.REPEATED, CUISINES_ENUM),
-            EATING_OPTIONS_FIELD: FieldType(FieldType.ENUM, FieldType.REPEATED, EATING_OPTIONS_ENUM),
-            HOURS_FIELD: FieldType(FieldType.STR, FieldType.OPTIONAL),
-            URL_FIELD: FieldType(FieldType.STR, FieldType.OPTIONAL),
+            RestaurantDatabase.NAME_FIELD: FieldType(FieldType.STR, FieldType.REQUIRED),
+            RestaurantDatabase.LOCATIONS_FIELD: FieldType(FieldType.ENUM, FieldType.REPEATED, RestaurantDatabase.LOCATIONS_ENUM),
+            RestaurantDatabase.CUISINES_FIELD: FieldType(FieldType.ENUM, FieldType.REPEATED, RestaurantDatabase.CUISINES_ENUM),
+            RestaurantDatabase.EATING_OPTIONS_FIELD: FieldType(FieldType.ENUM, FieldType.REPEATED, RestaurantDatabase.EATING_OPTIONS_ENUM),
+            RestaurantDatabase.HOURS_FIELD: FieldType(FieldType.STR, FieldType.OPTIONAL),
+            RestaurantDatabase.URL_FIELD: FieldType(FieldType.STR, FieldType.OPTIONAL),
 
             # TODO maybe add other fields: google maps URL, description, ...
         }
         base_enums = {
-            LOCATIONS_ENUM: [],
-            CUISINES_ENUM: [],
-            EATING_OPTIONS_ENUM: [
+            RestaurantDatabase.LOCATIONS_ENUM: [],
+            RestaurantDatabase.CUISINES_ENUM: [],
+            RestaurantDatabase.EATING_OPTIONS_ENUM: [
                "delivery", "pick-up", "dine-in",
             ],
         }
