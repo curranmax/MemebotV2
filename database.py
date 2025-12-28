@@ -348,13 +348,17 @@ class DatabaseImpl:
         return [value for _, value in sorted(weighted_values)[:limit]]
 
     def autocompleteEnumNames(self, current: str, limit: int = AUTOCOMPLETE_LIMIT) -> list[str]:
+        print('xa')
         pos_values = [enum_name for enum_name, _ in self.enums.items()]
+        print(', '.join(pos_values))
         options = edit_distance.Options(
             edit_distance_type = edit_distance.Options.WORD,
             char_distance_type = edit_distance.Options.CHAR_KEYBORAD_DISTANCE,
             ignore_case = True,
         )
         weighted_values = [(edit_distance.compute(current, value, options), value) for value in pos_values]
+        print(','.join(map v: str(v), weighted_values))
+        print('xb')
         return [value for _, value in sorted(weighted_values)[:limit]]
 
     def autocompleteEnumValues(self, current: str, enum_name: str, limit: int = AUTOCOMPLETE_LIMIT) -> list[str]:
@@ -483,7 +487,11 @@ class RestaurantDiscordCommands(app_commands.Group):
         return [app_commands.Choice(name=v, value=v) for v in sorted_autocomplete_values]
 
     async def enumNameAutocomplete(self, interaction: discord.Interaction, current: str) -> typing.List[app_commands.Choice[str]]:
+        print('a')
         sorted_enum_names = await self.restaurant_database.autocompleteEnumNames(current)
+        print('b')
+        print(', '.join(sorted_enum_names))
+        print('c')
         return [app_commands.Choice(name=v, value=v) for v in sorted_enum_names]
 
     async def enumValueAutocomplete(self, interaction: discord.Interaction, current: str) -> typing.List[app_commands.Choice[str]]:
