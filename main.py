@@ -18,7 +18,7 @@ elif feature_tracker.isChorebot():
     token = os.getenv('CHOREBOT_TOKEN')
     command_guilds = bot.CHOREBOT_GUILDS
 elif feature_tracker.isHoKbot():
-    token = os.getenv('DATABASEBOT_TOKEN')
+    token = os.getenv('HOKBOT_TOKEN')
     command_guilds = bot.HOKBOT_GUILDS
 else:
     token = os.getenv('DISCORD_TOKEN')
