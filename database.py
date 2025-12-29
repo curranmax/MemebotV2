@@ -569,6 +569,7 @@ class RestaurantDiscordCommands(app_commands.Group):
     async def enumValueAutocomplete(self, interaction: discord.Interaction, current: str) -> typing.List[app_commands.Choice[str]]:
         try:
             enum_name = interaction.namespace["enum_name"]
+            # TODO Handle if enum_name isn't set (just return a message to set it first.)
             sorted_enum_values = await self.restaurant_database.autocompleteEnumValues(current, enum_name=enum_name)
             return [app_commands.Choice(name=v, value=v) for v in sorted_enum_values]
         except Exception:
