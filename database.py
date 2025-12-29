@@ -451,7 +451,7 @@ class AsyncDatabaseWrapper:
         async with self.lock:
             return self.database_impl.autocompleteSingle(field_name, current, limit = limit)
 
-    def autocompleteEnumNames(self, current: str, limit: int = AUTOCOMPLETE_LIMIT) -> list[str]:
+    async def autocompleteEnumNames(self, current: str, limit: int = AUTOCOMPLETE_LIMIT) -> list[str]:
         async with self.lock:
             return self.database_impl.autocompleteEnumNames(current, limit = limit)
 
@@ -494,7 +494,7 @@ class RestaurantDiscordCommands(app_commands.Group):
 
     async def enumNameAutocomplete(self, interaction: discord.Interaction, current: str) -> typing.List[app_commands.Choice[str]]:
         try:
-            sorted_enum_names = self.restaurant_database.autocompleteEnumNames(current)
+            sorted_enum_names = await self.restaurant_database.autocompleteEnumNames(current)
             return [app_commands.Choice(name=v, value=v) for v in sorted_enum_names]
         except Exception as e:
             traceback.print_exc()
