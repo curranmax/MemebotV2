@@ -724,6 +724,7 @@ class RestaurantDiscordCommands(app_commands.Group):
         hours: typing.Optional[str] = None,
         url: typing.Optional[str] = None,
     ):
+        # CHECKED
         kwargs = {}
         if new_name is not None:
             kwargs[RestaurantDatabase.NAME_FIELD] = new_name
@@ -901,7 +902,7 @@ class RestaurantDatabase:
         return rv
 
     async def autocompleteEnumValues(self, current: str, enum_name: str | None = None, limit: int = AUTOCOMPLETE_LIMIT) -> list[str]:
-        return await self.asnyc_database.autocompleteEnumValues(current, enum_name, limit = limit)
+        return await self.async_database.autocompleteEnumValues(current, enum_name, limit = limit)
 
     async def getEnumValuesFromFieldName(self, field_name: str) -> list[str]:
         return await self.async_database.getEnumValuesFromFieldName(field_name)
