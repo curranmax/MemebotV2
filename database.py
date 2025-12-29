@@ -681,6 +681,7 @@ class RestaurantDiscordCommands(app_commands.Group):
         interaction: discord.Interaction,
         name: str,
     ):
+        # CHEKCED
         err = await self.restaurant_database.removeRestaurant(name)
         if err is None:
             msg = f'Successfully removed restaurant "{name}"'
@@ -911,13 +912,13 @@ class RestaurantDatabase:
         else:
             rv += f"**[{name}]({url})**: "
 
-        location_str = ", ".join(map(lambda v: f'"{v.enum_value}"', locations)) if len(locations) > 0 else "None"
+        location_str = ", ".join(map(lambda v: f'"{v}"', locations)) if len(locations) > 0 else "None"
         rv += f"*Location Tags* = {location_str}"
 
-        cuisine_str = ", ".join(map(lambda v: f'"{v.enum_value}"', cuisines)) if len(cuisines) > 0 else "None"
+        cuisine_str = ", ".join(map(lambda v: f'"{v}"', cuisines)) if len(cuisines) > 0 else "None"
         rv += f"; *Cuisine Tags* = {cuisine_str}"
 
-        eating_option_str = ", ".join(map(lambda v: f'"{v.enum_value}"', eating_options)) if len(eating_options) > 0 else "None"
+        eating_option_str = ", ".join(map(lambda v: f'"{v}"', eating_options)) if len(eating_options) > 0 else "None"
         rv += f"; *Eating Option Tags* = {eating_option_str}"
 
         if hours is not None:
