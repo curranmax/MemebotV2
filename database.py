@@ -96,7 +96,7 @@ class FieldType:
             return False
 
         if self.mode == FieldType.REPEATED:
-            for v in values:
+            for v in value:
                 if v in pos_values:
                     return True
             return True
