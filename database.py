@@ -606,6 +606,7 @@ class RestaurantDiscordCommands(app_commands.Group):
             hours: typing.Optional[str] = None,
             url: typing.Optional[str] = None,
     ):
+        # CHECKED
         kwargs = {
             RestaurantDatabase.NAME_FIELD: name,
             RestaurantDatabase.LOCATIONS_FIELD: parseDiscordList(locations),
@@ -898,7 +899,7 @@ class RestaurantDatabase:
     async def getEnumValuesFromFieldName(self, field_name: str) -> list[str]:
         return await self.async_database.getEnumValuesFromFieldName(field_name)
 
-    def restaurantRecordToStr(self, record: Record) -> str:
+    def restaurantRecordToStr(self, record: Record, line_prefix = "") -> str:
         name = record.fields["name"]
         locations = record.fields["locations"]
         cuisines = record.fields["cuisines"]
@@ -908,20 +909,20 @@ class RestaurantDatabase:
 
         rv = ""
         if url is None:
-            rv += f"**{name}**: "
+            rv += f"{line_prefix}**{name}**: "
         else:
-            rv += f"**[{name}]({url})**: "
+            rv += f"{line_prefix}**[{name}]({url})**: "
 
         location_str = ", ".join(map(lambda v: f'"{v}"', locations)) if len(locations) > 0 else "None"
-        rv += f"*Location Tags* = {location_str}"
+        rv += f"\n{line_prefix}\t*Locations* = {location_str}"
 
         cuisine_str = ", ".join(map(lambda v: f'"{v}"', cuisines)) if len(cuisines) > 0 else "None"
-        rv += f"; *Cuisine Tags* = {cuisine_str}"
+        rv += f"\n{line_prefix}\t*Cuisines* = {cuisine_str}"
 
         eating_option_str = ", ".join(map(lambda v: f'"{v}"', eating_options)) if len(eating_options) > 0 else "None"
-        rv += f"; *Eating Option Tags* = {eating_option_str}"
+        rv += f"\n{line_prefix}\t*Eating Options* = {eating_option_str}"
 
         if hours is not None:
-            rv += f"; *Hours*: \"{hours}\""
+            rv += f"\n{line_prefix}\t*Hours*: \"{hours}\""
 
         return rv
