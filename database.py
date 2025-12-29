@@ -234,7 +234,7 @@ class DatabaseImpl:
             return f'Unknown enum "{enum_name}"'
         if old_enum_value not in self.enums[enum_name]:
             return f'Old enum value "{old_enum_value}" is not in enum "{enum_name}"'
-        if new_enum_value not in self.enums[enum_name]:
+        if new_enum_value in self.enums[enum_name]:
             return f'New enum value "{new_enum_value}" already exists in enum "{enum_name}"'
 
         # Update enum value in self.enums[enum_name]
@@ -786,6 +786,7 @@ class RestaurantDiscordCommands(app_commands.Group):
         enum_name: str,
         enum_value: str,
     ):
+        # CHECKED
         err = await self.restaurant_database.removeEnumValue(enum_name, enum_value)
         if err is None:
             msg = f'Successfully removed enum_value "{enum_value}" from enum "{enum_name}" and all existing records'
