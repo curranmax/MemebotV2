@@ -555,26 +555,32 @@ class RestaurantDiscordCommands(app_commands.Group):
 
     async def enumNameAutocomplete(self, interaction: discord.Interaction, current: str) -> typing.List[app_commands.Choice[str]]:
         try:
-            print('RestaurantDiscordCommands-enumNameAutocomplete start')
             sorted_enum_names = self.restaurant_database.autocompleteEnumNames(current)
-            print(', '.join(sorted_enum_names))
-            print('RestaurantDiscordCommands-enumNameAutocomplete end')
             return [app_commands.Choice(name=v, value=v) for v in sorted_enum_names]
         except Exception as e:
-            print(e)
+            traceback.print_exc()
 
     async def enumValueAutocomplete(self, interaction: discord.Interaction, current: str) -> typing.List[app_commands.Choice[str]]:
-        enum_name = interaction.namespace["enum_name"]
-        sorted_enum_values = await self.restaurant_database.autocompleteEnumValues(current, enum_name=enum_name)
-        return [app_commands.Choice(name=v, value=v) for v in sorted_enum_values]
+        try:
+            enum_name = interaction.namespace["enum_name"]
+            sorted_enum_values = await self.restaurant_database.autocompleteEnumValues(current, enum_name=enum_name)
+            return [app_commands.Choice(name=v, value=v) for v in sorted_enum_values]
+        except Exception:
+            traceback.print_exc()
 
     async def restaurantNameAutocomplete(self, interaction: discord.Interaction, current: str) -> typing.List[app_commands.Choice[str]]:
-        sorted_restaurant_names = await self.restaurant_database.autocompleteSingle("name", current)
-        return [app_commands.Choice(name=v, value=v) for v in sorted_restaurant_names]
+        try:
+            sorted_restaurant_names = await self.restaurant_database.autocompleteSingle("name", current)
+            return [app_commands.Choice(name=v, value=v) for v in sorted_restaurant_names]
+        except Exception:
+            traceback.print_exc()
 
     async def restaurantNameListAutocomplete(self, interaction: discord.Interaction, current: str) -> typing.List[app_commands.Choice[str]]:
-        sorted_autocomplete_values = await self.restaurant_database.autocompleteList("name", current)
-        return [app_commands.Choice(name=v, value=v) for v in sorted_autocomplete_values]
+        try:
+            sorted_autocomplete_values = await self.restaurant_database.autocompleteList("name", current)
+            return [app_commands.Choice(name=v, value=v) for v in sorted_autocomplete_values]
+        except Exception:
+            traceback.print_exc()
 
     @app_commands.command(name='add-restaurant', description='Add a restaurant to the database')
     @app_commands.describe(
@@ -744,6 +750,7 @@ class RestaurantDiscordCommands(app_commands.Group):
         enum_name: str,
         new_enum_value: str,
     ):
+        # CHECKED
         err = await self.restaurant_database.addEnumValue(enum_name, new_enum_value)
 
         if err is None:
