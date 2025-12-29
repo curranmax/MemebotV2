@@ -245,9 +245,9 @@ class DatabaseImpl:
         # Update all records that have the old_enum_value
         for _, record in self.records.items():
             if old_enum_value in record.fields[enum_name]:
-                for i in range(len(self.record.fields[enum_name])):
-                    if self.record.fields[enum_name][i] == old_enum_value:
-                        self.record.fields[enum_name][i] = new_enum_value
+                for i in range(len(self.records.fields[enum_name])):
+                    if self.records.fields[enum_name][i] == old_enum_value:
+                        self.records.fields[enum_name][i] = new_enum_value
 
         return None
 
