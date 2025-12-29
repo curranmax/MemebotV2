@@ -259,6 +259,7 @@ class DatabaseImpl:
             if field_name not in self.record_struct:
                 raise Exception(f'DB "{self.name}": Unknown field name "{field_name}"')
             query_args[field_name] = (pos_values, self.record_struct[field_name])
+        print(query_args)
 
         for _, record in self.records.items():
             match = True
