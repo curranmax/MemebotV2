@@ -887,12 +887,12 @@ class RestaurantDatabase:
         return await self.async_database.getEnumValuesFromFieldName(field_name)
 
     def restaurantRecordToStr(self, record: Record) -> str:
-        name = record.field["name"]
-        locations = record.field["locations"]
-        cuisines = record.field["cuisines"]
-        eating_options = record.field["eating_options"]
-        hours = record.field["hours"]
-        url = record.field["url"]
+        name = record.fields["name"]
+        locations = record.fields["locations"]
+        cuisines = record.fields["cuisines"]
+        eating_options = record.fields["eating_options"]
+        hours = record.fields["hours"]
+        url = record.fields["url"]
 
         rv = ""
         if url is None:
