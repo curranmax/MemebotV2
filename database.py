@@ -329,9 +329,9 @@ class DatabaseImpl:
             for i in range(len(current_indexes)):
                 if current_indexes[i] >= len(pos_values[i])-1:
                     continue
-                if increment_value is None or pos_values[i+1][0] < increment_value:
+                if increment_value is None or pos_values[i][current_indexes[i]+1][0]-pos_values[i][current_indexes[i]][0] < increment_value:
                     increment_index = i
-                    increment_value = vs[i+1][0]
+                    increment_value = pos_values[i][current_indexes[i]+1][0]-pos_values[i][current_indexes[i]][0]
 
             if increment_index is None:
                 break
