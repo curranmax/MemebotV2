@@ -158,7 +158,7 @@ class DatabaseImpl:
                 raise Exception(f'DB "{self.name}": Record has invalid value for field "{field_name}": {field_value}')
 
         # Record has a field that it isn't supposed to
-        for field_name, _ in fields.items():
+        for field_name, _ in record.fields.items():
             if field_name not in self.record_struct:
                 raise Exception(f'DB "{self.name}": Record has extra field "{field_name}"')
 
@@ -326,12 +326,12 @@ class DatabaseImpl:
             sorted_combinations.append(", ".join(map(lambda v: v[1], [vs[i] for i, vs in zip(current_indexes, pos_values)])))
             increment_index = None
             increment_value = None  # The minimum amount that would increase the combo total by incrementing one index.
-            for i in range(len(current_indexes)):
-                if current_indexes[i] >= len(pos_values[i])-1:
+            for i, (ci, pvs) in enumerate(zip(current_indexes, pos_values)):
+                if ci >= len(pvs)-1:
                     continue
-                if increment_value is None or pos_values[i][current_indexes[i]+1][0]-pos_values[i][current_indexes[i]][0] < increment_value:
+                if increment_value is None or pvs[ci+1][0]-pvs[ci][0] < increment_value:
                     increment_index = i
-                    increment_value = pos_values[i][current_indexes[i]+1][0]-pos_values[i][current_indexes[i]][0]
+                    increment_value = pvs[ci+1][0]-pvs[ci][0]
 
             if increment_index is None:
                 break
