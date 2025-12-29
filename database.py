@@ -89,6 +89,7 @@ class FieldType:
             return v in enum_values
 
     def query(self, value: typing.Any, pos_values: list[typing.Any] | None) -> bool:
+        print(f'Evaluting query({value}, {pos_values})')
         if pos_values is None:
             return True
 
@@ -99,7 +100,7 @@ class FieldType:
             for v in value:
                 if v in pos_values:
                     return True
-            return True
+            return False
         else:
             return value in pos_values
 
@@ -204,7 +205,6 @@ class DatabaseImpl:
         self.records[new_key] = new_record
         return new_record, None
         
-
     def addEnumValue(self, enum_name: str, enum_value: str) -> str | None:
         if enum_name not in self.enums:
             return f'Unknown enum "{enum_name}"'
