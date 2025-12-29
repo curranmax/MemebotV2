@@ -308,7 +308,7 @@ class DatabaseImpl:
         pos_values = []
         for current_value in current_values:
             if current_value in pos_field_values:
-                pos_values.append([(0.0, current_values)])
+                pos_values.append([(0.0, current_value)])
             else:
                 this_pos_values = []
                 for pos_field_value in pos_field_values:
