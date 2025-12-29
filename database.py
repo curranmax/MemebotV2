@@ -327,7 +327,7 @@ class DatabaseImpl:
             increment_index = None
             increment_value = None  # The minimum amount that would increase the combo total by incrementing one index.
             for i in range(len(current_indexes)):
-                if current_indexes[i] >= len(pos_values)-1:
+                if current_indexes[i] >= len(pos_values[i])-1:
                     continue
                 if increment_value is None or pos_values[i+1][0] < increment_value:
                     increment_index = i
