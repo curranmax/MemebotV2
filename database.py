@@ -668,7 +668,7 @@ class RestaurantDiscordCommands(app_commands.Group):
 
         msg = f'Found {total_matches} restaurants that matched this query:\n'
         for record in matching_records:
-            msg += '* ' + self.restaurant_database.restaurantRecordToStr(record) + '\n'
+            msg += '\n' + self.restaurant_database.restaurantRecordToStr(record) + '\n'
         await interaction.response.send_message(msg, ephemeral = ephemeral)
 
     @app_commands.command(name='remove-restaurant', description='Removes a restaurant from the database.')
