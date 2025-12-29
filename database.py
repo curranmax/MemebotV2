@@ -652,7 +652,7 @@ class RestaurantDiscordCommands(app_commands.Group):
     ):
         kwargs = {}
         if names is not None:
-            kwargs["name"] = parseDiscordList(name)
+            kwargs["name"] = parseDiscordList(names)
         if locations is not None:
             kwargs["locations"] = parseDiscordList(locations)
         if cuisines is not None:
