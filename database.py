@@ -89,7 +89,6 @@ class FieldType:
             return v in enum_values
 
     def query(self, value: typing.Any, pos_values: list[typing.Any] | None) -> bool:
-        print(f'Evaluting query({value}, {pos_values})')
         if pos_values is None:
             return True
 
@@ -259,18 +258,13 @@ class DatabaseImpl:
             if field_name not in self.record_struct:
                 raise Exception(f'DB "{self.name}": Unknown field name "{field_name}"')
             query_args[field_name] = (pos_values, self.record_struct[field_name])
-        print(query_args)
 
         for _, record in self.records.items():
-            print(f'Start with record={record.fields}')
             match = True
             for field_name, (pos_values, field_type) in query_args.items():
-                print(f'Checking field "{field_name}" for pos_values "{pos_values}"')
-                print(f'Query result = {field_type.query(record.fields[field_name], pos_values)}')
                 if not field_type.query(record.fields[field_name], pos_values):
                     match = False
                     break
-            print(f'Match = {match}')
             if match:
                 rv.append(record)
 
@@ -302,7 +296,6 @@ class DatabaseImpl:
 
         # Split the current string by commas
         current_values = parseDiscordList(current)
-        print(f'current_values={current_values}')
 
         # If an entry is already an enum_value, then there is nothing to do for that entry
         # If an entry isn't an enum_value, then find the edit distance between the entry and all of the differnet enum_values
@@ -322,13 +315,10 @@ class DatabaseImpl:
                 this_pos_values.sort()
                 pos_values.append(this_pos_values)
 
-        print(f'pos_values={pos_values}')
-
         # TODO use a min heap here instead of checking everything
         current_indexes = [0] * len(pos_values)
         sorted_combinations = []
         while len(sorted_combinations) <= limit:
-            print(f'current_indexes={current_indexes}')
             sorted_combinations.append(", ".join(map(lambda v: v[1], [vs[i] for i, vs in zip(current_indexes, pos_values)])))
             increment_index = None
             increment_value = None  # The minimum amount that would increase the combo total by incrementing one index.
@@ -359,17 +349,13 @@ class DatabaseImpl:
         return [value for _, value in sorted(weighted_values)[:limit]]
 
     def autocompleteEnumNames(self, current: str, limit: int = AUTOCOMPLETE_LIMIT) -> list[str]:
-        print('dbimpl-autocompleteEnumNames start')
         pos_values = [enum_name for enum_name, _ in self.enums.items()]
-        print(', '.join(pos_values))
         options = edit_distance.Options(
             edit_distance_type = edit_distance.Options.WORD,
             char_distance_type = edit_distance.Options.CHAR_KEYBORAD_DISTANCE,
             ignore_case = True,
         )
         weighted_values = [(edit_distance.compute(current, value, options), value) for value in pos_values]
-        print(','.join(map(lambda v: str(v), weighted_values)))
-        print('dbimpl-autocompleteEnumNames end')
         return [value for _, value in sorted(weighted_values)[:limit]]
 
     def autocompleteEnumValues(self, current: str, enum_name: str, limit: int = AUTOCOMPLETE_LIMIT) -> list[str]:
@@ -403,128 +389,75 @@ def saveDatabase(filename, database_impl):
 # Wraps DatabaseImpl with a lock and async accessors.
 class AsyncDatabaseWrapper:
     def __init__(self, database_impl: DatabaseImpl, filename: str):
-        print('async-__init__ start')
         self.database_impl = database_impl
         self.filename = filename
         self.lock = asyncio.Lock()
-        print('async-__init__ end')
 
     async def addRecord(self, **kwargs) -> (Record | None, str | None):
-        print('async-addRecord start')
-        print(f'async-addRecord lock-status {self.lock.locked()}')
         async with self.lock:
-            print('async-addRecord got-lock')
             record, err = self.database_impl.addRecord(**kwargs)
             if err is None:
                 saveDatabase(self.filename, self.database_impl)
-            print('async-addRecord end')
             return record, err
 
     async def removeRecordByKey(self, key: tuple[typing.Any]) -> str | None:
-        print('async-removeRecordByKey start')
-        print(f'async-removeRecordByKey lock-status {self.lock.locked()}')
         async with self.lock:
-            print('async-removeRecordByKey got-lock')
             err = self.database_impl.removeRecordByKey(key)
             if err is None:
                 saveDatabase(self.filename, self.database_impl)
-            print('async-removeRecordByKey end')
             return err
 
     async def updateRecordByKey(self, key: tuple[typing.Any], **kwargs) -> (Record | None, str | None):
-        print('async-updateRecordByKey start')
-        print(f'async-updateRecordByKey lock-status {self.lock.locked()}')
         async with self.lock:
-            print('async-updateRecordByKey got-lock')
             record, err = self.database_impl.updateRecordByKey(key, **kwargs)
             if err is None:
                 saveDatabase(self.filename, self.database_impl)
-            print('async-updateRecordByKey end')
             return record, err
 
     async def addEnumValue(self, enum_name: str, enum_value: str) -> str | None:
-        print('async-addEnumValue start')
-        print(f'async-addEnumValue lock-status {self.lock.locked()}')
         async with self.lock:
-            print('async-addEnumValue got-lock')
             err = self.database_impl.addEnumValue(enum_name, enum_value)
             if err is None:
                 saveDatabase(self.filename, self.database_impl)
-            print('async-addEnumValue end')
             return err
     
     async def removeEnumValue(self, enum_name: str, enum_value: str) -> str | None:
-        print('async-removeEnumValue start')
-        print(f'async-removeEnumValue lock-status {self.lock.locked()}')
         async with self.lock:
-            print('async-removeEnumValue got-lock')
             err = self.database_impl.removeEnumValue(enum_name, enum_value)
             if err is None:
                 saveDatabase(self.filename, self.database_impl)
-            print('async-removeEnumValue end')
             return err
 
     async def updateEnumValue(self, enum_name: str, old_enum_value: str, new_enum_value: str) -> str | None:
-        print('async-updateEnumValue start')
-        print(f'async-updateEnumValue lock-status {self.lock.locked()}')
         async with self.lock:
-            print('async-updateEnumValue got-lock')
             err = self.database_impl.updateEnumValue(enum_name, old_enum_value, new_enum_value)
             if err is None:
                 saveDatabase(self.filename, self.database_impl)
-            print('async-updateEnumValue end')
             return err
 
     async def query(self, **kwargs) -> list[Record]:
-        print('async-query start')
-        print(f'async-query lock-status {self.lock.locked()}')
         async with self.lock:
-            print('async-query got-lock')
-            rv = self.database_impl.query(**kwargs)
-            print('async-query end')
-            return rv
+            return self.database_impl.query(**kwargs)
     
     async def getEnumValuesFromFieldName(self, field_name: str) -> list[str]:
-        print('async-getEnumValuesFromFieldName start')
-        print(f'async-getEnumValuesFromFieldName lock-status {self.lock.locked()}')
         async with self.lock:
-            print('async-getEnumValuesFromFieldName got-lock')
-            rv = self.database_impl.getEnumValuesFromFieldName(field_name)
-            print('async-getEnumValuesFromFieldName end')
-            return rv
+            return self.database_impl.getEnumValuesFromFieldName(field_name)
 
     async def autocompleteList(self, field_name: str, current: str, limit: int = AUTOCOMPLETE_LIMIT) -> list[str]:
-        print('async-autocompleteList start')
-        print(f'async-autocompleteList lock-status {self.lock.locked()}')
         async with self.lock:
-            print('async-autocompleteList got-lock')
-            rv = self.database_impl.autocompleteList(field_name, current, limit = limit)
-            print('async-autocompleteList end')
-            return rv
+            return self.database_impl.autocompleteList(field_name, current, limit = limit)
 
     async def autocompleteSingle(self, field_name: str, current: str, limit: int = AUTOCOMPLETE_LIMIT) -> list[str]:
-        print('async-autocompleteSingle start')
-        print(f'async-autocompleteSingle lock-status {self.lock.locked()}')
         async with self.lock:
-            print('async-autocompleteSingle got-lock')
-            rv = self.database_impl.autocompleteSingle(field_name, current, limit = limit)
-            print('async-autocompleteSingle end')
-            return rv
+            return self.database_impl.autocompleteSingle(field_name, current, limit = limit)
 
     def autocompleteEnumNames(self, current: str, limit: int = AUTOCOMPLETE_LIMIT) -> list[str]:
-        print('async-autocompleteEnumNames start')
-        rv = self.database_impl.autocompleteEnumNames(current, limit = limit)
-        print('async-autocompleteEnumNames end')
-        return rv
+        async with self.lock:
+            return self.database_impl.autocompleteEnumNames(current, limit = limit)
 
     async def autocompleteEnumValues(self, current: str, enum_name: str, limit: int = AUTOCOMPLETE_LIMIT) -> list[str]:
-        print('async-autocompleteEnumValues start')
-        print(self.lock.locked())
         async with self.lock:
-            print('async-autocompleteEnumValues got-lock')
-            rv = self.database_impl.autocompleteEnumValues(current, enum_name, limit = limit)
-            print('async-autocompleteEnumValues end')
-            return rv
+            return self.database_impl.autocompleteEnumValues(current, enum_name, limit = limit)
 
 
 # ----------------------------------------
@@ -569,7 +502,8 @@ class RestaurantDiscordCommands(app_commands.Group):
     async def enumValueAutocomplete(self, interaction: discord.Interaction, current: str) -> typing.List[app_commands.Choice[str]]:
         try:
             enum_name = interaction.namespace["enum_name"]
-            # TODO Handle if enum_name isn't set (just return a message to set it first.)
+            if enum_name is None or enum_name == "":
+                return [app_commands.Choice(name="Please select the enum name first!", value="")]
             sorted_enum_values = await self.restaurant_database.autocompleteEnumValues(current, enum_name=enum_name)
             return [app_commands.Choice(name=v, value=v) for v in sorted_enum_values]
         except Exception:
@@ -811,6 +745,7 @@ class RestaurantDiscordCommands(app_commands.Group):
         old_enum_value: str,
         new_enum_value: str,
     ):
+        # CHECKED
         err = await self.restaurant_database.updateEnumValue(enum_name, old_enum_value, new_enum_value)
         if err is None:
             msg = f'Successfully updated enum_value from "{old_enum_value}" to "{new_enum_value}" in enum "{enum_name}" and all existing records'
@@ -898,9 +833,7 @@ class RestaurantDatabase:
         return await self.async_database.autocompleteSingle(field_name, current, limit = limit)
 
     def autocompleteEnumNames(self, current: str, limit: int = AUTOCOMPLETE_LIMIT) -> list[str]:
-        print('RestaurantDatabase-autocompleteEnumNames start ASDFASDFASDF')
         rv = self.async_database.autocompleteEnumNames(current, limit = limit)
-        print('RestaurantDatabase-autocompleteEnumNames end')
         return rv
 
     async def autocompleteEnumValues(self, current: str, enum_name: str | None = None, limit: int = AUTOCOMPLETE_LIMIT) -> list[str]:
