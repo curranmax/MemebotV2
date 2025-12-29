@@ -325,11 +325,11 @@ class DatabaseImpl:
             print(f'current_indexes={current_indexes}')
             sorted_combinations.append(", ".join(map(lambda v: v[1], [vs[i] for i, vs in zip(current_indexes, pos_values)])))
             increment_index = None
-            increment_value = None
-            for i, vs in zip(current_indexes, pos_values):
-                if i >= len(vs) - 1:
+            increment_value = None  # The minimum amount that would increase the combo total by incrementing one index.
+            for i in range(len(current_indexes)):
+                if current_indexes[i] >= len(pos_values)-1:
                     continue
-                if increment_value is None or vs[i+1][0] < increment_value:
+                if increment_value is None or pos_values[i+1][0] < increment_value:
                     increment_index = i
                     increment_value = vs[i+1][0]
 
