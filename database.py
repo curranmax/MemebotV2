@@ -874,7 +874,7 @@ class RestaurantDatabase:
         return await self.async_database.removeRecordByKey((name,))
 
     async def updateRestaurant(self, old_name: str, **kwargs) -> (Record | None, str | None):
-        return await self.async_database.removeRecordByKey((old_name,), **kwargs)
+        return await self.async_database.updateRecordByKey((old_name,), **kwargs)
 
     async def addEnumValue(self, enum_name: str, enum_value: str) -> str | None:
         return await self.async_database.addEnumValue(enum_name, enum_value)
