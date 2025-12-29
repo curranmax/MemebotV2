@@ -263,7 +263,7 @@ class DatabaseImpl:
         for _, record in self.records.items():
             match = True
             for field_name, (pos_values, field_type) in query_args.items():
-                if not field_type.query(record.field[field_name], pos_values):
+                if not field_type.query(record.fields[field_name], pos_values):
                     match = False
                     break
             if match:
