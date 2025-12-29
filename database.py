@@ -262,11 +262,15 @@ class DatabaseImpl:
         print(query_args)
 
         for _, record in self.records.items():
+            print(f'Start with record={record.fields}')
             match = True
             for field_name, (pos_values, field_type) in query_args.items():
+                print(f'Checking field "{field_name}" for pos_values "{pos_values}"')
+                print(f'Query result = {field_type.query(record.fields[field_name], pos_values)}')
                 if not field_type.query(record.fields[field_name], pos_values):
                     match = False
                     break
+            print(f'Match = {match}')
             if match:
                 rv.append(record)
 
