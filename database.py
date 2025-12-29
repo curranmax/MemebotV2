@@ -440,7 +440,7 @@ class AsyncDatabaseWrapper:
             if err is None:
                 saveDatabase(self.filename, self.database_impl)
             print('async-updateRecordByKey end')
-            return recorrd, err
+            return record, err
 
     async def addEnumValue(self, enum_name: str, enum_value: str) -> str | None:
         print('async-addEnumValue start')
