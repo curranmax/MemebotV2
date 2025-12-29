@@ -342,7 +342,7 @@ class DatabaseImpl:
     def autocompleteSingle(self, field_name: str, current: str, limit: int = AUTOCOMPLETE_LIMIT) -> list[str]:
         if field_name not in self.record_struct:
             raise Exception(f'DB "{self.name}": Unknown field name "{field_name}"')
-        pos_values = [record.field[field_name] for _, record in self.records.items()]
+        pos_values = [record.fields[field_name] for _, record in self.records.items()]
         options = edit_distance.Options(
             edit_distance_type = edit_distance.Options.WORD,
             char_distance_type = edit_distance.Options.CHAR_KEYBORAD_DISTANCE,
