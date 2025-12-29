@@ -655,6 +655,7 @@ class RestaurantDiscordCommands(app_commands.Group):
         num_restaurants: typing.Optional[int] = 5,
         ephemeral: typing.Optional[bool] = False,
     ):
+        # CHECKED
         kwargs = {}
         if names is not None:
             kwargs["name"] = parseDiscordList(names)
@@ -736,7 +737,7 @@ class RestaurantDiscordCommands(app_commands.Group):
             kwargs[RestaurantDatabase.HOURS_FIELD] = hours
         if url is not None:
             kwargs[RestaurantDatabase.URL_FIELD] = field
-        updated_record, err = self.restaurant_database.updateRestaurant(name, **kwargs)
+        updated_record, err = await self.restaurant_database.updateRestaurant(name, **kwargs)
         if err is None:
             updated_record_str = self.restaurant_database.restaurantRecordToStr(updated_record)
             msg = f'Successfully updated restaurant "{name}" to:\n\n{updated_record_str}'
