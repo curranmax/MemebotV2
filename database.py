@@ -292,7 +292,7 @@ class DatabaseImpl:
         if self.record_struct[field_name].base_type == FieldType.ENUM:
             pos_field_values = self.getEnumValuesFromFieldName(field_name)
         else:
-            pos_field_values = [record.field[field_name] for _, record in self.records.items() if record.field[field_name] is not None]
+            pos_field_values = list(set(record.fields[field_name] for _, record in self.records.items() if record.field[field_name] is not None))
 
         # Split the current string by commas
         current_values = parseDiscordList(current)
