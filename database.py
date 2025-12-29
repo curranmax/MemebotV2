@@ -522,7 +522,7 @@ class AsyncDatabaseWrapper:
         print(self.lock.locked())
         async with self.lock:
             print('async-autocompleteEnumValues got-lock')
-            rv = self.database_impl.autocompleteEnum
+            rv = self.database_impl.autocompleteEnumValues(current, enum_name, limit = limit)
             print('async-autocompleteEnumValues end')
             return rv
 
