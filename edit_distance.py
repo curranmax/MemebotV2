@@ -112,6 +112,8 @@ def compute(v1: str, v2: str, options: Options|None = None) -> float:
         options = Options()
     v1 = options.preprocess(v1)
     v2 = options.preprocess(v2)
+    if len(v1) == 0 or len(v2) == 0:
+        return 0.0
     if options.edit_distance_type == Options.SIMPLE:
         return _simple(v1, v2, options)
     elif options.edit_distance_type == Options.WORD:

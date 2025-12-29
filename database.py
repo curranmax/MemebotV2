@@ -322,6 +322,7 @@ class DatabaseImpl:
         current_indexes = [0] * len(pos_values)
         sorted_combinations = []
         while len(sorted_combinations) <= limit:
+            print(f'current_indexes={current_indexes}')
             sorted_combinations.append(", ".join(map(lambda v: v[1], [vs[i] for i, vs in zip(current_indexes, pos_values)])))
             increment_index = None
             increment_value = None
