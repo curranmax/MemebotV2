@@ -164,7 +164,7 @@ class DatabaseImpl:
 
         # Everntyhing has been validated
 
-    def addRecord(self, **kwargs) -> (Record | None):
+    def addRecord(self, **kwargs) -> (Record | None, str | None):
         record = Record(kwargs)
         if record.getKey(self.keys) in self.records:
             key_str = ', '.join(record.getKey(self.keys))
@@ -403,16 +403,16 @@ class AsyncDatabaseWrapper:
         self.lock = asyncio.Lock()
         print('async-__init__ end')
 
-    async def addRecord(self, **kwargs) -> Record:
+    async def addRecord(self, **kwargs) -> (Record | None, str | None):
         print('async-addRecord start')
         print(f'async-addRecord lock-status {self.lock.locked()}')
         async with self.lock:
             print('async-addRecord got-lock')
-            record = self.database_impl.addRecord(**kwargs)
-            if record is not None:
+            record, err = self.database_impl.addRecord(**kwargs)
+            if err is None:
                 saveDatabase(self.filename, self.database_impl)
             print('async-addRecord end')
-            return record
+            return record, err
 
     async def removeRecordByKey(self, key: tuple[typing.Any]) -> str | None:
         print('async-removeRecordByKey start')
@@ -608,9 +608,13 @@ class RestaurantDiscordCommands(app_commands.Group):
             RestaurantDatabase.HOURS_FIELD: hours,
             RestaurantDatabase.URL_FIELD: url,
         }
-        new_record = await self.restaurant_database.addRestaurant(**kwargs)
-        new_record_str = self.restaurant_database.restaurantRecordToStr(new_record)
-        await interaction.response.send_message(f'Successfully added new restaurant!\n\n{new_record_str}')
+        new_record, err = await self.restaurant_database.addRestaurant(**kwargs)
+        if err is None:
+            new_record_str = self.restaurant_database.restaurantRecordToStr(new_record)
+            msg = f'Successfully added new restaurant!\n\n{new_record_str}'
+        else:
+            msg = err
+        await interaction.response.send_message(msg)
 
     # TODO Add more powerful querying syntax
     @app_commands.command(name='query', description='Finds the set of restaurants that match the query.')
@@ -847,8 +851,8 @@ class RestaurantDatabase:
         return [RestaurantDiscordCommands(self)]
 
     # kwargs should match record_struct
-    async def addRestaurant(self, **kwargs) -> Record:
-        await self.async_database.addRecord(**kwargs)
+    async def addRestaurant(self, **kwargs) -> (Record | None, str | None):
+        return await self.async_database.addRecord(**kwargs)
 
     async def removeRestaurant(self, name: str) -> str | None:
         return await self.async_database.removeRecordByKey((name,))
