@@ -8,7 +8,7 @@
 \b(?i:l+u+c+i+o+)\b	🐸
 \b(?i:l+u+c+i+o+ ?b+a+ll+)\b	⚽
 \b(?i:t+a+m+a+l+e+s*)\b	🫔
-\b(?i:d+.*v+a+)\b	🐰
+\b(?i:d+\.?v+a+)\b	🐰
 \b(?i:d+oo+m+(f+i+s+t+)?)\b	✊
 \b(?i:h+a+z+a+r+d+)\b	☣️
 \b(?i:(j+u+n+k+e+r+ q+u+ee+n+)|(j+q+))\b	🔪
