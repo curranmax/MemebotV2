@@ -37,6 +37,7 @@
 \b(?i:s+y+m+(e+t+r+a+)?)\b	🔦
 \b(?i:t+o+r+b+(j+o+r+n+)?)\b	🔨
 \b(?i:t+r+a+c+e+r+)\b	⌛
+\b(?i:v+e+n+d+e+tt+a+)\b   ⚔️
 \b(?i:v+e+n+t+u+r+e+)\b	🪨
 \b(?i:w+i+d+o+w+(m+a+k+e+r+)?)\b	🕷️
 \b(?i:a+n+a+)\b	👵
