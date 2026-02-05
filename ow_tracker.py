@@ -65,6 +65,7 @@ SUPPORT = 'Support'
 ROLES = [TANK, DPS, SUPPORT]
 HEROES = {
     # Tanks
+    'Domina': TANK,
     'D.Va': TANK,
     'Doomfist': TANK,
     'Hazard': TANK,
@@ -80,10 +81,12 @@ HEROES = {
     'Zarya': TANK,
 
     # DPS
+    'Anran': DPS,
     'Ashe': DPS,
     'Bastion': DPS,
     'Cassidy': DPS,
     'Echo': DPS,
+    'Emre': DPS,
     'Freja': DPS,
     'Genji': DPS,
     'Hanzo': DPS,
@@ -106,11 +109,13 @@ HEROES = {
     'Baptiste': SUPPORT,
     'Brigitte': SUPPORT,
     'Illari': SUPPORT,
+    'Jetpack Cat': SUPPORT,
     'Juno': SUPPORT,
     'Kiriko': SUPPORT,
     'Lifeweaver': SUPPORT,
     'Lúcio': SUPPORT,
     'Mercy': SUPPORT,
+    'Mizuki': SUPPORT,
     'Moira': SUPPORT,
     'Wuyang': SUPPORT,
     'Zenyatta': SUPPORT,
@@ -1637,12 +1642,19 @@ class OverwatchTracker:
         self.hero_usage = {}
         self.hero_usage_by_result = {}
 
+        # Assumes that seasons are in an ascending order (seasons with larger numbers occur after seasons with lower numbers)
+        all_seasons = sorted(list(set([game.season for game in self.games] + [self.season])), reverse=True)
+        lookback_seasons = 3
+        # All games from include_season and onwards will be calculated.
+        include_season = all_seasons[lookback_seasons - 1] if len(all_seasons >= lookback_seasons) else all_seasons[-1]
+
         for game in self.games:
             if not hasattr(game, 'season'):
                 game.season = 5
 
             # Only consider games from the current season and previous 2 seasons.
-            if self.season - game.season >= 2:
+            # TODO - Consider the latest k seasons (sort seasons by num)
+            if game.season >= include_season:
                 continue
             self._addGameToHeroUsage(game)
 
