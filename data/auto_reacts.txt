@@ -8,7 +8,7 @@
 \b(?i:l+u+c+i+o+)\b	🐸
 \b(?i:l+u+c+i+o+ ?b+a+ll+)\b	⚽
 \b(?i:t+a+m+a+l+e+s*)\b	🫔
-\b(?i:d+o+m+i+n+a+)\b   👩‍💼
+\b(?i:d+o+m+i+n+a+)\b	👩‍💼
 \b(?i:d+\.?v+a+)\b	🐰
 \b(?i:d+oo+m+(f+i+s+t+)?)\b	✊
 \b(?i:h+a+z+a+r+d+)\b	☣️
@@ -22,12 +22,12 @@
 \b(?i:w+i+n+s*t+o+n+)\b	🐵
 \b(?i:(h+a+mm+o+n+d+)|(w+r+e+c+k+i+n+g+ b+a+l+l+))\b	🐹
 \b(?i:z+a+r+y+a+)\b	🫧
-\b(?i:a+n+r+a+n+)\b 🔥
+\b(?i:a+n+r+a+n+)\b	🔥
 \b(?i:a+s+h+e+)\b	🧨
 \b(?i:b+a+s+t+i+o+n+)\b	🤖
 \b(?i:(c+a+ss+(i+d+y+)?)|(m+c+r+ee+))\b	🤠
 \b(?i:e+c+h+o+)\b	🔊
-\b(?i:e+m+r+e+)\b   👨‍💻
+\b(?i:e+m+r+e+)\b	👨‍💻
 \b(?i:f+r+e+j+a+)\b	🏹
 \b(?i:g+e+n+j+i+)\b	🥷
 \b(?i:h+a+n+z+o+)\b	🏹
@@ -47,10 +47,10 @@
 \b(?i:b+a+p+(t+i+s+t+e+)?)\b	🪟
 \b(?i:b+r+i+g+(i+tt+e+)?)\b	🛡️
 \b(?i:i+l+l+a+r+i+)\b	☀️
-\b(?i:j+e+t+p+a+c+k+\s+c+a+t+)\b    🐈
+\b(?i:j+e+t+p+a+c+k+\s+c+a+t+)\b	🐈
 \b(?i:j+u+n+o+)\b	🪐
 \b(?i:k+i+r+i+(k+o+)?)\b	🦊
-\b(?i:m+i+z+u+k+i+)\b   👒
+\b(?i:m+i+z+u+k+i+)\b	👒
 \b(?i:l+i+f+e+w+e+a+v+e+r+)\b	🌹
 \b(?i:m+o+i+r+a+)\b	👩‍🔬
 \b(?i:w+u+y+a+n+g+)\b	🌊
