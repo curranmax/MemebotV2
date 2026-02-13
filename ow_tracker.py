@@ -1646,7 +1646,7 @@ class OverwatchTracker:
         all_seasons = sorted(list(set([game.season for game in self.games] + [self.season])), reverse=True)
         lookback_seasons = 3
         # All games from include_season and onwards will be calculated.
-        include_season = all_seasons[lookback_seasons - 1] if len(all_seasons >= lookback_seasons) else all_seasons[-1]
+        include_season = all_seasons[lookback_seasons - 1] if len(all_seasons) >= lookback_seasons else all_seasons[-1]
 
         for game in self.games:
             if not hasattr(game, 'season'):
