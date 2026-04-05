@@ -574,6 +574,13 @@ def customEditDistance(v1, v2):
     return edit_distance.compute(v1, v2, options)
 
 
+
+def formatNum(v, digits = 2):
+    sv = str(v)
+    if len(sv) >= digits:
+        return sv
+    return  ' ' * (digits - len(sv)) + sv
+
 def getMap(map):
     if map not in MAPS:
         best_match = None
@@ -840,7 +847,7 @@ class OwTrackerDiscordCommands(app_commands.Group):
         weekly_tracker = self.ow_tracker_manager.getWeeklyTracker(user_id)
         if weekly_tracker is not None:
             current_week = weekly_tracker.getCurrentWeek()
-            msg += '\n\n```Weekly Goal:   ' + str(len(current_week.games)) + ' out of ' + str(current_week.goal) + ' games played'
+            msg += '\n\n```' + current_week.getGoalTable()
 
             active_streak = weekly_tracker.getActiveStreak()
             if active_streak <= 0:
@@ -1106,11 +1113,22 @@ class OwTrackerDiscordCommands(app_commands.Group):
         description=
         'Set or get the number of games for the weekly goal.')
     @app_commands.describe(
-        new_weekly_goal='The value for the new goal. If not set, then the current weekly goal will be returned.')
+        new_weekly_goal='The value for the totla number of games for the new goal. If not set, then the current weekly goal will be returned and the other inputs will be ignored.',
+        new_comp_goal='The value for the number of Competitive games for the new goal.',
+        new_stadium_goal='The value for the number of Stadium games for the new goal.',
+        new_tank_goal='The value for the number of Tank games for the new goal.',
+        new_dps_goal='The value for the number of DPS games for the new goal.',
+        new_support_goal='The value for the number of Support games for the new goal.',
+    )
     async def weekly_goal(
         self,
         interaction: discord.Interaction,
         new_weekly_goal: typing.Optional[int] = None,
+        new_comp_goal: typing.Optional[int] = None,
+        new_stadium_goal: typing.Optional[int] = None,
+        new_tank_goal: typing.Optional[int] = None,
+        new_dps_goal: typing.Optional[int] = None,
+        new_support_goal: typing.Optional[int] = None,
         # TODO Add a way to clear the weekly goal.
     ):
         # If user didn't include a parameter, just return their current goal.
@@ -1120,13 +1138,19 @@ class OwTrackerDiscordCommands(app_commands.Group):
             if current_weekly_goal is None:
                 message = 'Weekly goal is not set.'
             else:
-                message = f'Weekly goal is {current_weekly_goal} games.'
+                message = f'```Weekly goal is:\n{current_weekly_goal.displayTable()}```'
 
             await interaction.response.send_message(message, ephemeral=True)
             return
         # If the user set a new goal, then update their tracker.
         if new_weekly_goal is not None:
-            self.ow_tracker_manager.setWeeklyGoal(interaction.user.id, new_weekly_goal)
+            goal_obj = Goal(new_weekly_goal,
+                            comp = new_comp_goal,
+                            stadium = new_stadium_goal,
+                            tank = new_tank_goal,
+                            dps = new_dps_goal,
+                            support = new_support_goal)
+            self.ow_tracker_manager.setWeeklyGoal(interaction.user.id, goal_obj)
             await interaction.response.send_message(f'Weekly goal updated to {new_weekly_goal} games.', ephemeral=True)
 
     @app_commands.command(
@@ -1138,7 +1162,8 @@ class OwTrackerDiscordCommands(app_commands.Group):
         weekly_tracker = self.ow_tracker_manager.getWeeklyTracker(interaction.user.id)
         if weekly_tracker is not None:
             current_week = weekly_tracker.getCurrentWeek()
-            msg = 'Current weekly progress: ' + str(len(current_week.games)) + ' out of ' + str(current_week.goal) + ' games played'
+            msg = 'Current weekly progress:'
+            msg += '\n```' + current_week.getGoalTable() + '\n```'
 
             active_streak = weekly_tracker.getActiveStreak()
             if active_streak <= 0:
@@ -1253,7 +1278,7 @@ class OwTrackerDiscordCommands(app_commands.Group):
         #  DPS   -> X-X    | DPS   -> X-X
         #  Supp  -> X-X    | Supp  -> X-X
         #
-        # Weekly Goal:   XX out of XX games played
+        # %%GOAL_TABLE%%%
         # Weekly Streak: XX week active streak
 
         session_header = 'Today\'s Results'
@@ -1278,7 +1303,7 @@ class OwTrackerDiscordCommands(app_commands.Group):
         weekly_tracker = self.ow_tracker_manager.getWeeklyTracker(user_id)
         if weekly_tracker is not None:
             current_week = weekly_tracker.getCurrentWeek()
-            msg += '\n\n```Weekly Goal:   ' + str(len(current_week.games)) + ' out of ' + str(current_week.goal) + ' games played'
+            msg += '\n\n```' + current_week.getGoalTable() + '\n'
 
             active_streak = weekly_tracker.getActiveStreak()
             if active_streak <= 0:
@@ -1343,6 +1368,17 @@ class OverwatchTrackerManager:
 
         f = open(self.ow_tracker_fname, 'rb')
         self.overwatch_trackers = pickle.load(f)
+
+        # TODO Remove this debug code. This is to migrate the goal from a single int to an object.
+        for _, owt in self.overwatch_trackers.items():
+            if not hasattr(owt, 'weekly_tracker') or owt.weekly_tracker is None:
+                continue
+            for week in [owt.weekly_tracker.current_week] + owt.weekly_tracker.previous_weeks:
+                # Handle case where week goal might be uninitialized
+                if week.goal is None:
+                    continue
+                if isinstance(week.goal, int):
+                    week.goal = Goal(week.goal)
 
     # TODO make this async
     # TODO Add a lock for this
@@ -1438,31 +1474,33 @@ class OverwatchTrackerManager:
             longest_streak = weekly_tracker.getLongestStreak()
             
             # Message template
-            # -----------------------
-            # | Weekly Goal Summary |
-            # |---------------------|
-            # | Games          | XX |
-            # | Goal           | XX |
-            # | Current Streak | XX |
-            # | Longest Streak | XX |
+            # 
+            #                 Weekly Goal Summary                 
+            # ----------------------------------------------------
+            # |       | Total | Comp | Stad | Tank |  DPS | Supp |
+            # ----------------------------------------------------
+            # | Games |    ## |   ## |   ## |   ## |   ## |   ## |
+            # | Goal  |    ## |   ## |   ## |   ## |   ## |   ## |
+            # ----------------------------------------------------
+            # | Current Streak | ## |
+            # | Longest Streak | ## |
             # -----------------------
             #
             # There are XX days left in the week / This week is now over, good luck next week!
             # TODO Add more stats --> Record this week, # of comp and staidum games, weird map and hero stats (most frequent map, most chosen hero, highest wr hero this week, ...)
             # TODO More stats on the streaks (avg number of games, highest number of games in one week, ...)
 
-            # TODO Add support for 3 digt+ numbers. I can assume for a good while that I just need two digits.
-            format_num = lambda v: ('' if len(str(v)) >= 2 else ' ') + str(v)
-
             # TODO Add a gif or emote based on what happened (met goal --> airhorns, etc.; didn't meet goal --> sad face, etc.)
             msg = '```\n' + \
-                  f'-----------------------\n' + \
-                  f'| Weekly Goal Summary |\n' + \
-                  f'|---------------------|\n' + \
-                  f'| Num Games      | {format_num(len(current_week.games))} |\n' + \
-                  f'| Current Goal   | {format_num(current_week.goal)} |\n' + \
-                  f'| Active Streak  | {format_num(active_streak)} |\n' + \
-                  f'| Longest Streak | {format_num(longest_streak)} |\n' + \
+                  f'                Weekly Goal Summary                 \n' + \
+                  f'----------------------------------------------------\n' + \
+                  f'|       | Total | Comp | Stad | Tank |  DPS | Supp |\n' + \
+                  f'----------------------------------------------------\n' + \
+                  f'| Games |  {formatNum(len(current_week.games), digits=4)} | {formatNum(len(current_week.getCompGames()), digits=4)} | {formatNum(len(current_week.getStadiumGames()), digits=4)} | {formatNum(len(current_week.getTankGames()), digits=4)} | {formatNum(len(current_week.getDpsGames()), digits=4)} | {formatNum(len(current_week.getSupportGames()), digits=4)} |\n' + \
+                  f'| Goal  |  {formatNum(current_week.getWeeklyGoal().total, digits=4)} | {formatNum(current_week.getWeeklyGoal().comp, digits=4)} | {formatNum(current_week.getWeeklyGoal().stadium, digits=4)} | {formatNum(current_week.getWeeklyGoal().tank, digits=4)} | {formatNum(current_week.getWeeklyGoal().dps, digits=4)} | {formatNum(current_week.getWeeklyGoal().support, digits=4)} |\n' + \
+                  f'----------------------------------------------------\n' + \
+                  f'| Current Streak | {formatNum(active_streak, digits=2)} |\n' + \
+                  f'| Longest Streak | {formatNum(longest_streak, digits=2)} |\n' + \
                   f'-----------------------\n' + \
                   '```'
 
@@ -1872,6 +1910,8 @@ class WeeklyTracker:
         return self.current_week.goal
 
     def setGoal(self, new_goal):
+        if isinstance(new_goal, int):
+            new_goal = Goal(new_goal)
         self.current_week.goal = new_goal
 
     def addGame(self, game):
@@ -1928,7 +1968,7 @@ class WeeklyTracker:
         self.previous_weeks.append(last_week)
 
         # Construct the new current_week. It inherits the goal from last_week.
-        self.current_week = SingleWeek(last_week.goal, t, end = None, games = [])
+        self.current_week = SingleWeek(last_week.goal.copy(), t, end = None, games = [])
 
         # Check that self.previous_weeks is sorted from oldest to newest
         for i in range(len(self.previous_weeks) - 1):
@@ -1989,7 +2029,7 @@ class WeeklyTracker:
             # TODO Add a way for a user to update the goal for an old week
             midweek_datetime = start_datetime + (end_datetime - start_datetime) / 2.0
             most_recent_week = sorted([w for w in all_weeks if w.start < midweek_datetime], key=lambda w: w.start)[-1]
-            this_goal = most_recent_week.goal
+            this_goal = most_recent_week.goal.copy()
 
             # Construct the SingleWeek object.
             this_week = SingleWeek(this_goal, start_datetime, end_datetime, this_games)
@@ -2013,6 +2053,8 @@ class WeeklyTracker:
 class SingleWeek:
     def __init__(self, goal, start, end = None, games = []):
         # The goal number of games to play in a week.
+        if isinstance(goal, int):
+            goal = Goal(goal)
         self.goal = goal
         # The start time of the week
         self.start = start
@@ -2027,8 +2069,92 @@ class SingleWeek:
     def getStadiumGames(self):
         return [g for g in self.games if isinstance(g, StadiumGame)]
 
+    def getTankGames(self):
+        return [g for g in self.games if g.role == TANK]
+
+    def getDpsGames(self):
+        return [g for g in self.games if g.role == DPS]
+
+    def getSupportGames(self):
+        return [g for g in self.games if g.role == SUPPORT]
+
     def isGoalMet(self):
-        return self.goal <= len(self.games)
+        # Need to meet all goals that are None to return True.
+        # self.total is always non-None, the rest can be None.
+        if self.goal is None:
+            return False
+
+        if self.goal.total > len(self.games):
+            return False
+        if self.goal.comp is not None and \
+                self.goal.comp > len(self.getCompGames()):
+            return False
+        if self.goal.stadium is not None and \
+                self.goal.stadium > len(self.getStadiumGames()):
+            return False
+        if self.goal.tank is not None and \
+                self.goal.tank > len(self.getTankGames()):
+            return False
+        if self.goal.dps is not None and \
+                self.goal.dps > len(self.getDpsGames()):
+            return False
+        if self.goal.support is not None and \
+                self.goal.support > len(self.getSupportGames()):
+            return False
+        return True
+
+    def GoalTable(self):
+        # ----------------------------------------------------
+        # |       | Total | Comp | Stad | Tank |  DPS | Supp |
+        # ----------------------------------------------------
+        # | Games |    ## |   ## |   ## |   ## |   ## |   ## |
+        # | Goal  |    ## |   ## |   ## |   ## |   ## |   ## |
+        # ----------------------------------------------------
+        return f'----------------------------------------------------\n' + \
+               f'|       | Total | Comp | Stad | Tank |  DPS | Supp |\n' + \
+               f'----------------------------------------------------\n' + \
+               f'| Games |  {formatNum(len(self.games), digits=4)} | {formatNum(len(self.getCompGames()), digits=4)} | {formatNum(len(self.getStadiumGames()), digits=4)} | {formatNum(len(self.getTankGames()), digits=4)} | {formatNum(len(self.getDpsGames()), digits=4)} | {formatNum(len(self.getSupportGames()), digits=4)} |\n' + \
+               f'| Goal  |  {formatNum(self.goal.total, digits=4)} | {formatNum(self.goal.comp, digits=4)} | {formatNum(self.goal.stadium, digits=4)} | {formatNum(self.goal.tank, digits=4)} | {formatNum(self.goal.dps, digits=4)} | {formatNum(self.goal.support, digits=4)} |\n' + \
+               f'----------------------------------------------------'
+
+
+class Goal:
+    def __init__(self, total, comp = None, stadium = None, tank = None, dps = None, support = None):
+        self.total = total
+        self.comp = comp
+        self.stadium = stadium
+        self.tank = tank
+        self.dps = dps
+        self.support = support
+
+    def displayTable(self):
+        # ----------------
+        # | Total   | ## |
+        # | Comp    | ## |
+        # | Stadium | ## |
+        # | Tank    | ## |
+        # | DPS     | ## |
+        # | Supp    | ## |
+        # ----------------
+        return f'''----------------
+| Total   | {formatNum(self.total, digits = 2)} |
+| Comp    | {formatNum(self.comp, digits = 2)} |
+| Stadium | {formatNum(self.stadium, digits = 2)} |
+| Tank    | {formatNum(self.tank, digits = 2)} |
+| DPS     | {formatNum(self.dps, digits = 2)} |
+| Supp    | {formatNum(self.support, digits = 2)} |
+----------------'''
+
+    def copy(self):
+        return Goal(self.total,
+                comp = self.comp,
+                stadium = self.stadium,
+                tank = self.tank,
+                dps = self.dps,
+                support = self.support)
+
+    def __str__(self):
+        return f'GoalObj(total={self.total}, comp={self.comp}, stadium={self.stadium}, tank={self.tank}, dps={self.dps}, support={self.support})'
 
 # Hero Challenge Sub-Feature:
 
