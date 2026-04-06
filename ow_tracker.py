@@ -2103,7 +2103,7 @@ class SingleWeek:
             return False
         return True
 
-    def GoalTable(self):
+    def getGoalTable(self):
         # ----------------------------------------------------
         # |       | Total | Comp | Stad | Tank |  DPS | Supp |
         # ----------------------------------------------------
