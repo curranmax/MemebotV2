@@ -847,7 +847,7 @@ class OwTrackerDiscordCommands(app_commands.Group):
         weekly_tracker = self.ow_tracker_manager.getWeeklyTracker(user_id)
         if weekly_tracker is not None:
             current_week = weekly_tracker.getCurrentWeek()
-            msg += '\n\n```' + current_week.getGoalTable()
+            msg += '\n\n```\n' + current_week.getGoalTable()
 
             active_streak = weekly_tracker.getActiveStreak()
             if active_streak <= 0:
@@ -1163,7 +1163,7 @@ class OwTrackerDiscordCommands(app_commands.Group):
         if weekly_tracker is not None:
             current_week = weekly_tracker.getCurrentWeek()
             msg = 'Current weekly progress:'
-            msg += '\n```' + current_week.getGoalTable() + '\n```'
+            msg += '\n```\n' + current_week.getGoalTable() + '\n```'
 
             active_streak = weekly_tracker.getActiveStreak()
             if active_streak <= 0:
@@ -1303,7 +1303,7 @@ class OwTrackerDiscordCommands(app_commands.Group):
         weekly_tracker = self.ow_tracker_manager.getWeeklyTracker(user_id)
         if weekly_tracker is not None:
             current_week = weekly_tracker.getCurrentWeek()
-            msg += '\n\n```' + current_week.getGoalTable() + '\n'
+            msg += '\n\n```\n' + current_week.getGoalTable() + '\n'
 
             active_streak = weekly_tracker.getActiveStreak()
             if active_streak <= 0:
