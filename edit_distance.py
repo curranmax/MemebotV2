@@ -1,4 +1,5 @@
 import logging
+import unicodedata
 
 _CHAR_KEYBOARD_POSITION = {
     'q': (1.5, 3.0),
@@ -63,6 +64,13 @@ _CHAR_KEYBOARD_DISTANCE = {
 # This is the value to use if the character isn't in the above map. This will always be needed since we will compare to "None".
 _CHAR_KEYBOARD_UNKNOWN_DIST = 10.0
 
+def remove_accents(char_or_string):
+    # 'NFD' separates characters into their base character and their accent
+    normalized = unicodedata.normalize('NFD', char_or_string)
+    
+    # Filter out anything that is a 'Mn' (Mark, Nonspacing - i.e., an accent)
+    return ''.join(c for c in normalized if unicodedata.category(c) != 'Mn')
+
 class Options:
     # Algo type
     SIMPLE = '_simple'
@@ -74,16 +82,18 @@ class Options:
     CHAR_EQUALITY = '_char_equality'
     CHAR_KEYBORAD_DISTANCE = '_char_keyboard_distance'
 
-    def __init__(self, edit_distance_type: str = SIMPLE, char_distance_type: str = CHAR_EQUALITY, ignore_case: bool = True):
+    def __init__(self, edit_distance_type: str = SIMPLE, char_distance_type: str = CHAR_EQUALITY, ignore_case: bool = True, ignore_accents: bool = True):
         self.edit_distance_type = edit_distance_type
         self.char_distance_type = char_distance_type
 
         self.ignore_case = ignore_case
-        # TODO Add a bool to handle special characters (i.e. treat ones with accents the same as the ones without accents)
+        self.ignore_accents = ignore_accents
 
     def preprocess(self, v: str) -> str:
         if self.ignore_case:
             v = v.lower()
+        if self.ignore_accents:
+            v = remove_accents(v)
         return v
 
     def characterDistance(self, c1: str, c2: str) -> float:
