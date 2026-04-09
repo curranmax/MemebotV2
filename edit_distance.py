@@ -107,13 +107,13 @@ class Options:
             if c2 is not None:
                 c2 = c2.lower()
             if c1 not in _CHAR_KEYBOARD_POSITION or c2 not in _CHAR_KEYBOARD_POSITION:
-                if c1 is not None:
-                    logging.warning(f'Unknown character: {c1}')
-                if c2 is not None:
-                    logging.warning(f'Unknown character: {c2}')
+                if c1 not in _CHAR_KEYBOARD_POSITION:
+                    logging.warning(f'Unknown character: "{c1}"')
+                if c2 not in _CHAR_KEYBOARD_POSITION:
+                    logging.warning(f'Unknown character: "{c2}"')
                 return _CHAR_KEYBOARD_UNKNOWN_DIST
             if (c1, c2) not in _CHAR_KEYBOARD_DISTANCE:
-                raise Exception('Both characters are in _CHAR_KEYBOARD_POSITION, but combo is not in _CHAR_KEYBOARD_DISTANCE')
+                raise Exception(f'Both characters are in _CHAR_KEYBOARD_POSITION, but combo is not in _CHAR_KEYBOARD_DISTANCE: "{c1}", "{c2}"')
             return _CHAR_KEYBOARD_DISTANCE[(c1, c2)]
 
 

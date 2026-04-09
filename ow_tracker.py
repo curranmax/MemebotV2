@@ -1497,7 +1497,7 @@ class OverwatchTrackerManager:
                   f'|       | Total | Comp | Stad | Tank |  DPS | Supp |\n' + \
                   f'----------------------------------------------------\n' + \
                   f'| Games |  {formatNum(len(current_week.games), digits=4)} | {formatNum(len(current_week.getCompGames()), digits=4)} | {formatNum(len(current_week.getStadiumGames()), digits=4)} | {formatNum(len(current_week.getTankGames()), digits=4)} | {formatNum(len(current_week.getDpsGames()), digits=4)} | {formatNum(len(current_week.getSupportGames()), digits=4)} |\n' + \
-                  f'| Goal  |  {formatNum(current_week.getWeeklyGoal().total, digits=4)} | {formatNum(current_week.getWeeklyGoal().comp, digits=4)} | {formatNum(current_week.getWeeklyGoal().stadium, digits=4)} | {formatNum(current_week.getWeeklyGoal().tank, digits=4)} | {formatNum(current_week.getWeeklyGoal().dps, digits=4)} | {formatNum(current_week.getWeeklyGoal().support, digits=4)} |\n' + \
+                  f'| Goal  |  {formatNum(current_week.goal.total, digits=4)} | {formatNum(current_week.goal.comp, digits=4)} | {formatNum(current_week.goal.stadium, digits=4)} | {formatNum(current_week.goal.tank, digits=4)} | {formatNum(current_week.goal.dps, digits=4)} | {formatNum(current_week.goal.support, digits=4)} |\n' + \
                   f'----------------------------------------------------\n' + \
                   f'| Current Streak | {formatNum(active_streak, digits=2)} |\n' + \
                   f'| Longest Streak | {formatNum(longest_streak, digits=2)} |\n' + \
