@@ -94,6 +94,7 @@ HEROES = {
     'Mei': DPS,
     'Pharah': DPS,
     'Reaper': DPS,
+    'Sierra': DPS,
     'Soldier: 76': DPS,
     'Sojourn': DPS,
     'Sombra': DPS,
@@ -1491,6 +1492,7 @@ class OverwatchTrackerManager:
             # TODO More stats on the streaks (avg number of games, highest number of games in one week, ...)
 
             # TODO Add a gif or emote based on what happened (met goal --> airhorns, etc.; didn't meet goal --> sad face, etc.)
+            # TODO Add a try except block around the message sending so that it doesn't mess with the state being upodated
             msg = '```\n' + \
                   f'                Weekly Goal Summary                 \n' + \
                   f'----------------------------------------------------\n' + \
