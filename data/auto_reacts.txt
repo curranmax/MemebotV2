@@ -5,6 +5,7 @@
 \b(?i:d+i+v+(e+|i+n+g+))\b	<:dive:577357184145293342>
 \b(?i:(h+i+)|(h+e+ll+o+))\b	👋
 \b(?i:(m+e+m+e+)?(b+o+t+))\b	🤖
+\b(?i:s+e+a+tt+l+e+)\b	<:seattle:1494536229855825980>
 \b(?i:l+u+c+i+o+)\b	🐸
 \b(?i:l+u+c+i+o+ ?b+a+ll+)\b	⚽
 \b(?i:t+a+m+a+l+e+s*)\b	🫔
