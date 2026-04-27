@@ -8,11 +8,13 @@ import event_calendar
 import chore_calendar
 import custom_commands
 import database
+import hockey_calendar
 
 import discord
 from discord import app_commands
 import logging
 
+# TODO Move these to feature_tracker
 DEFAULT_GUILDS = [
     discord.Object(id=599237897580970005),
     discord.Object(id=525174584526241803),
@@ -21,6 +23,7 @@ DEFAULT_GUILDS = [
 
 CHOREBOT_GUILDS = [discord.Object(id=400805068934348800)]
 HOKBOT_GUILDS = [discord.Object(id=400805068934348800)]
+HOCKEYBOT_GUILDS = [discord.Object(id=400805068934348800)]
 
 TESTING_GUILDS = [discord.Object(id=599237897580970005)]
 
@@ -117,6 +120,11 @@ class CustomDiscordClient(discord.Client):
                 'database'):
             self.restaraunt_database = database.RestaurantDatabase()
             for command_group in self.restaraunt_database.getDiscordCommands():
+                self.command_tree.add_command(command_group, guilds=self.command_guilds)
+
+        if self.feature_tracker is not None and self.feature_tracker.isEnabled('hockey_calendar'):
+            self.hockey_calendar = hockey_calendar.HockeyCalendarManager(discord_client=self, event_calendar=self.getOrCreateEventCalendar())
+            for command_group in self.hockey_calendar.getDiscordCommands():
                 self.command_tree.add_command(command_group, guilds=self.command_guilds)
 
     def getOrCreateEventCalendar(self):

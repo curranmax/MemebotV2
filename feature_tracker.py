@@ -26,11 +26,13 @@ class FeatureTracker:
                                  '--custom_commands',
                                  action='store_true')
         self.parser.add_argument('-d', '--database', action='store_true')
+        self.parser.add_argument('-hc', '--hockey_calendar', action='store_true')
 
         # Switches for for feature groups
         self.parser.add_argument('-mb', '--memebot', action='store_true')
         self.parser.add_argument('-cb', '--chorebot', action='store_true')
         self.parser.add_argument('-hk', '--hokbot', action='store_true')
+        self.parser.add_argument('-hockey', '--hockeybot', action='store_true')
         self.parser.add_argument('-all', '--all_features', action='store_true')
 
         self.feature_groups = {
@@ -43,6 +45,9 @@ class FeatureTracker:
             ],
             'hokbot': [
                 'database',
+            ],
+            'hockeybot': [
+                'hockey_calendar',
             ],
             'all_features': [
                 'auto_reacts',
@@ -68,6 +73,9 @@ class FeatureTracker:
 
     def isHoKbot(self):
         return self.args.hokbot
+
+    def isHockeybot(self):
+        return self.args.hockeybot
 
     def isEnabled(self, feature):
         vs = vars(self.args)

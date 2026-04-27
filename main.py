@@ -10,6 +10,7 @@ feature_tracker = FT.FeatureTracker()
 
 # Get discord tokens and guilds.
 
+# TODO Move this to feature_tracker
 if feature_tracker.isTestingMode():
     print('RUNNING IN TESTING MODE')
     token = os.getenv('DISCORD_TESTING_TOKEN')
@@ -20,6 +21,9 @@ elif feature_tracker.isChorebot():
 elif feature_tracker.isHoKbot():
     token = os.getenv('HOKBOT_TOKEN')
     command_guilds = bot.HOKBOT_GUILDS
+elif feature_tracker.isHockeybot():
+    token = os.getenv('HOCKEYBOT_TOKEN')
+    command_guilds = bot.HOCKEYBOT_GUILDS
 else:
     token = os.getenv('DISCORD_TOKEN')
     command_guilds = bot.DEFAULT_GUILDS
