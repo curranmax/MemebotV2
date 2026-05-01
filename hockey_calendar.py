@@ -83,6 +83,62 @@ class HockeyCalendarManager:
         logging.info('getNextDailyCheckTime(): now = %s, et = %s', now.isoformat(), et.isoformat())
         return et
 
+    async def get_pwhl_youtube_link(self, summary: str, game_date: datetime):
+        loop = asyncio.get_running_loop()
+        def _fetch():
+            try:
+                import urllib.request
+                import xml.etree.ElementTree as ET
+                
+                rss_url = 'https://www.youtube.com/feeds/videos.xml?channel_id=UCNKUkQV2R0JKakyE1vuC1lQ'
+                req = urllib.request.Request(rss_url, headers={'User-Agent': 'Mozilla/5.0'})
+                with urllib.request.urlopen(req) as response:
+                    xml_data = response.read()
+                    root = ET.fromstring(xml_data)
+                    ns = {'yt': 'http://www.youtube.com/xml/schemas/2015', 'atom': 'http://www.w3.org/2005/Atom'}
+                    
+                    date_str1 = game_date.strftime('%B %d, %Y').replace(' 0', ' ')
+                    date_str2 = game_date.strftime('%b %d, %Y').replace(' 0', ' ')
+                    
+                    summary_words = set(w.lower() for w in re.findall(r'[a-zA-Z]+', summary) if len(w) >= 3)
+                    
+                    best_match = None
+                    best_score = -1
+                    
+                    for entry in root.findall('atom:entry', ns):
+                        title_elem = entry.find('atom:title', ns)
+                        if title_elem is None:
+                            continue
+                        title = title_elem.text
+                        link = entry.find('atom:link', ns).attrib['href']
+                        
+                        title_words = set(w.lower() for w in re.findall(r'[a-zA-Z]+', title))
+                        word_overlap = 0
+                        for sw in summary_words:
+                            for tw in title_words:
+                                if sw in tw or tw in sw:
+                                    word_overlap += 1
+                                    break
+                                    
+                        score = word_overlap
+                        
+                        if date_str1.lower() in title.lower() or date_str2.lower() in title.lower():
+                            score += 5
+                            
+                        is_pwhl = 'pwhl' in title.lower()
+                        
+                        if (score > 0 or is_pwhl) and score > best_score:
+                            if word_overlap > 0 or score >= 5:
+                                best_score = score
+                                best_match = link
+                                
+                    return best_match
+            except Exception as e:
+                logging.error(f'Error fetching YouTube link: {e}')
+                return None
+                
+        return await loop.run_in_executor(None, _fetch)
+
     async def dailyCheck(self):
         # Stops the daily check if channel_id or ical_link is not set.
         if self.channel_id is None or self.ical_link is None:
@@ -120,16 +176,26 @@ class HockeyCalendarManager:
                     msg += f"- **{e.summary}** at {time_str}"
 
                     # Add description if it exists (might contain links)
+                    has_yt_link = False
                     if hasattr(e, 'description') and e.description and e.description.strip():
                         description = e.description
                         # Log the full description
                         logging.info('dailyCheck(): description = %s', description)
 
                         # Use a regex to find any youtube links in the description. Replace with "[link](<youtube_link>)"
-                        description = re.sub(r'(https?://(?:www\.)?youtube\.com/watch\?v=[a-zA-Z0-9_-]+)', r'[link](<\1>)', description)
-                        msg += f"  {description.strip()}\n"
-                    else:
-                        msg += "\n"
+                        if re.search(r'(https?://(?:www\.)?youtube\.com/watch\?v=[a-zA-Z0-9_-]+)', description):
+                            has_yt_link = True
+                        description = re.sub(r'(https?://(?:www\.)?youtube\.com/watch\?v=[a-zA-Z0-9_-]+)', r'[watch here](<\1>)', description)
+                        msg += f" - {description.strip()}"
+                    
+                    if not has_yt_link:
+                        # Check the "The PWHL" youtube channel for a link to this game.
+                        yt_link = await self.get_pwhl_youtube_link(e.summary, event_pt)
+                        logging.info('dailyCheck: get_pwhl_youtube_link(summary = %s, event_pt = %s) -> yt_link = %s', e.summary, event_pt.isoformat(), yt_link)
+                        if yt_link:
+                            msg += f" - [watch here](<{yt_link}>)"
+
+                    msg += "\n"
                 channel = self.discord_client.get_channel(self.channel_id)
                 if channel:
                     await channel.send(msg)
