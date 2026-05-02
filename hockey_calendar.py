@@ -165,6 +165,11 @@ class HockeyCalendarManager:
             cal_events = await loop.run_in_executor(None, lambda: events(url=self.ical_link, start=start_date, end=end_date))
 
             if cal_events:
+                # Filter events to ensure they start between start_date (inclusive) and end_date (exclusive)
+                # This handles potential timezone overlap issues from icalevents returning adjacent day's events.
+                cal_events = [e for e in cal_events if start_date <= e.start.astimezone(pytz.timezone('US/Pacific')) < end_date]
+
+            if cal_events:
                 # If there are any events for today, post them to the discord channel.
                 msg = "**PWHL Games Today!**\n"
                 for e in sorted(cal_events, key=lambda x: x.start):
