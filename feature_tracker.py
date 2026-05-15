@@ -33,6 +33,7 @@ class FeatureTracker:
         self.parser.add_argument('-cb', '--chorebot', action='store_true')
         self.parser.add_argument('-hk', '--hokbot', action='store_true')
         self.parser.add_argument('-hockey', '--hockeybot', action='store_true')
+        self.parser.add_argument('-w', '--weatherman', action='store_true')
         self.parser.add_argument('-all', '--all_features', action='store_true')
 
         self.feature_groups = {
@@ -48,6 +49,9 @@ class FeatureTracker:
             ],
             'hockeybot': [
                 'hockey_calendar',
+            ],
+            'weatherman': [
+                'twitch_checker',
             ],
             'all_features': [
                 'auto_reacts',
