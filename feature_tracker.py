@@ -81,6 +81,9 @@ class FeatureTracker:
     def isHockeybot(self):
         return self.args.hockeybot
 
+    def isTheWeatherMan(self):
+        return self.args.weatherman
+
     def isEnabled(self, feature):
         vs = vars(self.args)
         if feature not in vs:

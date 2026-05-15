@@ -24,7 +24,7 @@ elif feature_tracker.isHoKbot():
 elif feature_tracker.isHockeybot():
     token = os.getenv('HOCKEYBOT_TOKEN')
     command_guilds = bot.HOCKEYBOT_GUILDS
-elif feature_tracker.isWeatherman():
+elif feature_tracker.isTheWeatherMan():
     token = os.getenv('WEATHERMAN_TOKEN')
     command_guilds = bot.WEATHERMAN_GUILDS
 else:
