@@ -1,0 +1,834 @@
+[
+  {
+    "team1": "Mexico",
+    "team2": "South Africa",
+    "group": "Group A",
+    "venue": "Estadio Azteca, Mexico City",
+    "time_pacific": "12:00 PM",
+    "date_pacific": "2026-06-11"
+  },
+  {
+    "team1": "South Korea",
+    "team2": "Czech Republic",
+    "group": "Group A",
+    "venue": "Estadio Akron, Guadalajara",
+    "time_pacific": "07:00 PM",
+    "date_pacific": "2026-06-11"
+  },
+  {
+    "team1": "Canada",
+    "team2": "Bosnia & Herzegovina",
+    "group": "Group B",
+    "venue": "BMO Field, Toronto",
+    "time_pacific": "12:00 PM",
+    "date_pacific": "2026-06-12"
+  },
+  {
+    "team1": "United States",
+    "team2": "Paraguay",
+    "group": "Group D",
+    "venue": "SoFi Stadium, Inglewood",
+    "time_pacific": "06:00 PM",
+    "date_pacific": "2026-06-12"
+  },
+  {
+    "team1": "Qatar",
+    "team2": "Switzerland",
+    "group": "Group B",
+    "venue": "Levi's Stadium, Santa Clara",
+    "time_pacific": "12:00 PM",
+    "date_pacific": "2026-06-13"
+  },
+  {
+    "team1": "Brazil",
+    "team2": "Morocco",
+    "group": "Group C",
+    "venue": "MetLife Stadium, East Rutherford",
+    "time_pacific": "03:00 PM",
+    "date_pacific": "2026-06-13"
+  },
+  {
+    "team1": "Haiti",
+    "team2": "Scotland",
+    "group": "Group C",
+    "venue": "Gillette Stadium, Boston",
+    "time_pacific": "06:00 PM",
+    "date_pacific": "2026-06-13"
+  },
+  {
+    "team1": "Australia",
+    "team2": "Türkiye",
+    "group": "Group D",
+    "venue": "BC Place, Vancouver",
+    "time_pacific": "09:00 PM",
+    "date_pacific": "2026-06-13"
+  },
+  {
+    "team1": "Germany",
+    "team2": "Curaçao",
+    "group": "Group E",
+    "venue": "NRG Stadium, Houston",
+    "time_pacific": "10:00 AM",
+    "date_pacific": "2026-06-14"
+  },
+  {
+    "team1": "Netherlands",
+    "team2": "Japan",
+    "group": "Group F",
+    "venue": "AT&T Stadium, Dallas",
+    "time_pacific": "01:00 PM",
+    "date_pacific": "2026-06-14"
+  },
+  {
+    "team1": "Ivory Coast",
+    "team2": "Ecuador",
+    "group": "Group E",
+    "venue": "Lincoln Financial Field, Philadelphia",
+    "time_pacific": "04:00 PM",
+    "date_pacific": "2026-06-14"
+  },
+  {
+    "team1": "Sweden",
+    "team2": "Tunisia",
+    "group": "Group F",
+    "venue": "Estadio BBVA, Monterrey",
+    "time_pacific": "07:00 PM",
+    "date_pacific": "2026-06-14"
+  },
+  {
+    "team1": "Spain",
+    "team2": "Cape Verde",
+    "group": "Group H",
+    "venue": "Mercedes-Benz Stadium, Atlanta",
+    "time_pacific": "09:00 AM",
+    "date_pacific": "2026-06-15"
+  },
+  {
+    "team1": "Belgium",
+    "team2": "Egypt",
+    "group": "Group G",
+    "venue": "Lumen Field, Seattle",
+    "time_pacific": "12:00 PM",
+    "date_pacific": "2026-06-15"
+  },
+  {
+    "team1": "Saudi Arabia",
+    "team2": "Uruguay",
+    "group": "Group H",
+    "venue": "Hard Rock Stadium, Miami",
+    "time_pacific": "03:00 PM",
+    "date_pacific": "2026-06-15"
+  },
+  {
+    "team1": "Iran",
+    "team2": "New Zealand",
+    "group": "Group G",
+    "venue": "SoFi Stadium, Los Angeles",
+    "time_pacific": "06:00 PM",
+    "date_pacific": "2026-06-15"
+  },
+  {
+    "team1": "France",
+    "team2": "Senegal",
+    "group": "Group I",
+    "venue": "MetLife Stadium, New York New Jersey",
+    "time_pacific": "12:00 PM",
+    "date_pacific": "2026-06-16"
+  },
+  {
+    "team1": "Iraq",
+    "team2": "Norway",
+    "group": "Group I",
+    "venue": "Gillette Stadium, Boston",
+    "time_pacific": "03:00 PM",
+    "date_pacific": "2026-06-16"
+  },
+  {
+    "team1": "Argentina",
+    "team2": "Algeria",
+    "group": "Group J",
+    "venue": "Arrowhead Stadium, Kansas City",
+    "time_pacific": "06:00 PM",
+    "date_pacific": "2026-06-16"
+  },
+  {
+    "team1": "Austria",
+    "team2": "Jordan",
+    "group": "Group J",
+    "venue": "Levi's Stadium, San Francisco Bay Area",
+    "time_pacific": "09:00 PM",
+    "date_pacific": "2026-06-16"
+  },
+  {
+    "team1": "Portugal",
+    "team2": "DR Congo",
+    "group": "Group K",
+    "venue": "NRG Stadium, Houston",
+    "time_pacific": "10:00 AM",
+    "date_pacific": "2026-06-17"
+  },
+  {
+    "team1": "England",
+    "team2": "Croatia",
+    "group": "Group L",
+    "venue": "AT&T Stadium, Dallas",
+    "time_pacific": "01:00 PM",
+    "date_pacific": "2026-06-17"
+  },
+  {
+    "team1": "Ghana",
+    "team2": "Panama",
+    "group": "Group L",
+    "venue": "BMO Field, Toronto",
+    "time_pacific": "04:00 PM",
+    "date_pacific": "2026-06-17"
+  },
+  {
+    "team1": "Uzbekistan",
+    "team2": "Colombia",
+    "group": "Group K",
+    "venue": "Estadio Azteca, Mexico City",
+    "time_pacific": "07:00 PM",
+    "date_pacific": "2026-06-17"
+  },
+  {
+    "team1": "Czech Republic",
+    "team2": "South Africa",
+    "group": "Group A",
+    "venue": "Mercedes-Benz Stadium, Atlanta",
+    "time_pacific": "09:00 AM",
+    "date_pacific": "2026-06-18"
+  },
+  {
+    "team1": "Switzerland",
+    "team2": "Bosnia & Herzegovina",
+    "group": "Group B",
+    "venue": "SoFi Stadium, Los Angeles",
+    "time_pacific": "12:00 PM",
+    "date_pacific": "2026-06-18"
+  },
+  {
+    "team1": "Canada",
+    "team2": "Qatar",
+    "group": "Group B",
+    "venue": "BC Place, Vancouver",
+    "time_pacific": "03:00 PM",
+    "date_pacific": "2026-06-18"
+  },
+  {
+    "team1": "Mexico",
+    "team2": "South Korea",
+    "group": "Group A",
+    "venue": "Estadio Akron, Guadalajara",
+    "time_pacific": "06:00 PM",
+    "date_pacific": "2026-06-18"
+  },
+  {
+    "team1": "United States",
+    "team2": "Australia",
+    "group": "Group D",
+    "venue": "Lumen Field, Seattle",
+    "time_pacific": "12:00 PM",
+    "date_pacific": "2026-06-19"
+  },
+  {
+    "team1": "Scotland",
+    "team2": "Morocco",
+    "group": "Group C",
+    "venue": "Gillette Stadium, Boston",
+    "time_pacific": "03:00 PM",
+    "date_pacific": "2026-06-19"
+  },
+  {
+    "team1": "Brazil",
+    "team2": "Haiti",
+    "group": "Group C",
+    "venue": "Lincoln Financial Field, Philadelphia",
+    "time_pacific": "05:30 PM",
+    "date_pacific": "2026-06-19"
+  },
+  {
+    "team1": "Türkiye",
+    "team2": "Paraguay",
+    "group": "Group D",
+    "venue": "Levi's Stadium, San Francisco Bay Area",
+    "time_pacific": "08:00 PM",
+    "date_pacific": "2026-06-19"
+  },
+  {
+    "team1": "Netherlands",
+    "team2": "Sweden",
+    "group": "Group F",
+    "venue": "NRG Stadium, Houston",
+    "time_pacific": "10:00 AM",
+    "date_pacific": "2026-06-20"
+  },
+  {
+    "team1": "Germany",
+    "team2": "Ivory Coast",
+    "group": "Group E",
+    "venue": "BMO Field, Toronto",
+    "time_pacific": "01:00 PM",
+    "date_pacific": "2026-06-20"
+  },
+  {
+    "team1": "Ecuador",
+    "team2": "Curaçao",
+    "group": "Group E",
+    "venue": "Arrowhead Stadium, Kansas City",
+    "time_pacific": "05:00 PM",
+    "date_pacific": "2026-06-20"
+  },
+  {
+    "team1": "Tunisia",
+    "team2": "Japan",
+    "group": "Group F",
+    "venue": "Estadio BBVA, Monterrey",
+    "time_pacific": "09:00 PM",
+    "date_pacific": "2026-06-20"
+  },
+  {
+    "team1": "Spain",
+    "team2": "Saudi Arabia",
+    "group": "Group H",
+    "venue": "Mercedes-Benz Stadium, Atlanta",
+    "time_pacific": "09:00 AM",
+    "date_pacific": "2026-06-21"
+  },
+  {
+    "team1": "Belgium",
+    "team2": "Iran",
+    "group": "Group G",
+    "venue": "SoFi Stadium, Los Angeles",
+    "time_pacific": "12:00 PM",
+    "date_pacific": "2026-06-21"
+  },
+  {
+    "team1": "Uruguay",
+    "team2": "Cape Verde",
+    "group": "Group H",
+    "venue": "Hard Rock Stadium, Miami",
+    "time_pacific": "03:00 PM",
+    "date_pacific": "2026-06-21"
+  },
+  {
+    "team1": "New Zealand",
+    "team2": "Egypt",
+    "group": "Group G",
+    "venue": "BC Place, Vancouver",
+    "time_pacific": "06:00 PM",
+    "date_pacific": "2026-06-21"
+  },
+  {
+    "team1": "Argentina",
+    "team2": "Austria",
+    "group": "Group J",
+    "venue": "AT&T Stadium, Dallas",
+    "time_pacific": "10:00 AM",
+    "date_pacific": "2026-06-22"
+  },
+  {
+    "team1": "France",
+    "team2": "Iraq",
+    "group": "Group I",
+    "venue": "Lincoln Financial Field, Philadelphia",
+    "time_pacific": "02:00 PM",
+    "date_pacific": "2026-06-22"
+  },
+  {
+    "team1": "Norway",
+    "team2": "Senegal",
+    "group": "Group I",
+    "venue": "MetLife Stadium, New York New Jersey",
+    "time_pacific": "05:00 PM",
+    "date_pacific": "2026-06-22"
+  },
+  {
+    "team1": "Jordan",
+    "team2": "Algeria",
+    "group": "Group J",
+    "venue": "Levi's Stadium, San Francisco Bay Area",
+    "time_pacific": "08:00 PM",
+    "date_pacific": "2026-06-22"
+  },
+  {
+    "team1": "Portugal",
+    "team2": "Uzbekistan",
+    "group": "Group K",
+    "venue": "NRG Stadium, Houston",
+    "time_pacific": "10:00 AM",
+    "date_pacific": "2026-06-23"
+  },
+  {
+    "team1": "England",
+    "team2": "Ghana",
+    "group": "Group L",
+    "venue": "Gillette Stadium, Boston",
+    "time_pacific": "01:00 PM",
+    "date_pacific": "2026-06-23"
+  },
+  {
+    "team1": "Panama",
+    "team2": "Croatia",
+    "group": "Group L",
+    "venue": "BMO Field, Toronto",
+    "time_pacific": "04:00 PM",
+    "date_pacific": "2026-06-23"
+  },
+  {
+    "team1": "Colombia",
+    "team2": "DR Congo",
+    "group": "Group K",
+    "venue": "Estadio Akron, Guadalajara",
+    "time_pacific": "07:00 PM",
+    "date_pacific": "2026-06-23"
+  },
+  {
+    "team1": "Switzerland",
+    "team2": "Canada",
+    "group": "Group B",
+    "venue": "BC Place, Vancouver",
+    "time_pacific": "12:00 PM",
+    "date_pacific": "2026-06-24"
+  },
+  {
+    "team1": "Bosnia & Herzegovina",
+    "team2": "Qatar",
+    "group": "Group B",
+    "venue": "Lumen Field, Seattle",
+    "time_pacific": "12:00 PM",
+    "date_pacific": "2026-06-24"
+  },
+  {
+    "team1": "Morocco",
+    "team2": "Haiti",
+    "group": "Group C",
+    "venue": "Mercedes-Benz Stadium, Atlanta",
+    "time_pacific": "03:00 PM",
+    "date_pacific": "2026-06-24"
+  },
+  {
+    "team1": "Scotland",
+    "team2": "Brazil",
+    "group": "Group C",
+    "venue": "Hard Rock Stadium, Miami",
+    "time_pacific": "03:00 PM",
+    "date_pacific": "2026-06-24"
+  },
+  {
+    "team1": "South Africa",
+    "team2": "South Korea",
+    "group": "Group A",
+    "venue": "Estadio BBVA, Monterrey",
+    "time_pacific": "06:00 PM",
+    "date_pacific": "2026-06-24"
+  },
+  {
+    "team1": "Czech Republic",
+    "team2": "Mexico",
+    "group": "Group A",
+    "venue": "Estadio Azteca, Mexico City",
+    "time_pacific": "06:00 PM",
+    "date_pacific": "2026-06-24"
+  },
+  {
+    "team1": "Curaçao",
+    "team2": "Ivory Coast",
+    "group": "Group E",
+    "venue": "Lincoln Financial Field, Philadelphia",
+    "time_pacific": "01:00 PM",
+    "date_pacific": "2026-06-25"
+  },
+  {
+    "team1": "Ecuador",
+    "team2": "Germany",
+    "group": "Group E",
+    "venue": "MetLife Stadium, New York New Jersey",
+    "time_pacific": "01:00 PM",
+    "date_pacific": "2026-06-25"
+  },
+  {
+    "team1": "Tunisia",
+    "team2": "Netherlands",
+    "group": "Group F",
+    "venue": "Arrowhead Stadium, Kansas City",
+    "time_pacific": "04:00 PM",
+    "date_pacific": "2026-06-25"
+  },
+  {
+    "team1": "Japan",
+    "team2": "Sweden",
+    "group": "Group F",
+    "venue": "AT&T Stadium, Dallas",
+    "time_pacific": "04:00 PM",
+    "date_pacific": "2026-06-25"
+  },
+  {
+    "team1": "Paraguay",
+    "team2": "Australia",
+    "group": "Group D",
+    "venue": "Levi's Stadium, San Francisco Bay Area",
+    "time_pacific": "07:00 PM",
+    "date_pacific": "2026-06-25"
+  },
+  {
+    "team1": "Türkiye",
+    "team2": "United States",
+    "group": "Group D",
+    "venue": "SoFi Stadium, Los Angeles",
+    "time_pacific": "07:00 PM",
+    "date_pacific": "2026-06-25"
+  },
+  {
+    "team1": "Norway",
+    "team2": "France",
+    "group": "Group I",
+    "venue": "Gillette Stadium, Boston",
+    "time_pacific": "12:00 PM",
+    "date_pacific": "2026-06-26"
+  },
+  {
+    "team1": "Senegal",
+    "team2": "Iraq",
+    "group": "Group I",
+    "venue": "BMO Field, Toronto",
+    "time_pacific": "12:00 PM",
+    "date_pacific": "2026-06-26"
+  },
+  {
+    "team1": "Cape Verde",
+    "team2": "Saudi Arabia",
+    "group": "Group H",
+    "venue": "NRG Stadium, Houston",
+    "time_pacific": "05:00 PM",
+    "date_pacific": "2026-06-26"
+  },
+  {
+    "team1": "Uruguay",
+    "team2": "Spain",
+    "group": "Group H",
+    "venue": "Estadio Akron, Guadalajara",
+    "time_pacific": "05:00 PM",
+    "date_pacific": "2026-06-26"
+  },
+  {
+    "team1": "Egypt",
+    "team2": "Iran",
+    "group": "Group G",
+    "venue": "Lumen Field, Seattle",
+    "time_pacific": "08:00 PM",
+    "date_pacific": "2026-06-26"
+  },
+  {
+    "team1": "New Zealand",
+    "team2": "Belgium",
+    "group": "Group G",
+    "venue": "BC Place, Vancouver",
+    "time_pacific": "08:00 PM",
+    "date_pacific": "2026-06-26"
+  },
+  {
+    "team1": "Croatia",
+    "team2": "Ghana",
+    "group": "Group L",
+    "venue": "Lincoln Financial Field, Philadelphia",
+    "time_pacific": "02:00 PM",
+    "date_pacific": "2026-06-27"
+  },
+  {
+    "team1": "Panama",
+    "team2": "England",
+    "group": "Group L",
+    "venue": "MetLife Stadium, New York New Jersey",
+    "time_pacific": "02:00 PM",
+    "date_pacific": "2026-06-27"
+  },
+  {
+    "team1": "Colombia",
+    "team2": "Portugal",
+    "group": "Group K",
+    "venue": "Hard Rock Stadium, Miami",
+    "time_pacific": "04:30 PM",
+    "date_pacific": "2026-06-27"
+  },
+  {
+    "team1": "DR Congo",
+    "team2": "Uzbekistan",
+    "group": "Group K",
+    "venue": "Mercedes-Benz Stadium, Atlanta",
+    "time_pacific": "04:30 PM",
+    "date_pacific": "2026-06-27"
+  },
+  {
+    "team1": "Algeria",
+    "team2": "Austria",
+    "group": "Group J",
+    "venue": "Arrowhead Stadium, Kansas City",
+    "time_pacific": "07:00 PM",
+    "date_pacific": "2026-06-27"
+  },
+  {
+    "team1": "Jordan",
+    "team2": "Argentina",
+    "group": "Group J",
+    "venue": "AT&T Stadium, Dallas",
+    "time_pacific": "07:00 PM",
+    "date_pacific": "2026-06-27"
+  },
+  {
+    "team1": "TBD Home (Round of 32 #1)",
+    "team2": "TBD Away (Round of 32 #1)",
+    "group": "Round of 32",
+    "venue": "",
+    "time_pacific": "12:00 PM",
+    "date_pacific": "2026-06-28"
+  },
+  {
+    "team1": "TBD Home (Round of 32 #2)",
+    "team2": "TBD Away (Round of 32 #2)",
+    "group": "Round of 32",
+    "venue": "",
+    "time_pacific": "10:00 AM",
+    "date_pacific": "2026-06-29"
+  },
+  {
+    "team1": "TBD Home (Round of 32 #3)",
+    "team2": "TBD Away (Round of 32 #3)",
+    "group": "Round of 32",
+    "venue": "",
+    "time_pacific": "01:30 PM",
+    "date_pacific": "2026-06-29"
+  },
+  {
+    "team1": "TBD Home (Round of 32 #4)",
+    "team2": "TBD Away (Round of 32 #4)",
+    "group": "Round of 32",
+    "venue": "",
+    "time_pacific": "06:00 PM",
+    "date_pacific": "2026-06-29"
+  },
+  {
+    "team1": "TBD Home (Round of 32 #5)",
+    "team2": "TBD Away (Round of 32 #5)",
+    "group": "Round of 32",
+    "venue": "",
+    "time_pacific": "10:00 AM",
+    "date_pacific": "2026-06-30"
+  },
+  {
+    "team1": "TBD Home (Round of 32 #6)",
+    "team2": "TBD Away (Round of 32 #6)",
+    "group": "Round of 32",
+    "venue": "",
+    "time_pacific": "02:00 PM",
+    "date_pacific": "2026-06-30"
+  },
+  {
+    "team1": "TBD Home (Round of 32 #7)",
+    "team2": "TBD Away (Round of 32 #7)",
+    "group": "Round of 32",
+    "venue": "",
+    "time_pacific": "06:00 PM",
+    "date_pacific": "2026-06-30"
+  },
+  {
+    "team1": "TBD Home (Round of 32 #8)",
+    "team2": "TBD Away (Round of 32 #8)",
+    "group": "Round of 32",
+    "venue": "",
+    "time_pacific": "09:00 AM",
+    "date_pacific": "2026-07-01"
+  },
+  {
+    "team1": "TBD Home (Round of 32 #9)",
+    "team2": "TBD Away (Round of 32 #9)",
+    "group": "Round of 32",
+    "venue": "",
+    "time_pacific": "01:00 PM",
+    "date_pacific": "2026-07-01"
+  },
+  {
+    "team1": "TBD Home (Round of 32 #10)",
+    "team2": "TBD Away (Round of 32 #10)",
+    "group": "Round of 32",
+    "venue": "",
+    "time_pacific": "05:00 PM",
+    "date_pacific": "2026-07-01"
+  },
+  {
+    "team1": "TBD Home (Round of 32 #11)",
+    "team2": "TBD Away (Round of 32 #11)",
+    "group": "Round of 32",
+    "venue": "",
+    "time_pacific": "12:00 PM",
+    "date_pacific": "2026-07-02"
+  },
+  {
+    "team1": "TBD Home (Round of 32 #12)",
+    "team2": "TBD Away (Round of 32 #12)",
+    "group": "Round of 32",
+    "venue": "",
+    "time_pacific": "04:00 PM",
+    "date_pacific": "2026-07-02"
+  },
+  {
+    "team1": "TBD Home (Round of 32 #13)",
+    "team2": "TBD Away (Round of 32 #13)",
+    "group": "Round of 32",
+    "venue": "",
+    "time_pacific": "08:00 PM",
+    "date_pacific": "2026-07-02"
+  },
+  {
+    "team1": "TBD Home (Round of 32 #14)",
+    "team2": "TBD Away (Round of 32 #14)",
+    "group": "Round of 32",
+    "venue": "",
+    "time_pacific": "11:00 AM",
+    "date_pacific": "2026-07-03"
+  },
+  {
+    "team1": "TBD Home (Round of 32 #15)",
+    "team2": "TBD Away (Round of 32 #15)",
+    "group": "Round of 32",
+    "venue": "",
+    "time_pacific": "03:00 PM",
+    "date_pacific": "2026-07-03"
+  },
+  {
+    "team1": "TBD Home (Round of 32 #16)",
+    "team2": "TBD Away (Round of 32 #16)",
+    "group": "Round of 32",
+    "venue": "",
+    "time_pacific": "06:30 PM",
+    "date_pacific": "2026-07-03"
+  },
+  {
+    "team1": "TBD Home (Round of 16 #1)",
+    "team2": "TBD Away (Round of 16 #1)",
+    "group": "Round of 16",
+    "venue": "",
+    "time_pacific": "10:00 AM",
+    "date_pacific": "2026-07-04"
+  },
+  {
+    "team1": "TBD Home (Round of 16 #2)",
+    "team2": "TBD Away (Round of 16 #2)",
+    "group": "Round of 16",
+    "venue": "",
+    "time_pacific": "02:00 PM",
+    "date_pacific": "2026-07-04"
+  },
+  {
+    "team1": "TBD Home (Round of 16 #3)",
+    "team2": "TBD Away (Round of 16 #3)",
+    "group": "Round of 16",
+    "venue": "",
+    "time_pacific": "01:00 PM",
+    "date_pacific": "2026-07-05"
+  },
+  {
+    "team1": "TBD Home (Round of 16 #4)",
+    "team2": "TBD Away (Round of 16 #4)",
+    "group": "Round of 16",
+    "venue": "",
+    "time_pacific": "05:00 PM",
+    "date_pacific": "2026-07-05"
+  },
+  {
+    "team1": "TBD Home (Round of 16 #5)",
+    "team2": "TBD Away (Round of 16 #5)",
+    "group": "Round of 16",
+    "venue": "",
+    "time_pacific": "12:00 PM",
+    "date_pacific": "2026-07-06"
+  },
+  {
+    "team1": "TBD Home (Round of 16 #6)",
+    "team2": "TBD Away (Round of 16 #6)",
+    "group": "Round of 16",
+    "venue": "",
+    "time_pacific": "05:00 PM",
+    "date_pacific": "2026-07-06"
+  },
+  {
+    "team1": "TBD Home (Round of 16 #7)",
+    "team2": "TBD Away (Round of 16 #7)",
+    "group": "Round of 16",
+    "venue": "",
+    "time_pacific": "09:00 AM",
+    "date_pacific": "2026-07-07"
+  },
+  {
+    "team1": "TBD Home (Round of 16 #8)",
+    "team2": "TBD Away (Round of 16 #8)",
+    "group": "Round of 16",
+    "venue": "",
+    "time_pacific": "01:00 PM",
+    "date_pacific": "2026-07-07"
+  },
+  {
+    "team1": "TBD Home (Quarter-finals #1)",
+    "team2": "TBD Away (Quarter-finals #1)",
+    "group": "Quarter-finals",
+    "venue": "",
+    "time_pacific": "01:00 PM",
+    "date_pacific": "2026-07-09"
+  },
+  {
+    "team1": "TBD Home (Quarter-finals #2)",
+    "team2": "TBD Away (Quarter-finals #2)",
+    "group": "Quarter-finals",
+    "venue": "",
+    "time_pacific": "12:00 PM",
+    "date_pacific": "2026-07-10"
+  },
+  {
+    "team1": "TBD Home (Quarter-finals #3)",
+    "team2": "TBD Away (Quarter-finals #3)",
+    "group": "Quarter-finals",
+    "venue": "",
+    "time_pacific": "02:00 PM",
+    "date_pacific": "2026-07-11"
+  },
+  {
+    "team1": "TBD Home (Quarter-finals #4)",
+    "team2": "TBD Away (Quarter-finals #4)",
+    "group": "Quarter-finals",
+    "venue": "",
+    "time_pacific": "06:00 PM",
+    "date_pacific": "2026-07-11"
+  },
+  {
+    "team1": "TBD Home (Semi-finals #1)",
+    "team2": "TBD Away (Semi-finals #1)",
+    "group": "Semi-finals",
+    "venue": "",
+    "time_pacific": "12:00 PM",
+    "date_pacific": "2026-07-14"
+  },
+  {
+    "team1": "TBD Home (Semi-finals #2)",
+    "team2": "TBD Away (Semi-finals #2)",
+    "group": "Semi-finals",
+    "venue": "",
+    "time_pacific": "12:00 PM",
+    "date_pacific": "2026-07-15"
+  },
+  {
+    "team1": "TBD Home (3rd Place Final #1)",
+    "team2": "TBD Away (3rd Place Final #1)",
+    "group": "3rd Place Final",
+    "venue": "",
+    "time_pacific": "02:00 PM",
+    "date_pacific": "2026-07-18"
+  },
+  {
+    "team1": "TBD Home (Final #1)",
+    "team2": "TBD Away (Final #1)",
+    "group": "Final",
+    "venue": "",
+    "time_pacific": "12:00 PM",
+    "date_pacific": "2026-07-19"
+  }
+]

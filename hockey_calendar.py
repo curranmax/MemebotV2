@@ -7,6 +7,7 @@ import discord
 from discord import app_commands
 import os
 import pickle
+import json
 from datetime import datetime, time, timedelta
 import pytz
 import logging
@@ -53,7 +54,7 @@ class HockeyCalendarManager:
         self.channel_id, self.ical_link = pickle.load(f)
         logging.info('hockey_calendar.load(): channel_id = %s, ical_link = %s', self.channel_id, self.ical_link)
 
-        if self.channel_id is not None and self.ical_link is not None:
+        if self.channel_id is not None:
             self.startDailyCheck()
 
     def save(self):
@@ -140,73 +141,105 @@ class HockeyCalendarManager:
         return await loop.run_in_executor(None, _fetch)
 
     async def dailyCheck(self):
-        # Stops the daily check if channel_id or ical_link is not set.
-        if self.channel_id is None or self.ical_link is None:
+        # Stops the daily check if channel_id is not set.
+        if self.channel_id is None:
             return
 
-        # TODO: Consider changing to the official Google Calendar API in the future (Option 2).
-        # Option 2 would involve using the `google-api-python-client` library. This is more
-        # powerful and allows fetching events from strictly private calendars without generating
-        # a public or secret iCal link. However, it requires setting up a Google Cloud Project,
-        # enabling the Google Calendar API, creating a Service Account, and downloading the JSON
-        # credentials file to use for authentication.
+        now = datetime.now(pytz.timezone('US/Pacific'))
+        pwhl_msg = ""
+        wc_msg = ""
 
+        # Fetch PWHL events if ical_link is set
+        if self.ical_link is not None:
+            try:
+                # Get start of today and end of today in local time
+                start_date = now.replace(hour=0, minute=0, second=0, microsecond=0)
+                end_date = start_date + timedelta(days=1)
+
+                # Log now, start_date, end_date
+                logging.info('dailyCheck(): now = %s, start_date = %s, end_date = %s', now.isoformat(), start_date.isoformat(), end_date.isoformat())
+                
+                # icalevents is synchronous, run it in an executor to avoid blocking the bot
+                loop = asyncio.get_running_loop()
+                cal_events = await loop.run_in_executor(None, lambda: events(url=self.ical_link, start=start_date, end=end_date))
+
+                if cal_events:
+                    # Filter events to ensure they start between start_date (inclusive) and end_date (exclusive)
+                    # This handles potential timezone overlap issues from icalevents returning adjacent day's events.
+                    cal_events = [e for e in cal_events if start_date <= e.start.astimezone(pytz.timezone('US/Pacific')) < end_date]
+
+                if cal_events:
+                    pwhl_msg = "**PWHL Games Today!**\n"
+                    for e in sorted(cal_events, key=lambda x: x.start):
+                        # Log the event
+                        logging.info('dailyCheck(): event = %s', e)
+
+                        event_pt = e.start.astimezone(pytz.timezone('US/Pacific'))
+                        time_str = event_pt.strftime('%I:%M %p')
+                        pwhl_msg += f"- **{e.summary}** at {time_str}"
+
+                        # Add description if it exists (might contain links)
+                        has_yt_link = False
+                        if hasattr(e, 'description') and e.description and e.description.strip():
+                            description = e.description
+                            # Log the full description
+                            logging.info('dailyCheck(): description = %s', description)
+
+                            # Use a regex to find any youtube links in the description. Replace with "[link](<youtube_link>)"
+                            if re.search(r'(https?://(?:www\.)?youtube\.com/watch\?v=[a-zA-Z0-9_-]+)', description):
+                                has_yt_link = True
+                            description = re.sub(r'(https?://(?:www\.)?youtube\.com/watch\?v=[a-zA-Z0-9_-]+)', r'[watch here](<\1>)', description)
+                            pwhl_msg += f" - {description.strip()}"
+                        
+                        if not has_yt_link:
+                            # Check the "The PWHL" youtube channel for a link to this game.
+                            yt_link = await self.get_pwhl_youtube_link(e.summary, event_pt)
+                            logging.info('dailyCheck: get_pwhl_youtube_link(summary = %s, event_pt = %s) -> yt_link = %s', e.summary, event_pt.isoformat(), yt_link)
+                            if yt_link:
+                                pwhl_msg += f" - [watch here](<{yt_link}>)"
+
+                        pwhl_msg += "\n"
+
+            except Exception as e:
+                logging.error(f'Error fetching hockey calendar events: {e}')
+
+        # Fetch FIFA World Cup 2026 matches from the offline schedule
         try:
-            now = datetime.now(pytz.timezone('US/Pacific'))
-            # Get start of today and end of today in local time
-            start_date = now.replace(hour=0, minute=0, second=0, microsecond=0)
-            end_date = start_date + timedelta(days=1)
+            wc_schedule_path = 'data/world_cup_2026_schedule.json'
+            if os.path.exists(wc_schedule_path):
+                with open(wc_schedule_path, 'r', encoding='utf-8') as f:
+                    wc_games = json.load(f)
+                
+                today_str = now.strftime('%Y-%m-%d')
+                today_games = [g for g in wc_games if g['date_pacific'] == today_str]
+                
+                if today_games:
+                    wc_msg = "**FIFA World Cup Games Today!**\n"
+                    for g in today_games:
+                        wc_msg += f"- **{g['team1']}** vs **{g['team2']}** ({g['group']}) at {g['time_pacific']} at {g['venue']}\n"
+            else:
+                logging.warning(f'World Cup schedule file not found at {wc_schedule_path}')
+        except Exception as e:
+            logging.error(f'Error parsing World Cup schedule: {e}')
 
-            # Log now, start_date, end_date
-            logging.info('dailyCheck(): now = %s, start_date = %s, end_date = %s', now.isoformat(), start_date.isoformat(), end_date.isoformat())
-            
-            # icalevents is synchronous, run it in an executor to avoid blocking the bot
-            loop = asyncio.get_running_loop()
-            cal_events = await loop.run_in_executor(None, lambda: events(url=self.ical_link, start=start_date, end=end_date))
+        # Send combined message to Discord channel
+        combined_msg = ""
+        if pwhl_msg:
+            combined_msg += pwhl_msg
+        if wc_msg:
+            if combined_msg:
+                combined_msg += "\n"
+            combined_msg += wc_msg
 
-            if cal_events:
-                # Filter events to ensure they start between start_date (inclusive) and end_date (exclusive)
-                # This handles potential timezone overlap issues from icalevents returning adjacent day's events.
-                cal_events = [e for e in cal_events if start_date <= e.start.astimezone(pytz.timezone('US/Pacific')) < end_date]
-
-            if cal_events:
-                # If there are any events for today, post them to the discord channel.
-                msg = "**PWHL Games Today!**\n"
-                for e in sorted(cal_events, key=lambda x: x.start):
-                    # Log the event
-                    logging.info('dailyCheck(): event = %s', e)
-
-                    event_pt = e.start.astimezone(pytz.timezone('US/Pacific'))
-                    time_str = event_pt.strftime('%I:%M %p')
-                    msg += f"- **{e.summary}** at {time_str}"
-
-                    # Add description if it exists (might contain links)
-                    has_yt_link = False
-                    if hasattr(e, 'description') and e.description and e.description.strip():
-                        description = e.description
-                        # Log the full description
-                        logging.info('dailyCheck(): description = %s', description)
-
-                        # Use a regex to find any youtube links in the description. Replace with "[link](<youtube_link>)"
-                        if re.search(r'(https?://(?:www\.)?youtube\.com/watch\?v=[a-zA-Z0-9_-]+)', description):
-                            has_yt_link = True
-                        description = re.sub(r'(https?://(?:www\.)?youtube\.com/watch\?v=[a-zA-Z0-9_-]+)', r'[watch here](<\1>)', description)
-                        msg += f" - {description.strip()}"
-                    
-                    if not has_yt_link:
-                        # Check the "The PWHL" youtube channel for a link to this game.
-                        yt_link = await self.get_pwhl_youtube_link(e.summary, event_pt)
-                        logging.info('dailyCheck: get_pwhl_youtube_link(summary = %s, event_pt = %s) -> yt_link = %s', e.summary, event_pt.isoformat(), yt_link)
-                        if yt_link:
-                            msg += f" - [watch here](<{yt_link}>)"
-
-                    msg += "\n"
+        if combined_msg:
+            try:
                 channel = self.discord_client.get_channel(self.channel_id)
                 if channel:
-                    await channel.send(msg)
-
-        except Exception as e:
-            logging.error(f'Error fetching hockey calendar events: {e}')
+                    await channel.send(combined_msg)
+                else:
+                    logging.error(f'Could not find Discord channel with ID {self.channel_id}')
+            except Exception as e:
+                logging.error(f'Error sending daily calendar message to channel {self.channel_id}: {e}')
 
         return EC.Event(self.getNextDailyCheckTime(), self.dailyCheck)
 
