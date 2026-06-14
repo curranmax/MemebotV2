@@ -217,6 +217,22 @@ class HockeyCalendarManager:
                     wc_msg = "**FIFA World Cup Games Today!**\n"
                     for g in today_games:
                         wc_msg += f"- **{g['team1']}** vs **{g['team2']}** ({g['group']}) at {g['time_pacific']} at {g['venue']}\n"
+
+                    # Check if today is the last day of any round
+                    round_last_dates = {}
+                    for g in wc_games:
+                        g_group = g['group']
+                        r_name = "Group Stage" if g_group.startswith("Group") else g_group
+                        
+                        g_date = g['date_pacific']
+                        if r_name not in round_last_dates or g_date > round_last_dates[r_name]:
+                            round_last_dates[r_name] = g_date
+                    
+                    rounds_to_remind = ["Group Stage", "Round of 32", "Round of 16", "Quarter-finals", "Semi-finals"]
+                    for r_name in rounds_to_remind:
+                        if round_last_dates.get(r_name) == today_str:
+                            wc_msg += f"\n**Reminder:** Today is the last day of the {r_name}. Please run `python scripts/fetch_world_cup_schedule.py` to fetch the updated schedule for the next round!\n"
+                            break
             else:
                 logging.warning(f'World Cup schedule file not found at {wc_schedule_path}')
         except Exception as e:
