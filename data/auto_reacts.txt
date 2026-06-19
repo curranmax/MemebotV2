@@ -35,6 +35,7 @@
 \b(?i:j+u+n+k+r+a+t+)\b	💣
 \b(?i:m+e+i+)\b	🧊
 \b(?i:r+e+a+p+e+r+)\b	☠️
+\b(?i:s+h+i+o+n+)\b	🐯
 \b(?i:s+i+e+rr+a+)\b	🦋
 \b(?i:s+o+j+o+u+r+n+)\b	🍁
 \b(?i:s+o+l+d+i+e+r+:?( 76)?)\b	🪖
