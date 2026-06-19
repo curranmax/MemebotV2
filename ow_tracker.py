@@ -13,7 +13,7 @@ import random
 import re
 import edit_distance
 
-# Move this data to firebase
+# TODO Have a script that automatically updates these
 MAPS = [
     # Escort
     'Circuit Royal',
@@ -31,6 +31,7 @@ MAPS = [
     'Hollywood',
     'King\'s Row',
     'Midtown',
+    'Neon Junction',
     'Numbani',
     'Paraíso',
 
@@ -94,6 +95,7 @@ HEROES = {
     'Mei': DPS,
     'Pharah': DPS,
     'Reaper': DPS,
+    'Shion': DPS,
     'Sierra': DPS,
     'Soldier: 76': DPS,
     'Sojourn': DPS,
