@@ -40,7 +40,6 @@ GROUND_TO_VENUE = {
 }
 
 def parse_openfootball_time(date_str, time_str):
-    # Matches patterns like "13:00 UTC-6", "16:30 UTC-4", or "12:00 UTC"
     match = re.match(r'^(\d{2}):(\d{2})\s+UTC(?:([+-]\d+))?$', time_str)
     if not match:
         try:
@@ -58,21 +57,20 @@ def parse_openfootball_time(date_str, time_str):
     utc_dt = dt - timedelta(hours=offset)
     return utc_dt.replace(tzinfo=pytz.utc)
 
-def fetch_and_parse_schedule():
-    url = "https://raw.githubusercontent.com/openfootball/worldcup.json/master/2026/worldcup.json"
-    print(f"Downloading schedule from {url}...")
-    
-    req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
-    with urllib.request.urlopen(req) as response:
+def test():
+    openfootball_url = "https://raw.githubusercontent.com/openfootball/worldcup.json/master/2026/worldcup.json"
+    print(f"Downloading openfootball schedule from {openfootball_url}...")
+    req_of = urllib.request.Request(openfootball_url, headers={'User-Agent': 'Mozilla/5.0'})
+    with urllib.request.urlopen(req_of) as response:
         of_data = json.loads(response.read().decode('utf-8'))
 
-    print("Parsing matches...")
     parsed_matches = []
     for of_match in of_data["matches"]:
         of_date = of_match["date"]
         of_time = of_match["time"]
         utc_dt = parse_openfootball_time(of_date, of_time)
 
+        # Decide team names
         team1 = of_match["team1"].strip()
         team2 = of_match["team2"].strip()
 
@@ -104,27 +102,13 @@ def fetch_and_parse_schedule():
             "venue": venue,
             "time_pacific": time_pacific,
             "date_pacific": date_pacific,
-            "datetime_utc": utc_dt.isoformat()
+            "num": of_match.get("num", 0)
         })
 
-    print(f"Successfully parsed {len(parsed_matches)} matches.")
-    
-    # Sort matches by kickoff time
-    parsed_matches.sort(key=lambda m: m["datetime_utc"])
-
-    # Remove the temporary UTC datetime objects before saving to JSON
-    for m in parsed_matches:
-        del m["datetime_utc"]
-
-    # Write output to file
-    out_dir = "data"
-    os.makedirs(out_dir, exist_ok=True)
-    out_path = os.path.join(out_dir, "world_cup_2026_schedule.json")
-    
-    with open(out_path, "w", encoding="utf-8") as f:
-        json.dump(parsed_matches, f, indent=2, ensure_ascii=False)
-        
-    print(f"Schedule saved to {out_path}")
+    print(f"Total matches: {len(parsed_matches)}")
+    r32 = [m for m in parsed_matches if m["group"] == "Round of 32"]
+    for m in r32:
+        print(f"#{m['num'] - 72}: {m['team1']} vs {m['team2']} at {m['venue']} on {m['date_pacific']} {m['time_pacific']}")
 
 if __name__ == "__main__":
-    fetch_and_parse_schedule()
+    test()

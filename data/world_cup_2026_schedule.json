@@ -3,7 +3,7 @@
     "team1": "Mexico",
     "team2": "South Africa",
     "group": "Group A",
-    "venue": "Estadio Azteca, Mexico City",
+    "venue": "Estadio Banorte, Mexico City",
     "time_pacific": "12:00 PM",
     "date_pacific": "2026-06-11"
   },
@@ -11,7 +11,7 @@
     "team1": "South Korea",
     "team2": "Czech Republic",
     "group": "Group A",
-    "venue": "Estadio Akron, Guadalajara",
+    "venue": "Estadio Akron, Zapopan",
     "time_pacific": "07:00 PM",
     "date_pacific": "2026-06-11"
   },
@@ -75,7 +75,7 @@
     "team1": "Netherlands",
     "team2": "Japan",
     "group": "Group F",
-    "venue": "AT&T Stadium, Dallas",
+    "venue": "AT&T Stadium, Arlington",
     "time_pacific": "01:00 PM",
     "date_pacific": "2026-06-14"
   },
@@ -115,7 +115,7 @@
     "team1": "Saudi Arabia",
     "team2": "Uruguay",
     "group": "Group H",
-    "venue": "Hard Rock Stadium, Miami",
+    "venue": "Hard Rock Stadium, Miami Gardens",
     "time_pacific": "03:00 PM",
     "date_pacific": "2026-06-15"
   },
@@ -123,7 +123,7 @@
     "team1": "Iran",
     "team2": "New Zealand",
     "group": "Group G",
-    "venue": "SoFi Stadium, Los Angeles",
+    "venue": "SoFi Stadium, Inglewood",
     "time_pacific": "06:00 PM",
     "date_pacific": "2026-06-15"
   },
@@ -131,7 +131,7 @@
     "team1": "France",
     "team2": "Senegal",
     "group": "Group I",
-    "venue": "MetLife Stadium, New York New Jersey",
+    "venue": "MetLife Stadium, East Rutherford",
     "time_pacific": "12:00 PM",
     "date_pacific": "2026-06-16"
   },
@@ -155,7 +155,7 @@
     "team1": "Austria",
     "team2": "Jordan",
     "group": "Group J",
-    "venue": "Levi's Stadium, San Francisco Bay Area",
+    "venue": "Levi's Stadium, Santa Clara",
     "time_pacific": "09:00 PM",
     "date_pacific": "2026-06-16"
   },
@@ -171,7 +171,7 @@
     "team1": "England",
     "team2": "Croatia",
     "group": "Group L",
-    "venue": "AT&T Stadium, Dallas",
+    "venue": "AT&T Stadium, Arlington",
     "time_pacific": "01:00 PM",
     "date_pacific": "2026-06-17"
   },
@@ -187,7 +187,7 @@
     "team1": "Uzbekistan",
     "team2": "Colombia",
     "group": "Group K",
-    "venue": "Estadio Azteca, Mexico City",
+    "venue": "Estadio Banorte, Mexico City",
     "time_pacific": "07:00 PM",
     "date_pacific": "2026-06-17"
   },
@@ -203,7 +203,7 @@
     "team1": "Switzerland",
     "team2": "Bosnia & Herzegovina",
     "group": "Group B",
-    "venue": "SoFi Stadium, Los Angeles",
+    "venue": "SoFi Stadium, Inglewood",
     "time_pacific": "12:00 PM",
     "date_pacific": "2026-06-18"
   },
@@ -219,7 +219,7 @@
     "team1": "Mexico",
     "team2": "South Korea",
     "group": "Group A",
-    "venue": "Estadio Akron, Guadalajara",
+    "venue": "Estadio Akron, Zapopan",
     "time_pacific": "06:00 PM",
     "date_pacific": "2026-06-18"
   },
@@ -251,7 +251,7 @@
     "team1": "Türkiye",
     "team2": "Paraguay",
     "group": "Group D",
-    "venue": "Levi's Stadium, San Francisco Bay Area",
+    "venue": "Levi's Stadium, Santa Clara",
     "time_pacific": "08:00 PM",
     "date_pacific": "2026-06-19"
   },
@@ -299,7 +299,7 @@
     "team1": "Belgium",
     "team2": "Iran",
     "group": "Group G",
-    "venue": "SoFi Stadium, Los Angeles",
+    "venue": "SoFi Stadium, Inglewood",
     "time_pacific": "12:00 PM",
     "date_pacific": "2026-06-21"
   },
@@ -307,7 +307,7 @@
     "team1": "Uruguay",
     "team2": "Cape Verde",
     "group": "Group H",
-    "venue": "Hard Rock Stadium, Miami",
+    "venue": "Hard Rock Stadium, Miami Gardens",
     "time_pacific": "03:00 PM",
     "date_pacific": "2026-06-21"
   },
@@ -323,7 +323,7 @@
     "team1": "Argentina",
     "team2": "Austria",
     "group": "Group J",
-    "venue": "AT&T Stadium, Dallas",
+    "venue": "AT&T Stadium, Arlington",
     "time_pacific": "10:00 AM",
     "date_pacific": "2026-06-22"
   },
@@ -339,7 +339,7 @@
     "team1": "Norway",
     "team2": "Senegal",
     "group": "Group I",
-    "venue": "MetLife Stadium, New York New Jersey",
+    "venue": "MetLife Stadium, East Rutherford",
     "time_pacific": "05:00 PM",
     "date_pacific": "2026-06-22"
   },
@@ -347,7 +347,7 @@
     "team1": "Jordan",
     "team2": "Algeria",
     "group": "Group J",
-    "venue": "Levi's Stadium, San Francisco Bay Area",
+    "venue": "Levi's Stadium, Santa Clara",
     "time_pacific": "08:00 PM",
     "date_pacific": "2026-06-22"
   },
@@ -379,7 +379,7 @@
     "team1": "Colombia",
     "team2": "DR Congo",
     "group": "Group K",
-    "venue": "Estadio Akron, Guadalajara",
+    "venue": "Estadio Akron, Zapopan",
     "time_pacific": "07:00 PM",
     "date_pacific": "2026-06-23"
   },
@@ -400,6 +400,14 @@
     "date_pacific": "2026-06-24"
   },
   {
+    "team1": "Scotland",
+    "team2": "Brazil",
+    "group": "Group C",
+    "venue": "Hard Rock Stadium, Miami Gardens",
+    "time_pacific": "03:00 PM",
+    "date_pacific": "2026-06-24"
+  },
+  {
     "team1": "Morocco",
     "team2": "Haiti",
     "group": "Group C",
@@ -408,11 +416,11 @@
     "date_pacific": "2026-06-24"
   },
   {
-    "team1": "Scotland",
-    "team2": "Brazil",
-    "group": "Group C",
-    "venue": "Hard Rock Stadium, Miami",
-    "time_pacific": "03:00 PM",
+    "team1": "Czech Republic",
+    "team2": "Mexico",
+    "group": "Group A",
+    "venue": "Estadio Banorte, Mexico City",
+    "time_pacific": "06:00 PM",
     "date_pacific": "2026-06-24"
   },
   {
@@ -420,14 +428,6 @@
     "team2": "South Korea",
     "group": "Group A",
     "venue": "Estadio BBVA, Monterrey",
-    "time_pacific": "06:00 PM",
-    "date_pacific": "2026-06-24"
-  },
-  {
-    "team1": "Czech Republic",
-    "team2": "Mexico",
-    "group": "Group A",
-    "venue": "Estadio Azteca, Mexico City",
     "time_pacific": "06:00 PM",
     "date_pacific": "2026-06-24"
   },
@@ -443,8 +443,16 @@
     "team1": "Ecuador",
     "team2": "Germany",
     "group": "Group E",
-    "venue": "MetLife Stadium, New York New Jersey",
+    "venue": "MetLife Stadium, East Rutherford",
     "time_pacific": "01:00 PM",
+    "date_pacific": "2026-06-25"
+  },
+  {
+    "team1": "Japan",
+    "team2": "Sweden",
+    "group": "Group F",
+    "venue": "AT&T Stadium, Arlington",
+    "time_pacific": "04:00 PM",
     "date_pacific": "2026-06-25"
   },
   {
@@ -456,26 +464,18 @@
     "date_pacific": "2026-06-25"
   },
   {
-    "team1": "Japan",
-    "team2": "Sweden",
-    "group": "Group F",
-    "venue": "AT&T Stadium, Dallas",
-    "time_pacific": "04:00 PM",
+    "team1": "Paraguay",
+    "team2": "Australia",
+    "group": "Group D",
+    "venue": "Levi's Stadium, Santa Clara",
+    "time_pacific": "07:00 PM",
     "date_pacific": "2026-06-25"
   },
   {
     "team1": "Paraguay",
     "team2": "Australia",
     "group": "Group D",
-    "venue": "Levi's Stadium, San Francisco Bay Area",
-    "time_pacific": "07:00 PM",
-    "date_pacific": "2026-06-25"
-  },
-  {
-    "team1": "Türkiye",
-    "team2": "United States",
-    "group": "Group D",
-    "venue": "SoFi Stadium, Los Angeles",
+    "venue": "Levi's Stadium, Santa Clara",
     "time_pacific": "07:00 PM",
     "date_pacific": "2026-06-25"
   },
@@ -507,7 +507,7 @@
     "team1": "Uruguay",
     "team2": "Spain",
     "group": "Group H",
-    "venue": "Estadio Akron, Guadalajara",
+    "venue": "Estadio Akron, Zapopan",
     "time_pacific": "05:00 PM",
     "date_pacific": "2026-06-26"
   },
@@ -528,6 +528,14 @@
     "date_pacific": "2026-06-26"
   },
   {
+    "team1": "Panama",
+    "team2": "England",
+    "group": "Group L",
+    "venue": "MetLife Stadium, East Rutherford",
+    "time_pacific": "02:00 PM",
+    "date_pacific": "2026-06-27"
+  },
+  {
     "team1": "Croatia",
     "team2": "Ghana",
     "group": "Group L",
@@ -536,18 +544,10 @@
     "date_pacific": "2026-06-27"
   },
   {
-    "team1": "Panama",
-    "team2": "England",
-    "group": "Group L",
-    "venue": "MetLife Stadium, New York New Jersey",
-    "time_pacific": "02:00 PM",
-    "date_pacific": "2026-06-27"
-  },
-  {
     "team1": "Colombia",
     "team2": "Portugal",
     "group": "Group K",
-    "venue": "Hard Rock Stadium, Miami",
+    "venue": "Hard Rock Stadium, Miami Gardens",
     "time_pacific": "04:30 PM",
     "date_pacific": "2026-06-27"
   },
@@ -571,63 +571,63 @@
     "team1": "Jordan",
     "team2": "Argentina",
     "group": "Group J",
-    "venue": "AT&T Stadium, Dallas",
+    "venue": "AT&T Stadium, Arlington",
     "time_pacific": "07:00 PM",
     "date_pacific": "2026-06-27"
   },
   {
-    "team1": "TBD Home (Round of 32 #1)",
-    "team2": "TBD Away (Round of 32 #1)",
+    "team1": "South Africa",
+    "team2": "Canada",
     "group": "Round of 32",
-    "venue": "",
+    "venue": "SoFi Stadium, Inglewood",
     "time_pacific": "12:00 PM",
     "date_pacific": "2026-06-28"
   },
   {
-    "team1": "TBD Home (Round of 32 #2)",
-    "team2": "TBD Away (Round of 32 #2)",
+    "team1": "Brazil",
+    "team2": "Japan",
     "group": "Round of 32",
-    "venue": "",
+    "venue": "NRG Stadium, Houston",
     "time_pacific": "10:00 AM",
     "date_pacific": "2026-06-29"
   },
   {
-    "team1": "TBD Home (Round of 32 #3)",
-    "team2": "TBD Away (Round of 32 #3)",
+    "team1": "Germany",
+    "team2": "Paraguay",
     "group": "Round of 32",
-    "venue": "",
+    "venue": "Gillette Stadium, Boston",
     "time_pacific": "01:30 PM",
     "date_pacific": "2026-06-29"
   },
   {
-    "team1": "TBD Home (Round of 32 #4)",
-    "team2": "TBD Away (Round of 32 #4)",
+    "team1": "Netherlands",
+    "team2": "Morocco",
     "group": "Round of 32",
-    "venue": "",
+    "venue": "Estadio BBVA, Monterrey",
     "time_pacific": "06:00 PM",
     "date_pacific": "2026-06-29"
   },
   {
-    "team1": "TBD Home (Round of 32 #5)",
-    "team2": "TBD Away (Round of 32 #5)",
+    "team1": "Ivory Coast",
+    "team2": "Norway",
     "group": "Round of 32",
-    "venue": "",
+    "venue": "AT&T Stadium, Arlington",
     "time_pacific": "10:00 AM",
     "date_pacific": "2026-06-30"
   },
   {
-    "team1": "TBD Home (Round of 32 #6)",
-    "team2": "TBD Away (Round of 32 #6)",
+    "team1": "France",
+    "team2": "Sweden",
     "group": "Round of 32",
-    "venue": "",
+    "venue": "MetLife Stadium, East Rutherford",
     "time_pacific": "02:00 PM",
     "date_pacific": "2026-06-30"
   },
   {
-    "team1": "TBD Home (Round of 32 #7)",
+    "team1": "Mexico",
     "team2": "TBD Away (Round of 32 #7)",
     "group": "Round of 32",
-    "venue": "",
+    "venue": "Estadio Banorte, Mexico City",
     "time_pacific": "06:00 PM",
     "date_pacific": "2026-06-30"
   },
@@ -635,7 +635,7 @@
     "team1": "TBD Home (Round of 32 #8)",
     "team2": "TBD Away (Round of 32 #8)",
     "group": "Round of 32",
-    "venue": "",
+    "venue": "Mercedes-Benz Stadium, Atlanta",
     "time_pacific": "09:00 AM",
     "date_pacific": "2026-07-01"
   },
@@ -643,55 +643,55 @@
     "team1": "TBD Home (Round of 32 #9)",
     "team2": "TBD Away (Round of 32 #9)",
     "group": "Round of 32",
-    "venue": "",
+    "venue": "Lumen Field, Seattle",
     "time_pacific": "01:00 PM",
     "date_pacific": "2026-07-01"
   },
   {
-    "team1": "TBD Home (Round of 32 #10)",
-    "team2": "TBD Away (Round of 32 #10)",
+    "team1": "United States",
+    "team2": "Bosnia & Herzegovina",
     "group": "Round of 32",
-    "venue": "",
+    "venue": "Levi's Stadium, Santa Clara",
     "time_pacific": "05:00 PM",
     "date_pacific": "2026-07-01"
-  },
-  {
-    "team1": "TBD Home (Round of 32 #11)",
-    "team2": "TBD Away (Round of 32 #11)",
-    "group": "Round of 32",
-    "venue": "",
-    "time_pacific": "12:00 PM",
-    "date_pacific": "2026-07-02"
   },
   {
     "team1": "TBD Home (Round of 32 #12)",
     "team2": "TBD Away (Round of 32 #12)",
     "group": "Round of 32",
-    "venue": "",
+    "venue": "SoFi Stadium, Inglewood",
+    "time_pacific": "12:00 PM",
+    "date_pacific": "2026-07-02"
+  },
+  {
+    "team1": "TBD Home (Round of 32 #11)",
+    "team2": "TBD Away (Round of 32 #11)",
+    "group": "Round of 32",
+    "venue": "BMO Field, Toronto",
     "time_pacific": "04:00 PM",
     "date_pacific": "2026-07-02"
   },
   {
-    "team1": "TBD Home (Round of 32 #13)",
+    "team1": "Switzerland",
     "team2": "TBD Away (Round of 32 #13)",
     "group": "Round of 32",
-    "venue": "",
+    "venue": "BC Place, Vancouver",
     "time_pacific": "08:00 PM",
     "date_pacific": "2026-07-02"
   },
   {
-    "team1": "TBD Home (Round of 32 #14)",
-    "team2": "TBD Away (Round of 32 #14)",
+    "team1": "Australia",
+    "team2": "Egypt",
     "group": "Round of 32",
-    "venue": "",
+    "venue": "AT&T Stadium, Arlington",
     "time_pacific": "11:00 AM",
     "date_pacific": "2026-07-03"
   },
   {
-    "team1": "TBD Home (Round of 32 #15)",
-    "team2": "TBD Away (Round of 32 #15)",
+    "team1": "Argentina",
+    "team2": "Cape Verde",
     "group": "Round of 32",
-    "venue": "",
+    "venue": "Hard Rock Stadium, Miami Gardens",
     "time_pacific": "03:00 PM",
     "date_pacific": "2026-07-03"
   },
@@ -699,135 +699,135 @@
     "team1": "TBD Home (Round of 32 #16)",
     "team2": "TBD Away (Round of 32 #16)",
     "group": "Round of 32",
-    "venue": "",
+    "venue": "Arrowhead Stadium, Kansas City",
     "time_pacific": "06:30 PM",
     "date_pacific": "2026-07-03"
   },
   {
-    "team1": "TBD Home (Round of 16 #1)",
-    "team2": "TBD Away (Round of 16 #1)",
+    "team1": "W73",
+    "team2": "W75",
     "group": "Round of 16",
-    "venue": "",
+    "venue": "NRG Stadium, Houston",
     "time_pacific": "10:00 AM",
     "date_pacific": "2026-07-04"
   },
   {
-    "team1": "TBD Home (Round of 16 #2)",
-    "team2": "TBD Away (Round of 16 #2)",
+    "team1": "W74",
+    "team2": "W77",
     "group": "Round of 16",
-    "venue": "",
+    "venue": "Lincoln Financial Field, Philadelphia",
     "time_pacific": "02:00 PM",
     "date_pacific": "2026-07-04"
   },
   {
-    "team1": "TBD Home (Round of 16 #3)",
-    "team2": "TBD Away (Round of 16 #3)",
+    "team1": "W76",
+    "team2": "W78",
     "group": "Round of 16",
-    "venue": "",
+    "venue": "MetLife Stadium, East Rutherford",
     "time_pacific": "01:00 PM",
     "date_pacific": "2026-07-05"
   },
   {
-    "team1": "TBD Home (Round of 16 #4)",
-    "team2": "TBD Away (Round of 16 #4)",
+    "team1": "W79",
+    "team2": "W80",
     "group": "Round of 16",
-    "venue": "",
+    "venue": "Estadio Banorte, Mexico City",
     "time_pacific": "05:00 PM",
     "date_pacific": "2026-07-05"
   },
   {
-    "team1": "TBD Home (Round of 16 #5)",
-    "team2": "TBD Away (Round of 16 #5)",
+    "team1": "W83",
+    "team2": "W84",
     "group": "Round of 16",
-    "venue": "",
+    "venue": "AT&T Stadium, Arlington",
     "time_pacific": "12:00 PM",
     "date_pacific": "2026-07-06"
   },
   {
-    "team1": "TBD Home (Round of 16 #6)",
-    "team2": "TBD Away (Round of 16 #6)",
+    "team1": "W81",
+    "team2": "W82",
     "group": "Round of 16",
-    "venue": "",
+    "venue": "Lumen Field, Seattle",
     "time_pacific": "05:00 PM",
     "date_pacific": "2026-07-06"
   },
   {
-    "team1": "TBD Home (Round of 16 #7)",
-    "team2": "TBD Away (Round of 16 #7)",
+    "team1": "W86",
+    "team2": "W88",
     "group": "Round of 16",
-    "venue": "",
+    "venue": "Mercedes-Benz Stadium, Atlanta",
     "time_pacific": "09:00 AM",
     "date_pacific": "2026-07-07"
   },
   {
-    "team1": "TBD Home (Round of 16 #8)",
-    "team2": "TBD Away (Round of 16 #8)",
+    "team1": "W85",
+    "team2": "W87",
     "group": "Round of 16",
-    "venue": "",
+    "venue": "BC Place, Vancouver",
     "time_pacific": "01:00 PM",
     "date_pacific": "2026-07-07"
   },
   {
-    "team1": "TBD Home (Quarter-finals #1)",
-    "team2": "TBD Away (Quarter-finals #1)",
-    "group": "Quarter-finals",
-    "venue": "",
+    "team1": "W89",
+    "team2": "W90",
+    "group": "Group Stage",
+    "venue": "Gillette Stadium, Boston",
     "time_pacific": "01:00 PM",
     "date_pacific": "2026-07-09"
   },
   {
-    "team1": "TBD Home (Quarter-finals #2)",
-    "team2": "TBD Away (Quarter-finals #2)",
-    "group": "Quarter-finals",
-    "venue": "",
+    "team1": "W93",
+    "team2": "W94",
+    "group": "Group Stage",
+    "venue": "SoFi Stadium, Inglewood",
     "time_pacific": "12:00 PM",
     "date_pacific": "2026-07-10"
   },
   {
-    "team1": "TBD Home (Quarter-finals #3)",
-    "team2": "TBD Away (Quarter-finals #3)",
-    "group": "Quarter-finals",
-    "venue": "",
+    "team1": "W91",
+    "team2": "W92",
+    "group": "Group Stage",
+    "venue": "Hard Rock Stadium, Miami Gardens",
     "time_pacific": "02:00 PM",
     "date_pacific": "2026-07-11"
   },
   {
-    "team1": "TBD Home (Quarter-finals #4)",
-    "team2": "TBD Away (Quarter-finals #4)",
-    "group": "Quarter-finals",
-    "venue": "",
+    "team1": "W95",
+    "team2": "W96",
+    "group": "Group Stage",
+    "venue": "Arrowhead Stadium, Kansas City",
     "time_pacific": "06:00 PM",
     "date_pacific": "2026-07-11"
   },
   {
-    "team1": "TBD Home (Semi-finals #1)",
-    "team2": "TBD Away (Semi-finals #1)",
-    "group": "Semi-finals",
-    "venue": "",
+    "team1": "W97",
+    "team2": "W98",
+    "group": "Group Stage",
+    "venue": "AT&T Stadium, Arlington",
     "time_pacific": "12:00 PM",
     "date_pacific": "2026-07-14"
   },
   {
-    "team1": "TBD Home (Semi-finals #2)",
-    "team2": "TBD Away (Semi-finals #2)",
-    "group": "Semi-finals",
-    "venue": "",
+    "team1": "W99",
+    "team2": "W100",
+    "group": "Group Stage",
+    "venue": "Mercedes-Benz Stadium, Atlanta",
     "time_pacific": "12:00 PM",
     "date_pacific": "2026-07-15"
   },
   {
-    "team1": "TBD Home (3rd Place Final #1)",
-    "team2": "TBD Away (3rd Place Final #1)",
-    "group": "3rd Place Final",
-    "venue": "",
+    "team1": "L101",
+    "team2": "L102",
+    "group": "Group Stage",
+    "venue": "Hard Rock Stadium, Miami Gardens",
     "time_pacific": "02:00 PM",
     "date_pacific": "2026-07-18"
   },
   {
-    "team1": "TBD Home (Final #1)",
-    "team2": "TBD Away (Final #1)",
+    "team1": "W101",
+    "team2": "W102",
     "group": "Final",
-    "venue": "",
+    "venue": "MetLife Stadium, East Rutherford",
     "time_pacific": "12:00 PM",
     "date_pacific": "2026-07-19"
   }
