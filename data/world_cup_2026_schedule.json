@@ -24,7 +24,7 @@
     "date_pacific": "2026-06-12"
   },
   {
-    "team1": "United States",
+    "team1": "USA",
     "team2": "Paraguay",
     "group": "Group D",
     "venue": "SoFi Stadium, Inglewood",
@@ -57,7 +57,7 @@
   },
   {
     "team1": "Australia",
-    "team2": "Türkiye",
+    "team2": "Turkey",
     "group": "Group D",
     "venue": "BC Place, Vancouver",
     "time_pacific": "09:00 PM",
@@ -224,7 +224,7 @@
     "date_pacific": "2026-06-18"
   },
   {
-    "team1": "United States",
+    "team1": "USA",
     "team2": "Australia",
     "group": "Group D",
     "venue": "Lumen Field, Seattle",
@@ -248,7 +248,7 @@
     "date_pacific": "2026-06-19"
   },
   {
-    "team1": "Türkiye",
+    "team1": "Turkey",
     "team2": "Paraguay",
     "group": "Group D",
     "venue": "Levi's Stadium, Santa Clara",
@@ -464,10 +464,10 @@
     "date_pacific": "2026-06-25"
   },
   {
-    "team1": "Paraguay",
-    "team2": "Australia",
+    "team1": "Turkey",
+    "team2": "USA",
     "group": "Group D",
-    "venue": "Levi's Stadium, Santa Clara",
+    "venue": "SoFi Stadium, Inglewood",
     "time_pacific": "07:00 PM",
     "date_pacific": "2026-06-25"
   },
@@ -625,30 +625,30 @@
   },
   {
     "team1": "Mexico",
-    "team2": "TBD Away (Round of 32 #7)",
+    "team2": "Ecuador",
     "group": "Round of 32",
     "venue": "Estadio Banorte, Mexico City",
     "time_pacific": "06:00 PM",
     "date_pacific": "2026-06-30"
   },
   {
-    "team1": "TBD Home (Round of 32 #8)",
-    "team2": "TBD Away (Round of 32 #8)",
+    "team1": "England",
+    "team2": "DR Congo",
     "group": "Round of 32",
     "venue": "Mercedes-Benz Stadium, Atlanta",
     "time_pacific": "09:00 AM",
     "date_pacific": "2026-07-01"
   },
   {
-    "team1": "TBD Home (Round of 32 #9)",
-    "team2": "TBD Away (Round of 32 #9)",
+    "team1": "Belgium",
+    "team2": "Senegal",
     "group": "Round of 32",
     "venue": "Lumen Field, Seattle",
     "time_pacific": "01:00 PM",
     "date_pacific": "2026-07-01"
   },
   {
-    "team1": "United States",
+    "team1": "USA",
     "team2": "Bosnia & Herzegovina",
     "group": "Round of 32",
     "venue": "Levi's Stadium, Santa Clara",
@@ -656,16 +656,16 @@
     "date_pacific": "2026-07-01"
   },
   {
-    "team1": "TBD Home (Round of 32 #12)",
-    "team2": "TBD Away (Round of 32 #12)",
+    "team1": "Spain",
+    "team2": "Austria",
     "group": "Round of 32",
     "venue": "SoFi Stadium, Inglewood",
     "time_pacific": "12:00 PM",
     "date_pacific": "2026-07-02"
   },
   {
-    "team1": "TBD Home (Round of 32 #11)",
-    "team2": "TBD Away (Round of 32 #11)",
+    "team1": "Portugal",
+    "team2": "Croatia",
     "group": "Round of 32",
     "venue": "BMO Field, Toronto",
     "time_pacific": "04:00 PM",
@@ -673,7 +673,7 @@
   },
   {
     "team1": "Switzerland",
-    "team2": "TBD Away (Round of 32 #13)",
+    "team2": "Algeria",
     "group": "Round of 32",
     "venue": "BC Place, Vancouver",
     "time_pacific": "08:00 PM",
@@ -696,104 +696,104 @@
     "date_pacific": "2026-07-03"
   },
   {
-    "team1": "TBD Home (Round of 32 #16)",
-    "team2": "TBD Away (Round of 32 #16)",
+    "team1": "Colombia",
+    "team2": "Ghana",
     "group": "Round of 32",
     "venue": "Arrowhead Stadium, Kansas City",
     "time_pacific": "06:30 PM",
     "date_pacific": "2026-07-03"
   },
   {
-    "team1": "W73",
-    "team2": "W75",
+    "team1": "Canada",
+    "team2": "Morocco",
     "group": "Round of 16",
     "venue": "NRG Stadium, Houston",
     "time_pacific": "10:00 AM",
     "date_pacific": "2026-07-04"
   },
   {
-    "team1": "W74",
-    "team2": "W77",
+    "team1": "Paraguay",
+    "team2": "France",
     "group": "Round of 16",
     "venue": "Lincoln Financial Field, Philadelphia",
     "time_pacific": "02:00 PM",
     "date_pacific": "2026-07-04"
   },
   {
-    "team1": "W76",
-    "team2": "W78",
+    "team1": "Brazil",
+    "team2": "Norway",
     "group": "Round of 16",
     "venue": "MetLife Stadium, East Rutherford",
     "time_pacific": "01:00 PM",
     "date_pacific": "2026-07-05"
   },
   {
-    "team1": "W79",
-    "team2": "W80",
+    "team1": "Mexico",
+    "team2": "England",
     "group": "Round of 16",
     "venue": "Estadio Banorte, Mexico City",
     "time_pacific": "05:00 PM",
     "date_pacific": "2026-07-05"
   },
   {
-    "team1": "W83",
-    "team2": "W84",
+    "team1": "Portugal",
+    "team2": "Spain",
     "group": "Round of 16",
     "venue": "AT&T Stadium, Arlington",
     "time_pacific": "12:00 PM",
     "date_pacific": "2026-07-06"
   },
   {
-    "team1": "W81",
-    "team2": "W82",
+    "team1": "USA",
+    "team2": "Belgium",
     "group": "Round of 16",
     "venue": "Lumen Field, Seattle",
     "time_pacific": "05:00 PM",
     "date_pacific": "2026-07-06"
   },
   {
-    "team1": "W86",
-    "team2": "W88",
+    "team1": "Argentina",
+    "team2": "Egypt",
     "group": "Round of 16",
     "venue": "Mercedes-Benz Stadium, Atlanta",
     "time_pacific": "09:00 AM",
     "date_pacific": "2026-07-07"
   },
   {
-    "team1": "W85",
-    "team2": "W87",
+    "team1": "Switzerland",
+    "team2": "Colombia",
     "group": "Round of 16",
     "venue": "BC Place, Vancouver",
     "time_pacific": "01:00 PM",
     "date_pacific": "2026-07-07"
   },
   {
-    "team1": "W89",
-    "team2": "W90",
+    "team1": "France",
+    "team2": "Morocco",
     "group": "Group Stage",
     "venue": "Gillette Stadium, Boston",
     "time_pacific": "01:00 PM",
     "date_pacific": "2026-07-09"
   },
   {
-    "team1": "W93",
-    "team2": "W94",
+    "team1": "Spain",
+    "team2": "Belgium",
     "group": "Group Stage",
     "venue": "SoFi Stadium, Inglewood",
     "time_pacific": "12:00 PM",
     "date_pacific": "2026-07-10"
   },
   {
-    "team1": "W91",
-    "team2": "W92",
+    "team1": "Norway",
+    "team2": "England",
     "group": "Group Stage",
     "venue": "Hard Rock Stadium, Miami Gardens",
     "time_pacific": "02:00 PM",
     "date_pacific": "2026-07-11"
   },
   {
-    "team1": "W95",
-    "team2": "W96",
+    "team1": "Argentina",
+    "team2": "Switzerland",
     "group": "Group Stage",
     "venue": "Arrowhead Stadium, Kansas City",
     "time_pacific": "06:00 PM",
