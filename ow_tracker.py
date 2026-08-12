@@ -67,6 +67,7 @@ ROLES = [TANK, DPS, SUPPORT]
 HEROES = {
     # Tanks
     'Domina': TANK,
+    'D.Mon': TANK,
     'D.Va': TANK,
     'Doomfist': TANK,
     'Hazard': TANK,
