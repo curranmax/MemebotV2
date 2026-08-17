@@ -13,558 +13,20 @@ import random
 import re
 import edit_distance
 
-# TODO Have a script that automatically updates these
-MAPS = [
-    # Escort
-    'Circuit Royal',
-    'Dorado',
-    'Havana',
-    'Junkertown',
-    'Rialto',
-    'Route 66',
-    'Shambali Monastery',
-    'Watchpoint: Gibraltar',
-
-    # Hybrid
-    'Blizzard World',
-    'Eichenwalde',
-    'Hollywood',
-    'King\'s Row',
-    'Midtown',
-    'Neon Junction',
-    'Numbani',
-    'Paraíso',
-
-    # Control
-    'Antarctic Peninsula',
-    'Busan',
-    'Ilios',
-    'Lijiang Tower',
-    'Nepal',
-    'Oasis',
-    'Samoa',
-
-    # Push
-    'Colosseo',
-    'Esperança',
-    'New Queen Street',
-    'Runasapi',
-
-    # Flashpoint
-    'Aatlis',
-    'New Junk City',
-    'Suravasa',
-
-    # Clash
-    'Throne of Anubis',
-    'Hanaoka',
-]
+import json
 
 TANK = 'Tank'
 DPS = 'DPS'
 SUPPORT = 'Support'
 ROLES = [TANK, DPS, SUPPORT]
-HEROES = {
-    # Tanks
-    'Domina': TANK,
-    'D.Mon': TANK,
-    'D.Va': TANK,
-    'Doomfist': TANK,
-    'Hazard': TANK,
-    'Junker Queen': TANK,
-    'Mauga': TANK,
-    'Orisa': TANK,
-    'Ramattra': TANK,
-    'Reinhardt': TANK,
-    'Roadhog': TANK,
-    'Sigma': TANK,
-    'Winston': TANK,
-    'Wrecking Ball': TANK,
-    'Zarya': TANK,
 
-    # DPS
-    'Anran': DPS,
-    'Ashe': DPS,
-    'Bastion': DPS,
-    'Cassidy': DPS,
-    'Echo': DPS,
-    'Emre': DPS,
-    'Freja': DPS,
-    'Genji': DPS,
-    'Hanzo': DPS,
-    'Junkrat': DPS,
-    'Mei': DPS,
-    'Pharah': DPS,
-    'Reaper': DPS,
-    'Shion': DPS,
-    'Sierra': DPS,
-    'Soldier: 76': DPS,
-    'Sojourn': DPS,
-    'Sombra': DPS,
-    'Symmetra': DPS,
-    'Torbjörn': DPS,
-    'Tracer': DPS,
-    'Vendetta': DPS,
-    'Venture': DPS,
-    'Widowmaker': DPS,
+# Load maps, heroes, and stadium heroes constants from human-readable JSON
+with open('data/overwatch_data.json', 'r', encoding='utf-8') as f:
+    _ow_data = json.load(f)
 
-    # Support
-    'Ana': SUPPORT,
-    'Baptiste': SUPPORT,
-    'Brigitte': SUPPORT,
-    'Illari': SUPPORT,
-    'Jetpack Cat': SUPPORT,
-    'Juno': SUPPORT,
-    'Kiriko': SUPPORT,
-    'Lifeweaver': SUPPORT,
-    'Lúcio': SUPPORT,
-    'Mercy': SUPPORT,
-    'Mizuki': SUPPORT,
-    'Moira': SUPPORT,
-    'Wuyang': SUPPORT,
-    'Zenyatta': SUPPORT,
-}
-
-# Map from heroes available in stadium to list of powers.
-# TODO Have a way to keep old powers that removed documented somewhere.
-STADIUM_HEROES = {
-    # Tank
-    'Doomfist': [
-        'Jab Cross',
-        'Rising Uppercut',
-        'The Best Defense',
-        'Aftershock',
-        'Seismic Rally',
-        'Slam Wham',
-        'Boomfist',
-        'Jetforce Jab',
-        'Overpowered',
-        'Asteriod Smash',
-        'Helping Hand',
-    ],
-    'D.Va': [
-        'Focused Fusion',
-        'Legendary Loadout',
-        'Overstocked',
-        'Countermeasures',
-        'Facetanking',
-        'Ultrawide Matrix',
-        'Ignition Burst',
-        'MEKA Punch',
-        'Stat Boost',
-        'Tokki Slam',
-        'Express Detonation',
-        'Party Protector',
-    ],
-    'Hazard': [
-        'Barbed Shot',
-        'Bonerot',
-        'Hit Me Again',
-        'Needle Storm',
-        'Bunny Hop',
-        'Slasher',
-        'Twin Fang',
-        'Woof Woof!',
-        'Fortress',
-        'Juiced',
-        'Off The Wall',
-        'Bringin\' The Pain',
-    ],
-    'Junker Queen': [
-        'Thrill of Battle',
-        'Royal Bullets',
-        'Twist the Knife',
-        'Blade Parade',
-        'Cut \'em Gracie!',
-        'Let\'s Go Win',
-        'Merciless Magnetism',
-        'Reckoner\'s Roar',
-        'Chop Chop',
-        'Soaring Stone',
-        'Bloodcrazed',
-        'Bow Down',
-    ],
-    'Orisa': [
-        'Scorched Earh',
-        'Shield Divergence',
-        'Advanced Throwbotics',
-        'Hot Rotate-O',
-        'Spynstem Update',
-        'Factory Reset',
-        'Hooves of Steel',
-        'Restortify',
-        'Ride with Me',
-        'Lassoed',
-        'Centripetal Charge',
-        'Supercharger',
-    ],
-    'Reinhardt': [
-        'Amplification Barrier',
-        'Barrier Reconstruction',
-        'To Me, My Friends!',
-        'Wilhelmwagen',
-        'Shield Stampede',
-        'Vanguard',
-        'Vroom Boom Boom',
-        'Blazing Blitz',
-        'Impact Burst',
-        'Magma Strike',
-        'Feeling the Burn',
-        'Smashing!',
-    ],
-    'Sigma': [
-        'Zero Gravity',
-        'Hyperloop',
-        'Trinisphere',
-        'Event Horizon',
-        'Symphonic Syzygy',
-        'Orbital Barrier',
-        'Philharmonic Fortitude',
-        'Mass Driver',
-        'Singularity',
-        'Maestro',
-        'Apogee Alignment',
-        'Astrophysical',
-    ],
-    'Winston': [
-        'Circuit Breaker',
-        'Electro Cluster',
-        'Lightning Rod',
-        'Volatile Volt',
-        'Lunar Leap',
-        'Moon Landing',
-        'Primal Punch',
-        'Pocket Projector',
-        'Surge Protector',
-        'Tesla Field',
-        'Apesteroid',
-        'Thick Skin',
-    ],
-    'Zarya': [
-        'No Limits',
-        'Particle Accelerator',
-        'Piercing Beam',
-        'Pre-workout',
-        'Barrier Benefits',
-        'Containment Shield',
-        'Fission Field',
-        'Here to Spot You',
-        'Lifelift',
-        'Major Flex',
-        'Volskaya Vortex',
-        'Graviton Anomaly',
-    ],
-
-    # DPS
-    'Ashe': [
-        'Head Honcho',
-        'Incendiary Rounds',
-        'My Business, My Rules',
-        'Reload Therapy',
-        'Calamity',
-        'Double Barreled',
-        'Incendiary Blast',
-        'Early Detonation',
-        'Molten Munitions',
-        'Out With a Bang',
-        'B.O.B. Jr.',
-        'Partners in Crime',
-    ],
-    'Cassidy': [
-        'Bang Bang',
-        'Buck Wild',
-        'Bullseye',
-        'Dead Man Walkin\'',
-        'Full House',
-        'Quick Draw',
-        'Think Flasht',
-        'Barrel Roll',
-        'Just Roll with It',
-        'Easy Rider',
-        'It\'s Twelve O\'clock Somewhere',
-        'Hot Potato',
-
-        # Old Powers
-        'Dead Man Walking',  # Renamed to "Dead Man Walkin'"
-        'Flash in the Pan',
-        'Sunrise',
-        'Sunset',
-    ],
-    'Freja': [
-        'Cyclone',
-        'Seekerpoint',
-        'Seismic Shot',
-        'Thread the Needle',
-        'Deep Pockets',
-        'Forager',
-        'Peak Performance',
-        'Redux',
-        'Volley à Deux',
-        'Lille Fælde',
-        'So Cooked',
-        'Mighty Gust',
-    ],
-    'Genji': [
-        'Cybernetic Speed',
-        'Hashimoto\'s Bane',
-        'Sacred Shuriken',
-        'Hanamura Healing',
-        'Hidden Blade',
-        'Laceration',
-        'Wyrm\'s Maw',
-        'Deflect-o-bot',
-        'Forged Under Fire',
-        'Iaido Strike',
-        'Spirit of Sojiro',
-        'Dragon\'s Breath',
-    ],
-    'Junkrat': [
-        '2 Frag 2 Frurious',
-        'Bango!',
-        'Big Bang',
-        'Bingo!',
-        'Soot Shaker',
-        'It\'s a(nother) trap!',
-        'Trap II, Esquire',
-        'Hop Boom',
-        'Slapnel',
-        'Gachabomb',
-        'Rainin\' Lead',
-        'Rip Roll',
-    ],
-    'Mei': [
-        'Extendothermics',
-        'Frost Armor',
-        'Permafrost',
-        'Slowball',
-        'Iceberg',
-        'Snowball Flight',
-        'Twice As Ice',
-        'Coulder',
-        'Cyclone',
-        'Frost Nova',
-        'Avalanche',
-        'Blizznado',
-    ],
-    'Pharah': [
-        'Evasive Maneuvers',
-        'Extra Charge',
-        'Launch Vector',
-        'Blitz Barrage',
-        'Carpet Bomb',
-        'Recursion Battery',
-        'Cyclic Salvo',
-        'Fuel Depot',
-        'Triple Volley',
-        'Fuel Conversion',
-        'Heat Seekers',
-        'Speed Kills',
-    ],
-    'Reaper': [
-        'Backstabber',
-        'Harvest Fest',
-        'Revolving Ruin',
-        'Shared Siphon',
-        'Shrouded Shrapnel',
-        'Spirited to Slay',
-        'Vampiric Touch',
-        'Death Step',
-        'Silen as the Grave',
-        'Strangle Step',
-        'Ghosted',
-        'Wraith Renewal',
-    ],
-    'Sojourn':[
-        'Fine-Tuned Thrusters',
-        'Lock and Load',
-        'Unconventional Tactics',
-        'Zoom Zoom Zoom',
-        'Commotion Cycle',
-        'Experimental Tech',
-        'Hard Stuck',
-        'Conductor Chase',
-        'Overcharge',
-        'Reverberation Rounds',
-        'Enhanced Targeting System',
-        'Aftershock',
-    ],
-    'Soldier: 76': [
-        'Peripheral Pulse',
-        'Super Visor',
-        'Chaingun',
-        'Man on the Run',
-        'Cratered',
-        'Double Helix',
-        'Hunker Down',
-        'Back Off',
-        'Biotic Bullseye',
-        'Frontliners',
-        'On Me!',
-        'Track and Field',
-    ],
-    'Torbjörn': [
-        'All Grown Up',
-        'Positive Reinforcement',
-        'Turriplets',
-        'Magmini',
-        'Swedish Sauna',
-        'Come Get Yer Armor',
-        'Dwarlord',
-        'Let Off Some Steam',
-        'Blacksmith',
-        'Forged in Fire',
-        'Clocked',
-        'Riveting',
-    ],
-    'Tracer': [
-        'Flash Fist',
-        'Get Stuffed!',
-        'Blink Of An Eye',
-        'Quantum Clip',
-        'Alternate Ending',
-        'Auto Recall',
-        'Bullet Time',
-        'T.Racer',
-        'Temportal',
-        'Foresight',
-        'Timelapse',
-        'Pocket Bomb',
-    ],
-
-    # Support
-    'Ana': [
-        'Artsy Dartsy',
-        'No Scope Needed',
-        'Pinpoint Prescription',
-        'Comfy Cloud',
-        'Dreamy',
-        'Fountain of Soothe',
-        'Home Remedy',
-        'Nanonade',
-        'Venomous',
-        'Falconer',
-        'My Turn',
-        'Our Turn',
-
-        # Old powers.
-        'Tactical Rifle',
-        'Sleep Regimen',
-        'Time Out',
-        'Your Full Potential',
-    ],
-    'Brigitte':[
-        'Burst Aid',
-        'Pep Talk',
-        'Whirlwhip',
-        'Optimizer',
-        'Repair Extender',
-        'God Ray',
-        'Maces to Faces',
-        'Mender Bender',
-        'Sköldkastning',
-        'Lindholm Wall',
-        'Aura Farming',
-        'Consecrated Ground',
-    ],
-    'Juno': [
-        'Medimaster',
-        'Stinger',
-        'Cosmic Coolant',
-        'Medicinal Missiles',
-        'Pulsar Plus',
-        'Blink Boots',
-        'Torpedo Glide',
-        'Black Hole',
-        'Hyper Healer',
-        'Rally Ring',
-        'Orbital Allignment',
-        'Stellar Focus',
-    ],
-    'Kiriko': [
-        'Foxy Fireworks',
-        'Keen Kunai',
-        'Triple Threat',
-        'Leaf on the Wind',
-        'Self-care',
-        'Supported Shooting',
-        'Clone Conjuration',
-        'Fleet Foot',
-        'Cleansing Charge',
-        'Two-zu',
-        'Crossing Guard',
-        'Spirit Veil',
-    ],
-    'Lúcio': [
-        'Fast Forward',
-        'Signature Shift',
-        'Sonic Boom',
-        'Mixtape',
-        'Megaphone',
-        'Radio Edit',
-        'Vivace',
-        'Wallvibing',
-        'Crowd Pleaser',
-        'Let\'s Bounce',
-        'Reverb',
-        'Beat Drop',
-    ],
-    'Mercy': [
-        'Distortion',
-        'Glass Extra Full',
-        'Protective Beam',
-        'Serenity',
-        'Threads of Fate',
-        'Battle Medic',
-        'Equivalent Exchange',
-        'First Responder',
-        'Renaissance',
-        'The Whambulance',
-        'Triage Unit',
-        'Crepuscular Circle'
-    ],
-    'Moira': [
-        'Chain Grasph',
-        'Deconstruction',
-        'Empowering You',
-        'Ethereal Excision',
-        'Optimal Overflow',
-        'Precarious Potency',
-        'Cross-orbal',
-        'Multiball',
-        'Phantasm',
-        'Scientific Deathod',
-        'Voidhoppers',
-        'Descruction\'s Divide',
-    ],
-    'Wuyang': [
-        'Paindrops',
-        'Undertow',
-        'Wave Lance',
-        'Flow State',
-        'Shore Up',
-        'Tidekeeper',
-        'Puddle Stomp',
-        'Splish Splash',
-        'Streamline',
-        'Ebb and Flow',
-        'Storm Surge',
-        'Tidal Save',
-    ],
-    'Zenyatta': [
-        'Flying Kick',
-        'It\'s Orbin\' Time',
-        'Seeking Salvation',
-        'Dual Harmony',
-        'Enlightenment',
-        'Gotta Have Faith',
-        'Inner Peace',
-        'Discord Fever',
-        'Discord Inferno',
-        'Instant Karma',
-        'Circle of Strife',
-        'Soul Control',
-    ],
-}
+MAPS = _ow_data['MAPS']
+HEROES = _ow_data['HEROES']
+STADIUM_HEROES = _ow_data['STADIUM_HEROES']
 
 
 # Move this to a central util file.
@@ -1123,6 +585,7 @@ class OwTrackerDiscordCommands(app_commands.Group):
         new_tank_goal='The value for the number of Tank games for the new goal.',
         new_dps_goal='The value for the number of DPS games for the new goal.',
         new_support_goal='The value for the number of Support games for the new goal.',
+        skip='Whether to skip the current week\'s goal (True/False). If specified, updates the skip status.'
     )
     async def weekly_goal(
         self,
@@ -1133,8 +596,12 @@ class OwTrackerDiscordCommands(app_commands.Group):
         new_tank_goal: typing.Optional[int] = None,
         new_dps_goal: typing.Optional[int] = None,
         new_support_goal: typing.Optional[int] = None,
-        # TODO Add a way to clear the weekly goal.
+        skip: typing.Optional[bool] = None
     ):
+        # Update skip status if provided
+        if skip is not None:
+            self.ow_tracker_manager.setWeeklyGoal(interaction.user.id, skip=skip)
+
         # If user didn't include a parameter, just return their current goal.
         if new_weekly_goal is None:
             current_weekly_goal = self.ow_tracker_manager.getWeeklyGoal(interaction.user.id)
@@ -1143,19 +610,28 @@ class OwTrackerDiscordCommands(app_commands.Group):
                 message = 'Weekly goal is not set.'
             else:
                 message = f'```Weekly goal is:\n{current_weekly_goal.displayTable()}```'
+                weekly_tracker = self.ow_tracker_manager.getWeeklyTracker(interaction.user.id)
+                if weekly_tracker is not None and getattr(weekly_tracker.getCurrentWeek(), 'skipped', False):
+                    message += '\n*Note: Current week\'s goal is SKIPPED.*'
+
+            if skip is not None:
+                message = f'Skip status updated. {message}'
 
             await interaction.response.send_message(message, ephemeral=True)
             return
+
         # If the user set a new goal, then update their tracker.
-        if new_weekly_goal is not None:
-            goal_obj = Goal(new_weekly_goal,
-                            comp = new_comp_goal,
-                            stadium = new_stadium_goal,
-                            tank = new_tank_goal,
-                            dps = new_dps_goal,
-                            support = new_support_goal)
-            self.ow_tracker_manager.setWeeklyGoal(interaction.user.id, goal_obj)
-            await interaction.response.send_message(f'Weekly goal updated to {new_weekly_goal} games.', ephemeral=True)
+        goal_obj = Goal(new_weekly_goal,
+                        comp = new_comp_goal,
+                        stadium = new_stadium_goal,
+                        tank = new_tank_goal,
+                        dps = new_dps_goal,
+                        support = new_support_goal)
+        self.ow_tracker_manager.setWeeklyGoal(interaction.user.id, new_weekly_goal=goal_obj)
+        message = f'Weekly goal updated to {new_weekly_goal} games.'
+        if skip is not None:
+            message += f' Skip status updated to {skip}.'
+        await interaction.response.send_message(message, ephemeral=True)
 
     @app_commands.command(
         name='recompute-weekly-goals',
@@ -1378,11 +854,13 @@ class OverwatchTrackerManager:
             if not hasattr(owt, 'weekly_tracker') or owt.weekly_tracker is None:
                 continue
             for week in [owt.weekly_tracker.current_week] + owt.weekly_tracker.previous_weeks:
-                # Handle case where week goal might be uninitialized
-                if week.goal is None:
+                if week is None:
                     continue
-                if isinstance(week.goal, int):
+                # Handle case where week goal might be uninitialized
+                if week.goal is not None and isinstance(week.goal, int):
                     week.goal = Goal(week.goal)
+                if not hasattr(week, 'skipped'):
+                    week.skipped = False
 
     # TODO make this async
     # TODO Add a lock for this
@@ -1460,8 +938,17 @@ class OverwatchTrackerManager:
             return None
         return self._getOrCreateOwTrackerForUser(user_id).getWeeklyGoal()
     
-    def setWeeklyGoal(self, user_id, new_weekly_goal):
-        return self._getOrCreateOwTrackerForUser(user_id).setWeeklyGoal(new_weekly_goal)
+    def setWeeklyGoal(self, user_id, new_weekly_goal=None, skip=None):
+        tracker = self._getOrCreateOwTrackerForUser(user_id)
+        if new_weekly_goal is not None:
+            tracker.setWeeklyGoal(new_weekly_goal)
+        if skip is not None:
+            weekly_tracker = tracker.getWeeklyTracker()
+            if weekly_tracker is None:
+                tracker.weekly_tracker = WeeklyTracker()
+                weekly_tracker = tracker.weekly_tracker
+            weekly_tracker.getCurrentWeek().skipped = skip
+        self.saveTrackersToFile()
 
     def getCurrentWeeklyGoalStatus(self, user_id):
         return self._getOrCreateOwTrackerForUser(user_id).getCurrentWeeklyGoal()
@@ -1496,18 +983,50 @@ class OverwatchTrackerManager:
 
             # TODO Add a gif or emote based on what happened (met goal --> airhorns, etc.; didn't meet goal --> sad face, etc.)
             # TODO Add a try except block around the message sending so that it doesn't mess with the state being upodated
+            if getattr(current_week, 'skipped', False):
+                total_val = comp_val = stadium_val = tank_val = dps_val = support_val = 'SKIP'
+            elif current_week.goal is None:
+                total_val = comp_val = stadium_val = tank_val = dps_val = support_val = None
+            else:
+                total_val = current_week.goal.total
+                comp_val = current_week.goal.comp
+                stadium_val = current_week.goal.stadium
+                tank_val = current_week.goal.tank
+                dps_val = current_week.goal.dps
+                support_val = current_week.goal.support
+
+            t1 = f'-------------------------------\n' + \
+                 f'|       | Total | Comp | Stad |\n' + \
+                 f'-------------------------------\n' + \
+                 f'| Games |  {formatNum(len(current_week.games), digits=4)} | {formatNum(len(current_week.getCompGames()), digits=4)} | {formatNum(len(current_week.getStadiumGames()), digits=4)} |\n' + \
+                 f'| Goal  |  {formatNum(total_val, digits=4)} | {formatNum(comp_val, digits=4)} | {formatNum(stadium_val, digits=4)} |\n' + \
+                 f'-------------------------------'
+
+            t2 = f'|       |  Tank |  DPS | Supp |\n' + \
+                 f'-------------------------------\n' + \
+                 f'| Games |  {formatNum(len(current_week.getTankGames()), digits=4)} | {formatNum(len(current_week.getDpsGames()), digits=4)} | {formatNum(len(current_week.getSupportGames()), digits=4)} |\n' + \
+                 f'| Goal  |  {formatNum(tank_val, digits=4)} | {formatNum(dps_val, digits=4)} | {formatNum(support_val, digits=4)} |\n' + \
+                 f'-------------------------------'
+
+            streaks = f'| Current Streak | {formatNum(active_streak, digits=2)} |\n' + \
+                      f'| Longest Streak | {formatNum(longest_streak, digits=2)} |\n' + \
+                      f'-----------------------'
+
             msg = '```\n' + \
                   f'                Weekly Goal Summary                 \n' + \
-                  f'----------------------------------------------------\n' + \
-                  f'|       | Total | Comp | Stad | Tank |  DPS | Supp |\n' + \
-                  f'----------------------------------------------------\n' + \
-                  f'| Games |  {formatNum(len(current_week.games), digits=4)} | {formatNum(len(current_week.getCompGames()), digits=4)} | {formatNum(len(current_week.getStadiumGames()), digits=4)} | {formatNum(len(current_week.getTankGames()), digits=4)} | {formatNum(len(current_week.getDpsGames()), digits=4)} | {formatNum(len(current_week.getSupportGames()), digits=4)} |\n' + \
-                  f'| Goal  |  {formatNum(current_week.goal.total, digits=4)} | {formatNum(current_week.goal.comp, digits=4)} | {formatNum(current_week.goal.stadium, digits=4)} | {formatNum(current_week.goal.tank, digits=4)} | {formatNum(current_week.goal.dps, digits=4)} | {formatNum(current_week.goal.support, digits=4)} |\n' + \
-                  f'----------------------------------------------------\n' + \
-                  f'| Current Streak | {formatNum(active_streak, digits=2)} |\n' + \
-                  f'| Longest Streak | {formatNum(longest_streak, digits=2)} |\n' + \
-                  f'-----------------------\n' + \
+                  t1 + '\n' + \
+                  t2 + '\n' + \
+                  streaks + '\n' + \
                   '```'
+
+            if getattr(current_week, 'skipped', False):
+                status_statement = "This week's goal is SKIPPED."
+            elif current_week.isGoalMet():
+                status_statement = "This week's goal has been MET! 🎉"
+            else:
+                status_statement = "This week's goal has NOT been met yet."
+
+            msg += f'\nStatus: {status_statement}'
 
             # Advance to to the next week if it is tuesday
             now = datetime.now(pytz.timezone('US/Pacific'))
@@ -1932,12 +1451,14 @@ class WeeklyTracker:
         # Go through previous_weeks in reverse order (Should be reverse chronological order)
         pw_streak = 0
         for pw in reversed(self.previous_weeks):
+            if getattr(pw, 'skipped', False):
+                continue
             if not pw.isGoalMet():
                 break
             pw_streak += 1
 
         # If we have met the streak in the current week, then add it to the streak.
-        if self.current_week.isGoalMet():
+        if self.current_week.isGoalMet() and not getattr(self.current_week, 'skipped', False):
             return pw_streak + 1
         # If we haven't me the streak in the current week, then it won't break the streak, but it doesn't count.
         return pw_streak
@@ -1946,6 +1467,8 @@ class WeeklyTracker:
         longest_streak = 0
         current_streak = 0
         for w in self.previous_weeks + [self.current_week]:
+            if getattr(w, 'skipped', False):
+                continue
             if w.isGoalMet():
                 current_streak += 1
                 if longest_streak is None or longest_streak < current_streak:
@@ -2036,8 +1559,11 @@ class WeeklyTracker:
             most_recent_week = sorted([w for w in all_weeks if w.start < midweek_datetime], key=lambda w: w.start)[-1]
             this_goal = most_recent_week.goal.copy()
 
+            # Check if there is an overlapping week in all_weeks that was skipped.
+            was_skipped = any(w.start == start_datetime and getattr(w, 'skipped', False) for w in all_weeks)
+
             # Construct the SingleWeek object.
-            this_week = SingleWeek(this_goal, start_datetime, end_datetime, this_games)
+            this_week = SingleWeek(this_goal, start_datetime, end_datetime, this_games, skipped=was_skipped)
 
             # Add to previous weeks, if the end of the week has passed, instead set it to current week
             if end_datetime < datetime.now(tz=pytz.timezone('US/Pacific')):
@@ -2056,7 +1582,7 @@ class WeeklyTracker:
         self.current_week = new_current_week
 
 class SingleWeek:
-    def __init__(self, goal, start, end = None, games = []):
+    def __init__(self, goal, start, end = None, games = [], skipped = False):
         # The goal number of games to play in a week.
         if isinstance(goal, int):
             goal = Goal(goal)
@@ -2067,6 +1593,7 @@ class SingleWeek:
         self.end = end
         # The list of Comp and Stadium games.
         self.games = games
+        self.skipped = skipped
 
     def getCompGames(self):
         return [g for g in self.games if isinstance(g, OverwatchGame)]
@@ -2115,11 +1642,23 @@ class SingleWeek:
         # | Games |    ## |   ## |   ## |   ## |   ## |   ## |
         # | Goal  |    ## |   ## |   ## |   ## |   ## |   ## |
         # ----------------------------------------------------
+        if getattr(self, 'skipped', False):
+            total_val = comp_val = stadium_val = tank_val = dps_val = support_val = 'SKIP'
+        elif self.goal is None:
+            total_val = comp_val = stadium_val = tank_val = dps_val = support_val = None
+        else:
+            total_val = self.goal.total
+            comp_val = self.goal.comp
+            stadium_val = self.goal.stadium
+            tank_val = self.goal.tank
+            dps_val = self.goal.dps
+            support_val = self.goal.support
+
         return f'----------------------------------------------------\n' + \
                f'|       | Total | Comp | Stad | Tank |  DPS | Supp |\n' + \
                f'----------------------------------------------------\n' + \
                f'| Games |  {formatNum(len(self.games), digits=4)} | {formatNum(len(self.getCompGames()), digits=4)} | {formatNum(len(self.getStadiumGames()), digits=4)} | {formatNum(len(self.getTankGames()), digits=4)} | {formatNum(len(self.getDpsGames()), digits=4)} | {formatNum(len(self.getSupportGames()), digits=4)} |\n' + \
-               f'| Goal  |  {formatNum(self.goal.total, digits=4)} | {formatNum(self.goal.comp, digits=4)} | {formatNum(self.goal.stadium, digits=4)} | {formatNum(self.goal.tank, digits=4)} | {formatNum(self.goal.dps, digits=4)} | {formatNum(self.goal.support, digits=4)} |\n' + \
+               f'| Goal  |  {formatNum(total_val, digits=4)} | {formatNum(comp_val, digits=4)} | {formatNum(stadium_val, digits=4)} | {formatNum(tank_val, digits=4)} | {formatNum(dps_val, digits=4)} | {formatNum(support_val, digits=4)} |\n' + \
                f'----------------------------------------------------'
 
 
