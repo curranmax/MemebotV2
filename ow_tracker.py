@@ -598,24 +598,26 @@ class OwTrackerDiscordCommands(app_commands.Group):
         new_support_goal: typing.Optional[int] = None,
         skip: typing.Optional[bool] = None
     ):
-        # Update skip status if provided
-        if skip is not None:
-            self.ow_tracker_manager.setWeeklyGoal(interaction.user.id, skip=skip)
-
-        # If user didn't include a parameter, just return their current goal.
+        # If user didn't include a new_weekly_goal parameter, just update skip (if provided) and return current goal.
         if new_weekly_goal is None:
+            if skip is not None:
+                self.ow_tracker_manager.setWeeklyGoal(interaction.user.id, skip=skip)
+
             current_weekly_goal = self.ow_tracker_manager.getWeeklyGoal(interaction.user.id)
 
             if current_weekly_goal is None:
                 message = 'Weekly goal is not set.'
             else:
-                message = f'```Weekly goal is:\n{current_weekly_goal.displayTable()}```'
+                table_str = current_weekly_goal.displayTable() if hasattr(current_weekly_goal, 'displayTable') else Goal(current_weekly_goal).displayTable()
+                message = f'```Weekly goal is:\n{table_str}```'
                 weekly_tracker = self.ow_tracker_manager.getWeeklyTracker(interaction.user.id)
-                if weekly_tracker is not None and getattr(weekly_tracker.getCurrentWeek(), 'skipped', False):
-                    message += '\n*Note: Current week\'s goal is SKIPPED.*'
+                if weekly_tracker is not None:
+                    cw = weekly_tracker.getCurrentWeek()
+                    if cw is not None and getattr(cw, 'skipped', False):
+                        message += '\n*Note: Current week\'s goal is SKIPPED.*'
 
             if skip is not None:
-                message = f'Skip status updated. {message}'
+                message = f'Skip status updated to {skip}. {message}'
 
             await interaction.response.send_message(message, ephemeral=True)
             return
@@ -627,7 +629,7 @@ class OwTrackerDiscordCommands(app_commands.Group):
                         tank = new_tank_goal,
                         dps = new_dps_goal,
                         support = new_support_goal)
-        self.ow_tracker_manager.setWeeklyGoal(interaction.user.id, new_weekly_goal=goal_obj)
+        self.ow_tracker_manager.setWeeklyGoal(interaction.user.id, new_weekly_goal=goal_obj, skip=skip)
         message = f'Weekly goal updated to {new_weekly_goal} games.'
         if skip is not None:
             message += f' Skip status updated to {skip}.'
@@ -846,14 +848,19 @@ class OverwatchTrackerManager:
             self.saveTrackersToFile()
             return
 
-        f = open(self.ow_tracker_fname, 'rb')
-        self.overwatch_trackers = pickle.load(f)
+        with open(self.ow_tracker_fname, 'rb') as f:
+            self.overwatch_trackers = pickle.load(f)
 
-        # TODO Remove this debug code. This is to migrate the goal from a single int to an object.
+        # Migrate and sanitize trackers
         for _, owt in self.overwatch_trackers.items():
             if not hasattr(owt, 'weekly_tracker') or owt.weekly_tracker is None:
                 continue
-            for week in [owt.weekly_tracker.current_week] + owt.weekly_tracker.previous_weeks:
+            wt = owt.weekly_tracker
+            if not hasattr(wt, 'current_week') or wt.current_week is None:
+                wt.current_week = SingleWeek(None, datetime.now(tz=pytz.timezone("US/Pacific")))
+            if not hasattr(wt, 'previous_weeks') or wt.previous_weeks is None:
+                wt.previous_weeks = []
+            for week in [wt.current_week] + wt.previous_weeks:
                 if week is None:
                     continue
                 # Handle case where week goal might be uninitialized
@@ -865,8 +872,8 @@ class OverwatchTrackerManager:
     # TODO make this async
     # TODO Add a lock for this
     def saveTrackersToFile(self):
-        f = open(self.ow_tracker_fname, 'wb')
-        pickle.dump(self.overwatch_trackers, f)
+        with open(self.ow_tracker_fname, 'wb') as f:
+            pickle.dump(self.overwatch_trackers, f)
 
     def addGame(self, user_id, overwatch_game):
         overwatch_tracker = self._getOrCreateOwTrackerForUser(user_id)
@@ -947,7 +954,11 @@ class OverwatchTrackerManager:
             if weekly_tracker is None:
                 tracker.weekly_tracker = WeeklyTracker()
                 weekly_tracker = tracker.weekly_tracker
-            weekly_tracker.getCurrentWeek().skipped = skip
+            current_week = weekly_tracker.getCurrentWeek()
+            if current_week is None:
+                weekly_tracker.current_week = SingleWeek(weekly_tracker.getGoal(), datetime.now(tz=pytz.timezone("US/Pacific")), skipped=skip)
+            else:
+                current_week.skipped = skip
         self.saveTrackersToFile()
 
     def getCurrentWeeklyGoalStatus(self, user_id):
@@ -956,9 +967,13 @@ class OverwatchTrackerManager:
     async def upateWeeklyChallenge(self):
         for user_id, tracker in self.overwatch_trackers.items():
             weekly_tracker = tracker.getWeeklyTracker() 
+            if weekly_tracker is None:
+                continue
 
             # Check the status of the weekly Goal
             current_week = weekly_tracker.getCurrentWeek()
+            if current_week is None:
+                continue
 
             # Check the Active Streak and Longest Streak
             active_streak = weekly_tracker.getActiveStreak()
@@ -1255,11 +1270,14 @@ class OverwatchTracker:
             return None
         return self.weekly_tracker.getGoal()
 
-    def setWeeklyGoal(self, new_weekly_goal):
+    def setWeeklyGoal(self, new_weekly_goal=None, skip=None):
         if not hasattr(self, 'weekly_tracker') or self.weekly_tracker is None:
             self.weekly_tracker = WeeklyTracker()
 
-        self.weekly_tracker.setGoal(new_weekly_goal)
+        if new_weekly_goal is not None:
+            self.weekly_tracker.setGoal(new_weekly_goal)
+        if skip is not None:
+            self.weekly_tracker.getCurrentWeek().skipped = skip
 
     def getCurrentWeeklyGoal(self):
         if not hasattr(self, 'weekly_tracker') or self.weekly_tracker is None:
@@ -1431,34 +1449,40 @@ class WeeklyTracker:
         self.previous_weeks = []
 
     def getGoal(self):
-        return self.current_week.goal
+        current_week = self.getCurrentWeek()
+        return current_week.goal if current_week is not None else None
 
     def setGoal(self, new_goal):
         if isinstance(new_goal, int):
             new_goal = Goal(new_goal)
-        self.current_week.goal = new_goal
+        self.getCurrentWeek().goal = new_goal
 
     def addGame(self, game):
-        self.current_week.games.append(game)
+        self.getCurrentWeek().games.append(game)
 
     def getCurrentWeek(self):
+        if not hasattr(self, 'current_week') or self.current_week is None:
+            self.current_week = SingleWeek(None, datetime.now(tz=pytz.timezone("US/Pacific")))
         return self.current_week
 
     def getPreviousWeeks(self):
+        if not hasattr(self, 'previous_weeks') or self.previous_weeks is None:
+            self.previous_weeks = []
         return self.previous_weeks
 
     def getActiveStreak(self):
         # Go through previous_weeks in reverse order (Should be reverse chronological order)
         pw_streak = 0
-        for pw in reversed(self.previous_weeks):
-            if getattr(pw, 'skipped', False):
+        for pw in reversed(self.getPreviousWeeks()):
+            if pw is None or getattr(pw, 'skipped', False):
                 continue
             if not pw.isGoalMet():
                 break
             pw_streak += 1
 
         # If we have met the streak in the current week, then add it to the streak.
-        if self.current_week.isGoalMet() and not getattr(self.current_week, 'skipped', False):
+        cw = self.getCurrentWeek()
+        if cw is not None and cw.isGoalMet() and not getattr(cw, 'skipped', False):
             return pw_streak + 1
         # If we haven't me the streak in the current week, then it won't break the streak, but it doesn't count.
         return pw_streak
@@ -1466,7 +1490,8 @@ class WeeklyTracker:
     def getLongestStreak(self):
         longest_streak = 0
         current_streak = 0
-        for w in self.previous_weeks + [self.current_week]:
+        weeks = [w for w in self.getPreviousWeeks() + [self.getCurrentWeek()] if w is not None]
+        for w in weeks:
             if getattr(w, 'skipped', False):
                 continue
             if w.isGoalMet():
@@ -1480,30 +1505,36 @@ class WeeklyTracker:
     def advanceWeek(self):
         # Log current state before advancing week
         logging.info('Starting advanceWeek')
-        self.logState("pre-advanceWeek")
-
-        # Get the current time, use this for the end fo the old week, and the start of the new week.
         t = datetime.now(tz=pytz.timezone("US/Pacific"))
 
-        # Move the old current_week to a separate variable
-        last_week = self.current_week
-        self.current_week = None
+        if not hasattr(self, 'previous_weeks') or self.previous_weeks is None:
+            self.previous_weeks = []
 
-        # Update last_week.end
-        last_week.end = t
+        if hasattr(self, 'current_week') and self.current_week is not None:
+            self.logState("pre-advanceWeek")
+            last_week = self.current_week
+            last_week.end = t
+            self.previous_weeks.append(last_week)
 
-        # Add last_week to self.previous_weekks
-        self.previous_weeks.append(last_week)
+            if last_week.goal is None:
+                next_goal = None
+            elif hasattr(last_week.goal, 'copy'):
+                next_goal = last_week.goal.copy()
+            elif isinstance(last_week.goal, int):
+                next_goal = Goal(last_week.goal)
+            else:
+                next_goal = None
+        else:
+            next_goal = None
 
-        # Construct the new current_week. It inherits the goal from last_week.
-        self.current_week = SingleWeek(last_week.goal.copy(), t, end = None, games = [])
+        self.current_week = SingleWeek(next_goal, t, end = None, games = [], skipped = False)
 
         # Check that self.previous_weeks is sorted from oldest to newest
         for i in range(len(self.previous_weeks) - 1):
             first_week = self.previous_weeks[i]
             second_week = self.previous_weeks[i+1]
 
-            if first_week.start >= second_week.start:
+            if first_week is not None and second_week is not None and first_week.start >= second_week.start:
                 print('WARNING WEEKLY STATUS VALUES ARE NOT IN THE EXPECTED ORDER!!!!!!')
 
         # Log current state before advancing week
@@ -1512,13 +1543,17 @@ class WeeklyTracker:
     
     def logState(self, prefix):
         # TODO Log details about the games.
+        cw = getattr(self, 'current_week', None)
+        if cw is None:
+            logging.info(f"{prefix} - self.current_week = None")
+        else:
+            end_str = 'None' if cw.end is None else cw.end.isoformat()
+            logging.info(f"{prefix} - self.current_week = [goal: {cw.goal}, start: {cw.start.isoformat()}, end: {end_str}, len(games): {len(cw.games)}]")
 
-        # Log state of self.current_week
-        end_str = 'None' if self.current_week.end is None else self.current_week.end.isoformat()
-        logging.info(f"{prefix} - self.current_week = [goal: {self.current_week.goal}, start: {self.current_week.start.isoformat()}, end: {end_str}, len(games): {len(self.current_week.games)}]")
-
-        # Log state of all previous weeks
-        for i, pw in enumerate(self.previous_weeks):
+        pw_list = getattr(self, 'previous_weeks', []) or []
+        for i, pw in enumerate(pw_list):
+            if pw is None:
+                continue
             end_str = 'None' if pw.end is None else pw.end.isoformat()
             logging.info(f"{prefix} - self.previous_weeks[{i}] = [goal: {pw.goal}, start: {pw.start.isoformat()}, end: {end_str}, len(games): {len(pw.games)}]")
 
@@ -1526,12 +1561,15 @@ class WeeklyTracker:
         # TODO Remove debuging printing. This function shouldn't be used often, so I think its fairly okay to leave it.
 
         # Start the new state
-        all_weeks = self.previous_weeks + [self.current_week]
+        all_weeks = [w for w in self.getPreviousWeeks() + [self.getCurrentWeek()] if w is not None]
+        if not all_weeks:
+            return
+
         new_previous_weeks = []
         new_current_week = None
 
         # Start at the earliest week.
-        start_datetime = min(w.start for w in all_weeks)
+        start_datetime = min(w.start for w in all_weeks if getattr(w, 'start', None) is not None)
 
         if all_games is None:
             # If all_games is None, then use existing games in the weekly tracker.
@@ -1556,8 +1594,19 @@ class WeeklyTracker:
             # Figure out the goal for that week. Find the most recent week stored, and use that goal. This isn't perfect.
             # TODO Add a way for a user to update the goal for an old week
             midweek_datetime = start_datetime + (end_datetime - start_datetime) / 2.0
-            most_recent_week = sorted([w for w in all_weeks if w.start < midweek_datetime], key=lambda w: w.start)[-1]
-            this_goal = most_recent_week.goal.copy()
+            weeks_before = [w for w in all_weeks if getattr(w, 'start', None) is not None and w.start < midweek_datetime]
+            if weeks_before:
+                most_recent_week = sorted(weeks_before, key=lambda w: w.start)[-1]
+                if most_recent_week.goal is None:
+                    this_goal = None
+                elif hasattr(most_recent_week.goal, 'copy'):
+                    this_goal = most_recent_week.goal.copy()
+                elif isinstance(most_recent_week.goal, int):
+                    this_goal = Goal(most_recent_week.goal)
+                else:
+                    this_goal = None
+            else:
+                this_goal = None
 
             # Check if there is an overlapping week in all_weeks that was skipped.
             was_skipped = any(w.start == start_datetime and getattr(w, 'skipped', False) for w in all_weeks)
@@ -1616,21 +1665,24 @@ class SingleWeek:
         if self.goal is None:
             return False
 
-        if self.goal.total > len(self.games):
+        if isinstance(self.goal, int):
+            return len(self.games) >= self.goal
+
+        if getattr(self.goal, 'total', None) is not None and self.goal.total > len(self.games):
             return False
-        if self.goal.comp is not None and \
+        if getattr(self.goal, 'comp', None) is not None and \
                 self.goal.comp > len(self.getCompGames()):
             return False
-        if self.goal.stadium is not None and \
+        if getattr(self.goal, 'stadium', None) is not None and \
                 self.goal.stadium > len(self.getStadiumGames()):
             return False
-        if self.goal.tank is not None and \
+        if getattr(self.goal, 'tank', None) is not None and \
                 self.goal.tank > len(self.getTankGames()):
             return False
-        if self.goal.dps is not None and \
+        if getattr(self.goal, 'dps', None) is not None and \
                 self.goal.dps > len(self.getDpsGames()):
             return False
-        if self.goal.support is not None and \
+        if getattr(self.goal, 'support', None) is not None and \
                 self.goal.support > len(self.getSupportGames()):
             return False
         return True
@@ -1646,6 +1698,9 @@ class SingleWeek:
             total_val = comp_val = stadium_val = tank_val = dps_val = support_val = 'SKIP'
         elif self.goal is None:
             total_val = comp_val = stadium_val = tank_val = dps_val = support_val = None
+        elif isinstance(self.goal, int):
+            total_val = self.goal
+            comp_val = stadium_val = tank_val = dps_val = support_val = None
         else:
             total_val = self.goal.total
             comp_val = self.goal.comp

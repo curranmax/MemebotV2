@@ -19,13 +19,13 @@ def test_single_week_skipped_display():
     week_active = SingleWeek(goal, start, skipped=False)
     table_active = week_active.getGoalTable()
     assert "SKIP" not in table_active
-    assert "0005" in table_active
+    assert "   5" in table_active
     
     # Test skipped
     week_skipped = SingleWeek(goal, start, skipped=True)
     table_skipped = week_skipped.getGoalTable()
     assert "SKIP" in table_skipped
-    assert "0005" not in table_skipped
+    assert "   5" not in table_skipped
     print("test_single_week_skipped_display passed!")
 
 def test_weekly_tracker_streaks():
@@ -122,26 +122,26 @@ def test_recompute_weekly_goals_preserves_skipped():
     assert recomputed_w2.skipped is False, "Recomputed week 2 should stay false"
     print("test_recompute_weekly_goals_preserves_skipped passed!")
 
+class OldSingleWeek:
+    def __init__(self, goal, start):
+        self.goal = goal
+        self.start = start
+        self.end = None
+        self.games = []
+        # no skipped field
+        
+class OldWeeklyTracker:
+    def __init__(self):
+        self.current_week = OldSingleWeek(Goal(5), datetime.now(tz=pytz.timezone("US/Pacific")))
+        self.previous_weeks = [OldSingleWeek(Goal(5), datetime.now(tz=pytz.timezone("US/Pacific")) - timedelta(days=7))]
+        
+class OldOverwatchTracker:
+    def __init__(self):
+        self.weekly_tracker = OldWeeklyTracker()
+        self.season = 3
+
 def test_pickle_migration():
     print("Running test_pickle_migration...")
-    # Simulate an old state where weeks don't have the 'skipped' field
-    class OldSingleWeek:
-        def __init__(self, goal, start):
-            self.goal = goal
-            self.start = start
-            self.end = None
-            self.games = []
-            # no skipped field
-            
-    class OldWeeklyTracker:
-        def __init__(self):
-            self.current_week = OldSingleWeek(Goal(5), datetime.now(tz=pytz.timezone("US/Pacific")))
-            self.previous_weeks = [OldSingleWeek(Goal(5), datetime.now(tz=pytz.timezone("US/Pacific")) - timedelta(days=7))]
-            
-    class OldOverwatchTracker:
-        def __init__(self):
-            self.weekly_tracker = OldWeeklyTracker()
-            self.season = 3
             
     test_fname = "scratch/test_ow_tracker.pickle"
     if os.path.exists(test_fname):
