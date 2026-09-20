@@ -195,9 +195,61 @@ def test_manager_and_tracker_integration():
         
     print("test_manager_and_tracker_integration passed!")
 
+def test_recompute_weekly_goals_empty_weeks_and_goal_instances():
+    print("Running test_recompute_weekly_goals_empty_weeks_and_goal_instances...")
+    tz = pytz.timezone("US/Pacific")
+    t1 = datetime(2026, 8, 4, 8, tzinfo=tz) # Week 1
+    t2 = datetime(2026, 8, 11, 8, tzinfo=tz) # Week 2 (no games)
+    t3 = datetime(2026, 8, 18, 8, tzinfo=tz) # Week 3
+    t4 = datetime(2026, 8, 25, 8, tzinfo=tz) # Week 4
+    
+    # Games only in Week 1 and Week 3
+    g1 = ow_tracker.OverwatchGame('Win', 'King\'s Row', 'Reinhardt', 1.0, 1)
+    g1.datetime = datetime(2026, 8, 5, 12, tzinfo=tz)
+    g3 = ow_tracker.OverwatchGame('Win', 'King\'s Row', 'Reinhardt', 1.0, 1)
+    g3.datetime = datetime(2026, 8, 20, 12, tzinfo=tz)
+    
+    w1 = SingleWeek(Goal(5), t1, t2, games=[g1])
+    w2 = SingleWeek(Goal(None), t2, t3, games=[]) # Week with 0 games
+    w3 = SingleWeek(Goal(10), t3, t4, games=[g3])
+    w4 = SingleWeek(Goal(15), t4, None, games=[]) # current week
+    
+    tracker = WeeklyTracker()
+    tracker.previous_weeks = [w1, w2, w3]
+    tracker.current_week = w4
+    
+    # Recompute weekly goals
+    tracker.recomputeWeeklyGoals()
+    
+    all_recomputed_weeks = tracker.getPreviousWeeks() + [tracker.getCurrentWeek()]
+    for i, w in enumerate(all_recomputed_weeks):
+        assert isinstance(w.goal, Goal), f"Week {i} goal is not an instance of Goal: {type(w.goal)}"
+    
+    # Week 2 (08/11 to 08/18) has 0 games
+    w_empty = tracker.getWeekForDate("08/13/2026")
+    assert w_empty is not None
+    assert len(w_empty.games) == 0
+    assert isinstance(w_empty.goal, Goal)
+    
+    # Update the goal for the empty week
+    res = tracker.setGoal(Goal(7), target_date="08/13/2026")
+    assert res is True
+    assert w_empty.goal.total == 7
+    
+    # Recompute again: verify the goal for that empty week is preserved!
+    tracker.recomputeWeeklyGoals()
+    w_empty_after = tracker.getWeekForDate("08/13/2026")
+    assert w_empty_after is not None
+    assert isinstance(w_empty_after.goal, Goal)
+    assert w_empty_after.goal.total == 7
+    assert len(w_empty_after.games) == 0
+    
+    print("test_recompute_weekly_goals_empty_weeks_and_goal_instances passed!")
+
 if __name__ == "__main__":
     test_parse_date()
     test_week_lookup_and_change_boundary()
     test_set_weekly_goal_by_date()
     test_manager_and_tracker_integration()
+    test_recompute_weekly_goals_empty_weeks_and_goal_instances()
     print("All date tests passed successfully!")

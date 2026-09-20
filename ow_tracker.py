@@ -673,7 +673,7 @@ class OwTrackerDiscordCommands(app_commands.Group):
 
                 week_start_str = get_pacific_date(target_week.start).strftime("%m/%d/%Y")
                 week_goal = target_week.goal
-                if week_goal is None:
+                if week_goal is None or getattr(week_goal, 'total', None) is None:
                     message = f'Weekly goal for week of {week_start_str} is not set.'
                 else:
                     table_str = week_goal.displayTable() if hasattr(week_goal, 'displayTable') else Goal(week_goal).displayTable()
@@ -692,7 +692,7 @@ class OwTrackerDiscordCommands(app_commands.Group):
 
             current_weekly_goal = self.ow_tracker_manager.getWeeklyGoal(interaction.user.id)
 
-            if current_weekly_goal is None:
+            if current_weekly_goal is None or getattr(current_weekly_goal, 'total', None) is None:
                 message = 'Weekly goal is not set.'
             else:
                 table_str = current_weekly_goal.displayTable() if hasattr(current_weekly_goal, 'displayTable') else Goal(current_weekly_goal).displayTable()
@@ -950,7 +950,9 @@ class OverwatchTrackerManager:
                 if week is None:
                     continue
                 # Handle case where week goal might be uninitialized
-                if week.goal is not None and isinstance(week.goal, int):
+                if week.goal is None:
+                    week.goal = Goal(None)
+                elif isinstance(week.goal, int):
                     week.goal = Goal(week.goal)
                 if not hasattr(week, 'skipped'):
                     week.skipped = False
@@ -1660,15 +1662,15 @@ class WeeklyTracker:
             self.previous_weeks.append(last_week)
 
             if last_week.goal is None:
-                next_goal = None
+                next_goal = Goal(None)
             elif hasattr(last_week.goal, 'copy'):
                 next_goal = last_week.goal.copy()
             elif isinstance(last_week.goal, int):
                 next_goal = Goal(last_week.goal)
             else:
-                next_goal = None
+                next_goal = Goal(None)
         else:
-            next_goal = None
+            next_goal = Goal(None)
 
         self.current_week = SingleWeek(next_goal, t, end = None, games = [], skipped = False)
 
@@ -1734,22 +1736,28 @@ class WeeklyTracker:
                 gt = 'Stadium' if isinstance(g, StadiumGame) else 'Comp'
                 print(f'Adding game to this week: datetime={g.datetime.isoformat()}, type={gt}, result={g.result}')
 
-            # Figure out the goal for that week. Find the most recent week stored, and use that goal. This isn't perfect.
-            # TODO Add a way for a user to update the goal for an old week
+            # Figure out the goal for that week.
+            # Look for an exact/overlapping week from previous state that had a goal configured.
             midweek_datetime = start_datetime + (end_datetime - start_datetime) / 2.0
-            weeks_before = [w for w in all_weeks if getattr(w, 'start', None) is not None and w.start < midweek_datetime]
-            if weeks_before:
-                most_recent_week = sorted(weeks_before, key=lambda w: w.start)[-1]
-                if most_recent_week.goal is None:
-                    this_goal = None
-                elif hasattr(most_recent_week.goal, 'copy'):
-                    this_goal = most_recent_week.goal.copy()
-                elif isinstance(most_recent_week.goal, int):
-                    this_goal = Goal(most_recent_week.goal)
-                else:
-                    this_goal = None
+            overlapping_weeks = [w for w in all_weeks if getattr(w, 'start', None) is not None and w.start == start_datetime and getattr(w, 'goal', None) is not None and getattr(w.goal, 'total', None) is not None]
+            if overlapping_weeks:
+                matched_w = overlapping_weeks[-1]
+                this_goal = matched_w.goal.copy() if hasattr(matched_w.goal, 'copy') else Goal(matched_w.goal)
             else:
-                this_goal = None
+                weeks_before = [w for w in all_weeks if getattr(w, 'start', None) is not None and w.start < midweek_datetime and getattr(w, 'goal', None) is not None and getattr(w.goal, 'total', None) is not None]
+                if weeks_before:
+                    most_recent_week = sorted(weeks_before, key=lambda w: w.start)[-1]
+                    this_goal = most_recent_week.goal.copy() if hasattr(most_recent_week.goal, 'copy') else Goal(most_recent_week.goal)
+                else:
+                    weeks_with_goal = [w for w in all_weeks if getattr(w, 'goal', None) is not None and getattr(w.goal, 'total', None) is not None]
+                    if weeks_with_goal:
+                        fallback_week = sorted(weeks_with_goal, key=lambda w: w.start)[0]
+                        this_goal = fallback_week.goal.copy() if hasattr(fallback_week.goal, 'copy') else Goal(fallback_week.goal)
+                    else:
+                        this_goal = Goal(None)
+
+            if this_goal is None or not isinstance(this_goal, Goal):
+                this_goal = Goal(this_goal) if isinstance(this_goal, int) else Goal(None)
 
             # Check if there is an overlapping week in all_weeks that was skipped.
             was_skipped = any(w.start == start_datetime and getattr(w, 'skipped', False) for w in all_weeks)
@@ -1778,6 +1786,8 @@ class SingleWeek:
         # The goal number of games to play in a week.
         if isinstance(goal, int):
             goal = Goal(goal)
+        elif goal is None:
+            goal = Goal(None)
         self.goal = goal
         # The start time of the week
         self.start = start
@@ -1811,7 +1821,10 @@ class SingleWeek:
         if isinstance(self.goal, int):
             return len(self.games) >= self.goal
 
-        if getattr(self.goal, 'total', None) is not None and self.goal.total > len(self.games):
+        if getattr(self.goal, 'total', None) is None:
+            return False
+
+        if self.goal.total > len(self.games):
             return False
         if getattr(self.goal, 'comp', None) is not None and \
                 self.goal.comp > len(self.getCompGames()):
