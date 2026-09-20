@@ -73,6 +73,54 @@ def getHero(hero):
     return hero
 
 
+DATE_REGEX = re.compile(
+    r'^(?P<month>\d{1,2})\/(?P<day>\d{1,2})(?:\/(?P<year>\d{2}|\d{4}))?$')
+
+
+def get_pacific_date(dt):
+    if dt is None:
+        return None
+    if getattr(dt, 'tzinfo', None) is not None:
+        return dt.astimezone(pytz.timezone("US/Pacific")).date()
+    return dt.date()
+
+
+def parseDate(date_str, base_dt=None):
+    """
+    Parses a date string in MM/DD(/YYYY)? format.
+    Returns (date_obj, dt_obj, error_msg).
+    If parsing succeeds, error_msg is None.
+    If parsing fails, date_obj and dt_obj are None, and error_msg contains the error message.
+    """
+    if not isinstance(date_str, str):
+        return None, None, 'Invalid date format!'
+
+    if base_dt is None:
+        base_dt = datetime.now(tz=pytz.timezone('US/Pacific'))
+
+    date_match = DATE_REGEX.match(date_str.strip())
+    if date_match is None:
+        return None, None, 'Invalid date format!'
+
+    month = int(date_match.group('month'))
+    day = int(date_match.group('day'))
+    year = date_match.group('year')
+
+    if year is not None:
+        year = int(year)
+        if year < 100:
+            year += 2000
+    else:
+        year = base_dt.date().year
+
+    try:
+        parsed_date = date_cls(year, month, day)
+        parsed_dt = datetime.combine(parsed_date, base_dt.time(), pytz.timezone("US/Pacific"))
+        return parsed_date, parsed_dt, None
+    except ValueError:
+        return None, None, 'Invalid date!'
+
+
 OW_TRACKER_FILENAME = 'data/ow_tracker.pickle'
 SEASON_FILENAME = 'data/season.pickle'
 HERO_CHALLENGE_FILENAME = 'data/hero_challenge.pickle'
@@ -585,7 +633,8 @@ class OwTrackerDiscordCommands(app_commands.Group):
         new_tank_goal='The value for the number of Tank games for the new goal.',
         new_dps_goal='The value for the number of DPS games for the new goal.',
         new_support_goal='The value for the number of Support games for the new goal.',
-        skip='Whether to skip the current week\'s goal (True/False). If specified, updates the skip status.'
+        skip='Whether to skip the current week\'s goal (True/False). If specified, updates the skip status.',
+        date='The date of the week in MM/DD or MM/DD/YYYY format. If specified, sets or gets the goal for that week.'
     )
     async def weekly_goal(
         self,
@@ -596,10 +645,48 @@ class OwTrackerDiscordCommands(app_commands.Group):
         new_tank_goal: typing.Optional[int] = None,
         new_dps_goal: typing.Optional[int] = None,
         new_support_goal: typing.Optional[int] = None,
-        skip: typing.Optional[bool] = None
+        skip: typing.Optional[bool] = None,
+        date: typing.Optional[str] = None
     ):
-        # If user didn't include a new_weekly_goal parameter, just update skip (if provided) and return current goal.
+        target_date = None
+        if date is not None:
+            target_date, _, err = parseDate(date)
+            if err:
+                await interaction.response.send_message(err, ephemeral=True)
+                return
+
+        # If user didn't include a new_weekly_goal parameter, just update skip (if provided) and return goal.
         if new_weekly_goal is None:
+            if target_date is not None:
+                weekly_tracker = self.ow_tracker_manager.getWeeklyTracker(interaction.user.id)
+                if weekly_tracker is None:
+                    await interaction.response.send_message(f'No week found matching date {date}.', ephemeral=True)
+                    return
+                target_week = weekly_tracker.getWeekForDate(target_date)
+                if target_week is None:
+                    await interaction.response.send_message(f'No week found matching date {date}.', ephemeral=True)
+                    return
+
+                if skip is not None:
+                    target_week.skipped = skip
+                    self.ow_tracker_manager.saveTrackersToFile()
+
+                week_start_str = get_pacific_date(target_week.start).strftime("%m/%d/%Y")
+                week_goal = target_week.goal
+                if week_goal is None:
+                    message = f'Weekly goal for week of {week_start_str} is not set.'
+                else:
+                    table_str = week_goal.displayTable() if hasattr(week_goal, 'displayTable') else Goal(week_goal).displayTable()
+                    message = f'```Weekly goal for week of {week_start_str} is:\n{table_str}```'
+                    if getattr(target_week, 'skipped', False):
+                        message += f'\n*Note: Week of {week_start_str}\'s goal is SKIPPED.*'
+
+                if skip is not None:
+                    message = f'Skip status updated to {skip}. {message}'
+
+                await interaction.response.send_message(message, ephemeral=True)
+                return
+
             if skip is not None:
                 self.ow_tracker_manager.setWeeklyGoal(interaction.user.id, skip=skip)
 
@@ -629,6 +716,25 @@ class OwTrackerDiscordCommands(app_commands.Group):
                         tank = new_tank_goal,
                         dps = new_dps_goal,
                         support = new_support_goal)
+
+        if target_date is not None:
+            weekly_tracker = self.ow_tracker_manager.getWeeklyTracker(interaction.user.id)
+            if weekly_tracker is None:
+                await interaction.response.send_message(f'No week found matching date {date}.', ephemeral=True)
+                return
+            target_week = weekly_tracker.getWeekForDate(target_date)
+            if target_week is None:
+                await interaction.response.send_message(f'No week found matching date {date}.', ephemeral=True)
+                return
+
+            self.ow_tracker_manager.setWeeklyGoal(interaction.user.id, new_weekly_goal=goal_obj, skip=skip, target_date=target_date)
+            week_start_str = get_pacific_date(target_week.start).strftime("%m/%d/%Y")
+            message = f'Weekly goal for week of {week_start_str} updated to {new_weekly_goal} games.'
+            if skip is not None:
+                message += f' Skip status updated to {skip}.'
+            await interaction.response.send_message(message, ephemeral=True)
+            return
+
         self.ow_tracker_manager.setWeeklyGoal(interaction.user.id, new_weekly_goal=goal_obj, skip=skip)
         message = f'Weekly goal updated to {new_weekly_goal} games.'
         if skip is not None:
@@ -711,29 +817,9 @@ class OwTrackerDiscordCommands(app_commands.Group):
         # Get current time in PT or use the supplied date parameter.
         dt = datetime.now(tz=pytz.timezone('US/Pacific'))
         if date is not None:
-            # If date is given override that date.
-            pattern = re.compile(r'^(?P<month>\d{1,2})\/(?P<day>\d{1,2})(?:\/(?P<year>\d{2}|\d{4}))?$')
-            # TODO Define this REGEX in a common place
-            date_match = HeroChallengeDiscordCommands.DATE_REGEX.match(date)
-            if date_match is None:
-                await interaction.response.send_message('Invalid date format!', ephemeral=True)
-                return
-            month = int(date_match.group('month'))
-            day = int(date_match.group('day'))
-            year = date_match.group('year')
-
-            if year is not None:
-                year = int(year)
-                if year < 100:
-                    year += 2000
-            else:
-                year = dt.date().year
-
-            try:
-                date = date_cls(year, month, day)
-                dt = datetime.combine(date, dt.time(), pytz.timezone("US/Pacific"))
-            except ValueError:
-                await interaction.response.send_message('Invalid date!', ephemeral=True)
+            _, dt, err = parseDate(date, base_dt=dt)
+            if err:
+                await interaction.response.send_message(err, ephemeral=True)
                 return
 
         stadium_game = StadiumGame(
@@ -940,26 +1026,16 @@ class OverwatchTrackerManager:
             return None
         return self._getOrCreateOwTrackerForUser(user_id).getWeeklyTracker()
 
-    def getWeeklyGoal(self, user_id):
+    def getWeeklyGoal(self, user_id, target_date=None):
         if user_id not in self.overwatch_trackers:
             return None
-        return self._getOrCreateOwTrackerForUser(user_id).getWeeklyGoal()
+        return self._getOrCreateOwTrackerForUser(user_id).getWeeklyGoal(target_date=target_date)
     
-    def setWeeklyGoal(self, user_id, new_weekly_goal=None, skip=None):
+    def setWeeklyGoal(self, user_id, new_weekly_goal=None, skip=None, target_date=None):
         tracker = self._getOrCreateOwTrackerForUser(user_id)
-        if new_weekly_goal is not None:
-            tracker.setWeeklyGoal(new_weekly_goal)
-        if skip is not None:
-            weekly_tracker = tracker.getWeeklyTracker()
-            if weekly_tracker is None:
-                tracker.weekly_tracker = WeeklyTracker()
-                weekly_tracker = tracker.weekly_tracker
-            current_week = weekly_tracker.getCurrentWeek()
-            if current_week is None:
-                weekly_tracker.current_week = SingleWeek(weekly_tracker.getGoal(), datetime.now(tz=pytz.timezone("US/Pacific")), skipped=skip)
-            else:
-                current_week.skipped = skip
+        res = tracker.setWeeklyGoal(new_weekly_goal=new_weekly_goal, skip=skip, target_date=target_date)
         self.saveTrackersToFile()
+        return res
 
     def getCurrentWeeklyGoalStatus(self, user_id):
         return self._getOrCreateOwTrackerForUser(user_id).getCurrentWeeklyGoal()
@@ -1265,19 +1341,29 @@ class OverwatchTracker:
             return None
         return self.weekly_tracker
 
-    def getWeeklyGoal(self):
+    def getWeeklyGoal(self, target_date=None):
         if not hasattr(self, 'weekly_tracker') or self.weekly_tracker is None:
             return None
-        return self.weekly_tracker.getGoal()
+        return self.weekly_tracker.getGoal(target_date=target_date)
 
-    def setWeeklyGoal(self, new_weekly_goal=None, skip=None):
+    def setWeeklyGoal(self, new_weekly_goal=None, skip=None, target_date=None):
         if not hasattr(self, 'weekly_tracker') or self.weekly_tracker is None:
             self.weekly_tracker = WeeklyTracker()
 
+        if target_date is not None:
+            target_week = self.weekly_tracker.getWeekForDate(target_date)
+            if target_week is None:
+                return False
+        else:
+            target_week = self.weekly_tracker.getCurrentWeek()
+
         if new_weekly_goal is not None:
-            self.weekly_tracker.setGoal(new_weekly_goal)
+            if isinstance(new_weekly_goal, int):
+                new_weekly_goal = Goal(new_weekly_goal)
+            target_week.goal = new_weekly_goal
         if skip is not None:
-            self.weekly_tracker.getCurrentWeek().skipped = skip
+            target_week.skipped = skip
+        return True
 
     def getCurrentWeeklyGoal(self):
         if not hasattr(self, 'weekly_tracker') or self.weekly_tracker is None:
@@ -1448,14 +1534,71 @@ class WeeklyTracker:
         self.current_week = SingleWeek(goal, datetime.now(tz=pytz.timezone("US/Pacific")))
         self.previous_weeks = []
 
-    def getGoal(self):
+    def getWeekForDate(self, target_date):
+        if isinstance(target_date, str):
+            target_d, _, err = parseDate(target_date)
+            if err:
+                return None
+        elif isinstance(target_date, datetime):
+            target_d = get_pacific_date(target_date)
+        elif isinstance(target_date, date_cls):
+            target_d = target_date
+        else:
+            return None
+
+        all_weeks = [w for w in self.getPreviousWeeks() + [self.getCurrentWeek()] if w is not None and getattr(w, 'start', None) is not None]
+        if not all_weeks:
+            return None
+
+        all_weeks.sort(key=lambda w: w.start)
+
+        matching_weeks = []
+        for w in all_weeks:
+            start_date = get_pacific_date(w.start)
+            if w.end is not None:
+                end_date = get_pacific_date(w.end)
+            else:
+                start_dt = w.start.astimezone(pytz.timezone("US/Pacific")) if getattr(w.start, 'tzinfo', None) else pytz.timezone("US/Pacific").localize(w.start)
+                for pd in range(1, 8):
+                    candidate = start_dt + timedelta(days=pd)
+                    if candidate.weekday() == 1:
+                        end_date = candidate.date()
+                        break
+                else:
+                    end_date = (start_dt + timedelta(days=7)).date()
+
+            # If target_d is at or after start_date and strictly before end_date, it's inside this week.
+            # If target_d == end_date, it is the change date and belongs to the week starting, NOT ending.
+            if (start_date <= target_d < end_date) or (start_date == target_d and start_date == end_date):
+                matching_weeks.append((w, start_date == target_d))
+
+        if not matching_weeks:
+            return None
+
+        starting_weeks = [w for w, is_start in matching_weeks if is_start]
+        if starting_weeks:
+            return starting_weeks[-1]
+
+        return matching_weeks[-1][0]
+
+    def getGoal(self, target_date=None):
+        if target_date is not None:
+            week = self.getWeekForDate(target_date)
+            return week.goal if week is not None else None
         current_week = self.getCurrentWeek()
         return current_week.goal if current_week is not None else None
 
-    def setGoal(self, new_goal):
+    def setGoal(self, new_goal, target_date=None):
         if isinstance(new_goal, int):
             new_goal = Goal(new_goal)
+        if target_date is not None:
+            week = self.getWeekForDate(target_date)
+            if week is None:
+                return False
+            week.goal = new_goal
+            return True
         self.getCurrentWeek().goal = new_goal
+        return True
 
     def addGame(self, game):
         self.getCurrentWeek().games.append(game)
@@ -1763,8 +1906,7 @@ class HeroChallengeDiscordCommands(app_commands.Group):
             name='hero-challenge', *args, **kwargs)
         self.hero_challenge_manager = hero_challenge_manager
 
-    DATE_REGEX = re.compile(
-        r'^(?P<month>\d{1,2})\/(?P<day>\d{1,2})(?:\/(?P<year>\d{2}|\d{4}))?$')
+    DATE_REGEX = DATE_REGEX
 
     HERO_CHOICES = [
         app_commands.Choice(name=hero, value=hero)
@@ -1848,42 +1990,25 @@ class HeroChallengeDiscordCommands(app_commands.Group):
             hero: str,
             add_or_remove: typing.Optional[int]=1,
             date: typing.Optional[str]=None):
-        today = datetime.now(tz=pytz.timezone('US/Pacific')).date()
         if date is None:
             # Use today as default.
-            date = today
+            target_date = datetime.now(tz=pytz.timezone('US/Pacific')).date()
         else:
             # Otherwise parse date.
-            match = HeroChallengeDiscordCommands.DATE_REGEX.match(date)
-            if match is None:
-                await interaction.response.send_message('Invalid date format!', ephemeral=True)
-                return
-            month = int(date_match.group('month'))
-            day = int(date_match.group('day'))
-            year = date_match.group('year')
-
-            if year is not None:
-                year = int(year)
-                if year < 100:
-                    year += 2000
-            else:
-                year = today.year
-
-            try:
-                date = date_cls(year, monthy, day)
-            except ValueError:
-                await interaction.response.send_message('Invalid date!', ephemeral=True)
+            target_date, _, err = parseDate(date)
+            if err:
+                await interaction.response.send_message(err, ephemeral=True)
                 return
 
         hero_challenge_tracker = self.hero_challenge_manager.getTrackerForUser(interaction.user.id)
         if add_or_remove == 1:
-            changed = hero_challenge_tracker.addHeroWithDate(hero, date)
+            changed = hero_challenge_tracker.addHeroWithDate(hero, target_date)
         else:
-            changed = hero_challenge_tracker.removeHeroWithDate(hero, date)
+            changed = hero_challenge_tracker.removeHeroWithDate(hero, target_date)
 
         if changed:
             self.hero_challenge_manager.saveTrackersToFile()
-            await interaction.response.send_message('Hero challenge tracker sucessfullly updated!', ephemeral=True)
+            await interaction.response.send_message('Hero challenge tracker successfully updated!', ephemeral=True)
         else:
             await interaction.response.send_message('Error when updating tracker!', ephemeral=True)
 
