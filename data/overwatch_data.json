@@ -31,7 +31,8 @@
         "New Junk City",
         "Suravasa",
         "Throne of Anubis",
-        "Hanaoka"
+        "Hanaoka",
+        "Grímsvötn"
     ],
     "HEROES": {
         "Domina": "Tank",
@@ -76,6 +77,7 @@
         "Ana": "Support",
         "Baptiste": "Support",
         "Brigitte": "Support",
+        "Doctrine": "Support",
         "Illari": "Support",
         "Jetpack Cat": "Support",
         "Juno": "Support",
